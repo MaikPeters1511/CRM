@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/AppHost/">
+    <Project Path="AppHost/Crm.AppHost/Crm.AppHost.csproj" />
+    <Project Path="AppHost/Crm.ServiceDefaults/Crm.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/Gateway/">
+    <Project Path="Gateway/Crm.Gateway/Crm.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/Services/" />
+  <Folder Name="/Services/customer-service/" />
+  <Folder Name="/Services/customer-service/src/">
+    <Project Path="Services/customer-service/src/CustomerService.Application/CustomerService.Application.csproj" />
+    <Project Path="Services/customer-service/src/CustomerService.Domain/CustomerService.Domain.csproj" />
+    <Project Path="Services/customer-service/src/CustomerService.Infrastructure/CustomerService.Infrastructure.csproj" />
+    <Project Path="Services/customer-service/src/CustomerService.Web/CustomerService.Web.csproj" />
+  </Folder>
+  <Folder Name="/Services/employee-service/" />
+  <Folder Name="/Services/employee-service/src/">
+    <Project Path="Services/employee-service/src/EmployeeService.Application/EmployeeService.Application.csproj" />
+    <Project Path="Services/employee-service/src/EmployeeService.Domain/EmployeeService.Domain.csproj" />
+    <Project Path="Services/employee-service/src/EmployeeService.Infrastructure/EmployeeService.Infrastructure.csproj" />
+    <Project Path="Services/employee-service/src/EmployeeService.Web/EmployeeService.Web.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/CustomerService.Tests/CustomerService.Tests.csproj" />
+    <Project Path="Tests/EmployeeService.Tests/EmployeeService.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EmployeeService.Application\EmployeeService.Application.csproj" />
     <ProjectReference Include="..\EmployeeService.Infrastructure\EmployeeService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\AppHost\Crm.ServiceDefaults\Crm.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>
