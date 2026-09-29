@@ -1,6 +1,6 @@
 # Change: Kundenverwaltung
 
-> **Status:** proposed
+> **Status:** in-progress
 > Ablage: `UserStories/kundenverwaltung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-kundenverwaltung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -93,13 +93,13 @@ Das System SHALL in der Kundendetailsicht alle zugeordneten Termine (vergangen/z
 `customer-service` als eigenständiger Microservice mit Clean-Architecture-internen Layern: Domain-Layer: `Customer` als Aggregate Root mit `Address` als Value Object, Domain Event `CustomerDeactivated`. Application-Layer: CQRS Commands (`CreateCustomerCommand`, `UpdateCustomerCommand`, `DeactivateCustomerCommand`) und Queries (`SearchCustomersQuery`, `GetCustomerByIdQuery`) via Wolverine. Infrastructure: EF Core Repository gegen eigene PostgreSQL-Instanz `customer_db`, `.Include()` nur innerhalb des Service (keine Cross-Service-Joins). Terminreferenzen werden über Inter-Service-Call/Event, nicht per DB-Join, aufgelöst. Service wird über .NET Aspire AppHost registriert und über API-Gateway/Service Discovery erreichbar gemacht. Die grundsätzliche Microservices-Zerlegung (Servicegrenzen, Kommunikationsmuster synchron vs. Event-basiert, Datenkonsistenzstrategie zwischen `customer-service`, `employee-service` und `appointment-service`) ist als ADR in `docs/adr/0001-microservices-architektur-crm.md` festgehalten.
 
 ## 8. Tasks (Implementierungs-Checkliste)
-- [ ] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/`
-- [ ] 2. Backend implementieren (Domain → Application → Infrastructure → Web)
+- [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/`
+- [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web) — mit Einschränkung: `GET /api/customers/{id}` liefert noch keine Terminreferenzen aus `appointment-service` (dieser Service existiert im Projekt noch nicht, siehe Bericht des backend-agent)
 - [ ] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
 - [ ] 4. E2E-/Compliance-Tests (QA) grün
-- [ ] 5. Doku/OpenAPI aktualisiert
+- [ ] 5. Doku/OpenAPI aktualisiert — Swagger/OpenAPI ist über Swashbuckle im Web-Projekt aktiv (`/swagger`), separate Doku-Artefakte durch doc-agent stehen noch aus
 - [ ] 6. Aspire AppHost-Ressource für `customer-service` + `customer_db` gemäß ADR 0001 registrieren (devops-agent)
-- [ ] 7. Wolverine-Event-Schema für `CustomerDeactivated` definieren und im Message Broker (RabbitMQ) publizieren (backend-agent, ADR 0001)
+- [x] 7. Wolverine-Event-Schema für `CustomerDeactivated` definieren und im Message Broker (RabbitMQ) publizieren (backend-agent, ADR 0001) — Contract `CustomerDeactivatedIntegrationEvent` implementiert, Publish via Wolverine `IMessageBus`; RabbitMQ-Transport ist konfigurierbar über Connection String (aktiv sobald Broker via Aspire/Docker bereitgestellt wird)
 - [ ] 8. YARP-Gateway-Route für `customer-service` inkl. Auth-Termination konfigurieren (devops-agent/sec-agent, ADR 0001)
 
 ## 9. Acceptance Criteria (DoD)
