@@ -1,0 +1,93 @@
+{
+  "auth": {
+    "nav": {
+      "logout": "Log out"
+    },
+    "login": {
+      "heading": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "errors": {
+        "emailRequired": "Please enter a valid email address.",
+        "passwordRequired": "Password is required.",
+        "invalidCredentials": "Email or password is incorrect."
+      }
+    }
+  },
+  "appointment": {
+    "nav": {
+      "title": "Appointment Scheduling"
+    },
+    "calendar": {
+      "heading": "Calendar",
+      "newAppointment": "New appointment",
+      "viewModeLabel": "Select view",
+      "viewModes": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month"
+      },
+      "previous": "Previous",
+      "today": "Today",
+      "next": "Next",
+      "employeeFilter": "Employee",
+      "allEmployees": "All employees",
+      "loading": "Loading appointments…",
+      "gridLabel": "Appointment calendar"
+    },
+    "status": {
+      "Confirmed": "Confirmed",
+      "Cancelled": "Cancelled",
+      "Completed": "Completed",
+      "RequiresReview": "Requires review"
+    },
+    "form": {
+      "heading": "Create appointment",
+      "customer": "Customer",
+      "employee": "Employee",
+      "employeePlaceholder": "Select an employee",
+      "service": "Service",
+      "servicePlaceholder": "Select a service",
+      "date": "Date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "availableSlots": "Available time slots",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "customerRequired": "Please select a customer.",
+        "employeeRequired": "Please select an employee.",
+        "serviceRequired": "Please select a service.",
+        "conflict": "The selected time slot is already booked. Please choose a different time slot."
+      }
+    },
+    "detail": {
+      "heading": "Appointment details",
+      "loading": "Loading appointment…",
+      "back": "Back to calendar",
+      "status": "Status",
+      "start": "Start",
+      "end": "End",
+      "cancellationReason": "Cancellation reason",
+      "rescheduleHeading": "Reschedule appointment",
+      "reschedule": "Reschedule",
+      "cancel": "Cancel appointment"
+    },
+    "cancelModal": {
+      "title": "Cancel appointment",
+      "reasonLabel": "Cancellation reason",
+      "reasonRequired": "Please provide a reason.",
+      "confirm": "Cancel appointment",
+      "cancel": "Close"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "loadFailed": "The appointment data could not be loaded.",
+      "saveFailed": "The appointment could not be saved.",
+      "rescheduleFailed": "The appointment could not be rescheduled.",
+      "cancelFailed": "The appointment could not be cancelled.",
+      "forbidden": "You are not allowed to change this appointment because it belongs to another employee."
+    }
+  }
+}

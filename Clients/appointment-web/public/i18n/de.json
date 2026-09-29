@@ -1,0 +1,93 @@
+{
+  "auth": {
+    "nav": {
+      "logout": "Abmelden"
+    },
+    "login": {
+      "heading": "Anmelden",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "errors": {
+        "emailRequired": "Bitte eine gültige E-Mail-Adresse angeben.",
+        "passwordRequired": "Passwort ist ein Pflichtfeld.",
+        "invalidCredentials": "E-Mail oder Passwort ist falsch."
+      }
+    }
+  },
+  "appointment": {
+    "nav": {
+      "title": "Terminverwaltung"
+    },
+    "calendar": {
+      "heading": "Kalender",
+      "newAppointment": "Neuer Termin",
+      "viewModeLabel": "Ansicht wählen",
+      "viewModes": {
+        "day": "Tag",
+        "week": "Woche",
+        "month": "Monat"
+      },
+      "previous": "Zurück",
+      "today": "Heute",
+      "next": "Weiter",
+      "employeeFilter": "Mitarbeiter",
+      "allEmployees": "Alle Mitarbeiter",
+      "loading": "Termine werden geladen…",
+      "gridLabel": "Terminkalender"
+    },
+    "status": {
+      "Confirmed": "Bestätigt",
+      "Cancelled": "Storniert",
+      "Completed": "Abgeschlossen",
+      "RequiresReview": "Prüfung erforderlich"
+    },
+    "form": {
+      "heading": "Termin anlegen",
+      "customer": "Kunde",
+      "employee": "Mitarbeiter",
+      "employeePlaceholder": "Mitarbeiter auswählen",
+      "service": "Leistung",
+      "servicePlaceholder": "Leistung auswählen",
+      "date": "Datum",
+      "startTime": "Startzeit",
+      "endTime": "Endzeit",
+      "availableSlots": "Verfügbare Zeitfenster",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "customerRequired": "Bitte einen Kunden auswählen.",
+        "employeeRequired": "Bitte einen Mitarbeiter auswählen.",
+        "serviceRequired": "Bitte eine Leistung auswählen.",
+        "conflict": "Der gewählte Zeitraum ist bereits belegt. Bitte ein anderes Zeitfenster wählen."
+      }
+    },
+    "detail": {
+      "heading": "Termindetails",
+      "loading": "Termin wird geladen…",
+      "back": "Zurück zum Kalender",
+      "status": "Status",
+      "start": "Beginn",
+      "end": "Ende",
+      "cancellationReason": "Stornierungsgrund",
+      "rescheduleHeading": "Termin verschieben",
+      "reschedule": "Verschieben",
+      "cancel": "Stornieren"
+    },
+    "cancelModal": {
+      "title": "Termin stornieren",
+      "reasonLabel": "Grund der Stornierung",
+      "reasonRequired": "Bitte einen Grund angeben.",
+      "confirm": "Stornieren",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "generic": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Die Termindaten konnten nicht geladen werden.",
+      "saveFailed": "Der Termin konnte nicht gespeichert werden.",
+      "rescheduleFailed": "Der Termin konnte nicht verschoben werden.",
+      "cancelFailed": "Der Termin konnte nicht storniert werden.",
+      "forbidden": "Sie haben keine Berechtigung, diesen Termin zu ändern, da er einem anderen Mitarbeiter zugeordnet ist."
+    }
+  }
+}
