@@ -106,7 +106,7 @@ Das System SHALL das Deaktivieren eines Mitarbeiters ermöglichen, ohne bestehen
 ## 8. Tasks (Implementierungs-Checkliste)
 - [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/`
 - [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web)
-- [ ] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
+- [x] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
 - [ ] 4. E2E-/Compliance-Tests (QA) grün
 - [ ] 5. Doku/OpenAPI aktualisiert
 - [ ] 6. Aspire AppHost-Ressource für `employee-service` + `employee_db` gemäß ADR 0001 registrieren (devops-agent)
