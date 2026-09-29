@@ -18,3 +18,8 @@ obj/
 
 ## Test results
 TestResults/
+
+## Node/Angular (Clients/customer-web)
+node_modules
+dist/
+.angular/

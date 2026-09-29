@@ -1,0 +1,82 @@
+{
+  "customer": {
+    "nav": {
+      "title": "Kundenverwaltung"
+    },
+    "list": {
+      "heading": "Kunden",
+      "searchLabel": "Suche nach Name, E-Mail oder Telefon",
+      "searchPlaceholder": "z. B. Mustermann",
+      "statusLabel": "Status",
+      "statusAll": "Alle",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "newCustomer": "Neuer Kunde",
+      "empty": "Keine Kunden gefunden.",
+      "loading": "Kunden werden geladen…",
+      "columns": {
+        "lastName": "Nachname",
+        "firstName": "Vorname",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "view": "Ansehen",
+      "edit": "Bearbeiten",
+      "pagination": {
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageInfo": "Seite {{page}} von {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Neuen Kunden anlegen",
+      "editHeading": "Kunden bearbeiten",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "street": "Straße",
+      "city": "Stadt",
+      "zipCode": "Postleitzahl",
+      "country": "Land",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "firstNameRequired": "Vorname ist ein Pflichtfeld.",
+        "lastNameRequired": "Nachname ist ein Pflichtfeld.",
+        "contactRequired": "Bitte E-Mail oder Telefonnummer angeben."
+      }
+    },
+    "detail": {
+      "heading": "Kundendetails",
+      "tabs": {
+        "masterData": "Stammdaten",
+        "appointments": "Termine"
+      },
+      "appointmentsUnavailable": "Die Terminhistorie ist noch nicht verfügbar, da der Termin-Service noch nicht angebunden ist.",
+      "createdAt": "Angelegt am",
+      "createdBy": "Angelegt von",
+      "modifiedAt": "Geändert am",
+      "modifiedBy": "Geändert von",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "deactivate": "Deaktivieren",
+      "edit": "Bearbeiten",
+      "back": "Zurück zur Liste"
+    },
+    "deactivateModal": {
+      "title": "Kunden deaktivieren",
+      "message": "Möchten Sie {{name}} wirklich deaktivieren? Der Kunde erscheint danach nicht mehr in der aktiven Kundenliste, die Historie bleibt erhalten.",
+      "confirm": "Deaktivieren",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "generic": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Die Kundendaten konnten nicht geladen werden.",
+      "saveFailed": "Die Änderungen konnten nicht gespeichert werden.",
+      "deactivateFailed": "Der Kunde konnte nicht deaktiviert werden."
+    }
+  }
+}
