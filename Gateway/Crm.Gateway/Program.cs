@@ -52,7 +52,7 @@ builder.Services.AddAuthorization(options =>
 
 // OWASP A05: restriktive CORS-Policy nur fuer die bekannten Angular-Dev-Origins statt AllowAnyOrigin.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? ["http://localhost:4200", "http://localhost:4201"];
+    ?? ["http://localhost:4200", "http://localhost:4201", "http://localhost:4202"];
 
 builder.Services.AddCors(options =>
 {
