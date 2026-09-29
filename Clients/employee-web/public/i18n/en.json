@@ -1,0 +1,110 @@
+{
+  "employee": {
+    "nav": {
+      "title": "Employee Management"
+    },
+    "role": {
+      "admin": "Admin",
+      "employee": "Employee"
+    },
+    "weekday": {
+      "Monday": "Monday",
+      "Tuesday": "Tuesday",
+      "Wednesday": "Wednesday",
+      "Thursday": "Thursday",
+      "Friday": "Friday",
+      "Saturday": "Saturday",
+      "Sunday": "Sunday"
+    },
+    "list": {
+      "heading": "Employees",
+      "searchLabel": "Search by name or email",
+      "searchPlaceholder": "e.g. Doe",
+      "roleLabel": "Role",
+      "roleAll": "All",
+      "serviceLabel": "Service (service id)",
+      "servicePlaceholder": "e.g. 3f2c...",
+      "newEmployee": "New employee",
+      "empty": "No employees found.",
+      "loading": "Loading employees…",
+      "columns": {
+        "lastName": "Last name",
+        "firstName": "First name",
+        "email": "Email",
+        "role": "Role",
+        "services": "Services",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "edit": "Edit",
+      "schedule": "Working hours",
+      "addAbsence": "Absence",
+      "deactivate": "Deactivate",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {{page}} of {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Create new employee",
+      "editHeading": "Edit employee",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "role": "Role",
+      "services": "Services",
+      "noServices": "No services assigned yet.",
+      "serviceId": "Service id",
+      "serviceName": "Name",
+      "addService": "Add service",
+      "removeService": "Remove {{name}}",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "firstNameRequired": "First name is required.",
+        "lastNameRequired": "Last name is required.",
+        "emailRequired": "A valid email address is required."
+      }
+    },
+    "schedule": {
+      "heading": "Working hours (weekly schedule)",
+      "instructions": "Select the available time slots per weekday. Navigate with the arrow keys.",
+      "gridLabel": "Weekly schedule time grid",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "absence": {
+      "heading": "Record absence",
+      "type": "Type",
+      "typeVacation": "Vacation",
+      "typeSick": "Sick leave",
+      "typeOther": "Other",
+      "from": "From",
+      "to": "To",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirmOverride": "Confirm despite conflict",
+      "cancelConflict": "Cancel",
+      "errors": {
+        "fromRequired": "Start date is required.",
+        "toRequired": "End date is required.",
+        "conflict": "The absence conflicts with existing appointments. Please confirm explicitly or reschedule the appointments."
+      }
+    },
+    "deactivateModal": {
+      "title": "Deactivate employee",
+      "message": "Do you really want to deactivate {{name}}? The employee will no longer appear in availability selection, but the history is preserved.",
+      "confirm": "Deactivate",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "loadFailed": "Employee data could not be loaded.",
+      "saveFailed": "The changes could not be saved.",
+      "deactivateFailed": "The employee could not be deactivated."
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "employee": {
+    "nav": {
+      "title": "Mitarbeiterverwaltung"
+    },
+    "role": {
+      "admin": "Admin",
+      "employee": "Mitarbeiter"
+    },
+    "weekday": {
+      "Monday": "Montag",
+      "Tuesday": "Dienstag",
+      "Wednesday": "Mittwoch",
+      "Thursday": "Donnerstag",
+      "Friday": "Freitag",
+      "Saturday": "Samstag",
+      "Sunday": "Sonntag"
+    },
+    "list": {
+      "heading": "Mitarbeiter",
+      "searchLabel": "Suche nach Name oder E-Mail",
+      "searchPlaceholder": "z. B. Mustermann",
+      "roleLabel": "Rolle",
+      "roleAll": "Alle",
+      "serviceLabel": "Leistung (Service-Id)",
+      "servicePlaceholder": "z. B. 3f2c...",
+      "newEmployee": "Neuer Mitarbeiter",
+      "empty": "Keine Mitarbeiter gefunden.",
+      "loading": "Mitarbeiter werden geladen…",
+      "columns": {
+        "lastName": "Nachname",
+        "firstName": "Vorname",
+        "email": "E-Mail",
+        "role": "Rolle",
+        "services": "Leistungen",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "edit": "Bearbeiten",
+      "schedule": "Arbeitszeiten",
+      "addAbsence": "Abwesenheit",
+      "deactivate": "Deaktivieren",
+      "pagination": {
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageInfo": "Seite {{page}} von {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Neuen Mitarbeiter anlegen",
+      "editHeading": "Mitarbeiter bearbeiten",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "role": "Rolle",
+      "services": "Leistungen",
+      "noServices": "Noch keine Leistungen zugeordnet.",
+      "serviceId": "Service-Id",
+      "serviceName": "Bezeichnung",
+      "addService": "Leistung hinzufügen",
+      "removeService": "{{name}} entfernen",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "firstNameRequired": "Vorname ist ein Pflichtfeld.",
+        "lastNameRequired": "Nachname ist ein Pflichtfeld.",
+        "emailRequired": "Eine gültige E-Mail-Adresse ist erforderlich."
+      }
+    },
+    "schedule": {
+      "heading": "Arbeitszeiten (Wochenplan)",
+      "instructions": "Wählen Sie die Zeitfenster je Wochentag aus. Navigation mit den Pfeiltasten möglich.",
+      "gridLabel": "Wochenplan-Zeitraster",
+      "save": "Speichern",
+      "cancel": "Abbrechen"
+    },
+    "absence": {
+      "heading": "Abwesenheit erfassen",
+      "type": "Art",
+      "typeVacation": "Urlaub",
+      "typeSick": "Krankheit",
+      "typeOther": "Sonstige",
+      "from": "Von",
+      "to": "Bis",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "confirmOverride": "Trotz Konflikt bestätigen",
+      "cancelConflict": "Abbrechen",
+      "errors": {
+        "fromRequired": "Startdatum ist ein Pflichtfeld.",
+        "toRequired": "Enddatum ist ein Pflichtfeld.",
+        "conflict": "Die Abwesenheit kollidiert mit bestehenden Terminen. Bitte explizit bestätigen oder die Termine verschieben."
+      }
+    },
+    "deactivateModal": {
+      "title": "Mitarbeiter deaktivieren",
+      "message": "Möchten Sie {{name}} wirklich deaktivieren? Der Mitarbeiter erscheint danach nicht mehr in der Verfügbarkeitsauswahl, die Historie bleibt erhalten.",
+      "confirm": "Deaktivieren",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "generic": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Die Mitarbeiterdaten konnten nicht geladen werden.",
+      "saveFailed": "Die Änderungen konnten nicht gespeichert werden.",
+      "deactivateFailed": "Der Mitarbeiter konnte nicht deaktiviert werden."
+    }
+  }
+}

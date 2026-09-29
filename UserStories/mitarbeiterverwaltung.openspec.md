@@ -1,6 +1,6 @@
 # Change: Mitarbeiterverwaltung
 
-> **Status:** proposed
+> **Status:** in-progress
 > Ablage: `UserStories/mitarbeiterverwaltung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-mitarbeiterverwaltung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -104,15 +104,18 @@ Das System SHALL das Deaktivieren eines Mitarbeiters ermöglichen, ohne bestehen
 `employee-service` als eigenständiger Microservice mit interner Clean-Architecture-Schichtung: Domain-Layer: `Employee` als Aggregate Root mit `WorkingHours`/`Absence` als zugehörige Entities/Value Objects, Domain Event `EmployeeDeactivated`. Application-Layer: CQRS Commands (`CreateEmployeeCommand`, `UpdateEmployeeCommand`, `DeactivateEmployeeCommand`, `SetWorkingHoursCommand`, `AddAbsenceCommand`) und Queries (`SearchEmployeesQuery`, `GetEmployeeAvailabilityQuery`) via Wolverine. Infrastructure: EF Core Repository gegen `employee_db`. Verfügbarkeitsberechnung kombiniert lokale Arbeitszeiten/Abwesenheiten mit Terminstatus aus `appointment-service` (synchroner Call, ggf. mit Caching/Circuit-Breaker via Polly). Service wird über .NET Aspire AppHost registriert. Die endgültige Entscheidung zu Servicegrenzen und Kommunikationsmustern (sync REST vs. Event-Choreografie) für `customer-service`, `employee-service` und `appointment-service` ist dokumentiert in `docs/adr/0001-microservices-architektur-crm.md`.
 
 ## 8. Tasks (Implementierungs-Checkliste)
-- [ ] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/`
-- [ ] 2. Backend implementieren (Domain → Application → Infrastructure → Web)
-- [ ] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
+- [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/`
+- [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web)
+- [x] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
 - [ ] 4. E2E-/Compliance-Tests (QA) grün
 - [ ] 5. Doku/OpenAPI aktualisiert
 - [ ] 6. Aspire AppHost-Ressource für `employee-service` + `employee_db` gemäß ADR 0001 registrieren (devops-agent)
-- [ ] 7. Polly-Resilienzrichtlinien (Timeout/Retry/Circuit-Breaker) für den synchronen Call `employee-service` → `appointment-service` (Konfliktabgleich) implementieren (backend-agent, ADR 0001)
-- [ ] 8. Wolverine-Event-Schema für `EmployeeDeactivated` definieren und publizieren (backend-agent, ADR 0001)
+- [x] 7. Polly-Resilienzrichtlinien (Timeout/Retry/Circuit-Breaker) für den synchronen Call `employee-service` → `appointment-service` (Konfliktabgleich) implementieren (backend-agent, ADR 0001) — Client-Implementierung steht bereits, da `appointment-service` selbst noch nicht existiert (siehe bekannte Lücke unten); in Tests durch Fake ersetzt.
+- [x] 8. Wolverine-Event-Schema für `EmployeeDeactivated` definieren und publizieren (backend-agent, ADR 0001)
 - [ ] 9. YARP-Gateway-Route für `employee-service` inkl. Auth-Termination konfigurieren (devops-agent/sec-agent, ADR 0001)
+
+### Bekannte Lücke (backend-agent)
+`appointment-service` existiert noch nicht. `IAppointmentAvailabilityClient` (Application-Layer) und dessen HTTP-Implementierung `AppointmentAvailabilityHttpClient` (Infrastructure-Layer, mit Polly-Timeout/Retry/Circuit-Breaker via `Microsoft.Extensions.Http.Resilience`) sind vollständig implementiert und werden von `AddAbsenceCommand`/`GetEmployeeAvailabilityQuery` verwendet, aber der exakte Response-Vertrag von `appointment-service` ist noch nicht spezifiziert. Es wurde der im Proposal genannte Mindestvertrag angenommen ("Liste bestehender Termine im Zeitraum X-Y für Mitarbeiter Z", Route `GET /api/appointments?employeeId=&from=&to=`, DTO `{Date, StartTime, EndTime}`). Sobald `appointment-service` (Change `terminverwaltung.openspec.md`) implementiert ist, muss `AppointmentAvailabilityHttpClient` ggf. an den tatsächlichen Contract angepasst werden. In den Tests wird die Abhängigkeit über einen Fake (`FakeAppointmentAvailabilityClient`) ersetzt.
 
 ## 9. Acceptance Criteria (DoD)
 - [ ] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün.
