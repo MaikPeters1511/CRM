@@ -64,8 +64,9 @@ builder.Services.AddCors(options =>
 
 // Reiner Reverse-Proxy: Routing/Cluster-Konfiguration kommt aus appsettings.json
 // (pfadbasiert /api/auth/** -> identity-service (anonym), /api/customers/** -> customer-service,
-// /api/employees/** -> employee-service). Ziel-Adressen werden über .NET Aspire Service Discovery
-// aufgelöst (WithReference im AppHost), keine fachliche Logik/Aggregation im Gateway (ADR 0001 Abschnitt 4).
+// /api/employees/** -> employee-service, /api/appointments/** -> appointment-service). Ziel-Adressen
+// werden über .NET Aspire Service Discovery aufgelöst (WithReference im AppHost), keine fachliche
+// Logik/Aggregation im Gateway (ADR 0001 Abschnitt 4).
 // Der validierte Authorization-Header wird von YARP standardmaessig unverändert an die
 // Downstream-Services weitergeleitet (kein Token-Neuausstellen im Gateway).
 builder.Services

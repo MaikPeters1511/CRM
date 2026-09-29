@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\Services\identity-service\src\IdentityService.Web\IdentityService.Web.csproj" />
     <ProjectReference Include="..\..\Services\customer-service\src\CustomerService.Web\CustomerService.Web.csproj" />
     <ProjectReference Include="..\..\Services\employee-service\src\EmployeeService.Web\EmployeeService.Web.csproj" />
+    <ProjectReference Include="..\..\Services\appointment-service\src\AppointmentService.Web\AppointmentService.Web.csproj" />
     <ProjectReference Include="..\..\Gateway\Crm.Gateway\Crm.Gateway.csproj" />
   </ItemGroup>
 

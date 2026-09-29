@@ -27,7 +27,15 @@
     <Project Path="Services/employee-service/src/EmployeeService.Infrastructure/EmployeeService.Infrastructure.csproj" />
     <Project Path="Services/employee-service/src/EmployeeService.Web/EmployeeService.Web.csproj" />
   </Folder>
+  <Folder Name="/Services/appointment-service/" />
+  <Folder Name="/Services/appointment-service/src/">
+    <Project Path="Services/appointment-service/src/AppointmentService.Application/AppointmentService.Application.csproj" />
+    <Project Path="Services/appointment-service/src/AppointmentService.Domain/AppointmentService.Domain.csproj" />
+    <Project Path="Services/appointment-service/src/AppointmentService.Infrastructure/AppointmentService.Infrastructure.csproj" />
+    <Project Path="Services/appointment-service/src/AppointmentService.Web/AppointmentService.Web.csproj" />
+  </Folder>
   <Folder Name="/Tests/">
+    <Project Path="Tests/AppointmentService.Tests/AppointmentService.Tests.csproj" />
     <Project Path="Tests/CustomerService.Tests/CustomerService.Tests.csproj" />
     <Project Path="Tests/EmployeeService.Tests/EmployeeService.Tests.csproj" />
     <Project Path="Tests/IdentityService.Tests/IdentityService.Tests.csproj" />

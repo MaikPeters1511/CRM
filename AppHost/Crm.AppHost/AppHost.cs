@@ -1,8 +1,9 @@
 // AppHost fuer die CRM-Microservices-Landschaft (siehe docs/adr/0001-microservices-architektur-crm.md).
 // Orchestriert: identity-service (JWT-Ausstellung), customer-service + eigene PostgreSQL-Instanz
-// (customer_db), employee-service + eigene PostgreSQL-Instanz (employee_db), einen gemeinsamen
-// RabbitMQ-Broker fuer Wolverine Integration Events (CustomerDeactivated/EmployeeDeactivated)
-// sowie das YARP-Gateway als reinen Reverse-Proxy vor allen drei Services.
+// (customer_db), employee-service + eigene PostgreSQL-Instanz (employee_db), appointment-service +
+// eigene PostgreSQL-Instanz (appointment_db), einen gemeinsamen RabbitMQ-Broker fuer Wolverine
+// Integration Events (CustomerDeactivated/EmployeeDeactivated/AppointmentCreated/Cancelled/Rescheduled)
+// sowie das YARP-Gateway als reinen Reverse-Proxy vor allen drei fachlichen Services.
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Gemeinsames JWT-Schema (Issuer/Audience/SigningKey) fuer identity-service (Aussteller) und
@@ -26,6 +27,9 @@ var customerDb = customerPostgres.AddDatabase("customer-db", databaseName: "cust
 
 var employeePostgres = builder.AddPostgres("employee-postgres");
 var employeeDb = employeePostgres.AddDatabase("employee-db", databaseName: "employee_db");
+
+var appointmentPostgres = builder.AddPostgres("appointment-postgres");
+var appointmentDb = appointmentPostgres.AddDatabase("appointment-db", databaseName: "appointment_db");
 
 // Gemeinsamer Message-Broker fuer Wolverine Integration Events (ADR 0001, Abschnitt 2/7).
 var rabbitmq = builder.AddRabbitMQ("rabbitmq");
@@ -59,20 +63,42 @@ var employeeService = builder.AddProject<Projects.EmployeeService_Web>("employee
     .WaitFor(employeeDb)
     .WaitFor(rabbitmq);
 
+// appointment-service (terminverwaltung.openspec.md, ADR 0001 Abschnitt 1/2/5/7): benoetigt
+// synchrone Service-Discovery-Referenzen auf customer-service/employee-service fuer die
+// Polly-abgesicherten Vorbedingungs-Calls (GET /api/customers/{id}, GET /api/employees/{id}/availability).
+var appointmentService = builder.AddProject<Projects.AppointmentService_Web>("appointment-service")
+    .WithReference(appointmentDb, connectionName: "appointment_db")
+    .WithReference(rabbitmq, connectionName: "rabbitmq")
+    .WithReference(customerService)
+    .WithReference(employeeService)
+    .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
+    .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
+    .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
+    .WaitFor(appointmentDb)
+    .WaitFor(rabbitmq)
+    .WaitFor(customerService)
+    .WaitFor(employeeService);
+
+// employee-service ruft umgekehrt appointment-service synchron auf (GET /api/appointments?employeeId=&from=&to=,
+// ADR 0001 Abschnitt 2) - daher auch hier eine Service-Discovery-Referenz in dieser Richtung.
+employeeService.WithReference(appointmentService);
+
 // API-Gateway (ADR 0001, Abschnitt 4): reiner Reverse-Proxy + Auth-Termination,
-// erreicht identity-service/customer-service/employee-service ausschliesslich ueber
-// Aspire Service Discovery. Gateway validiert das JWT (Auth-Termination), die Services
+// erreicht identity-service/customer-service/employee-service/appointment-service ausschliesslich
+// ueber Aspire Service Discovery. Gateway validiert das JWT (Auth-Termination), die Services
 // validieren es serverseitig erneut (Defense in Depth) - daher denselben Signing-Key/Issuer/Audience.
 builder.AddProject<Projects.Crm_Gateway>("gateway")
     .WithReference(identityService)
     .WithReference(customerService)
     .WithReference(employeeService)
+    .WithReference(appointmentService)
     .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
     .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
     .WaitFor(identityService)
     .WaitFor(customerService)
     .WaitFor(employeeService)
+    .WaitFor(appointmentService)
     .WithExternalHttpEndpoints();
 
 builder.Build().Run();

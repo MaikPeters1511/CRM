@@ -1,6 +1,6 @@
 # Change: Terminvergabe mit Kalender
 
-> **Status:** proposed
+> **Status:** in-progress
 > Ablage: `UserStories/terminverwaltung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-terminverwaltung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -104,16 +104,16 @@ Das System SHALL eine automatische Erinnerung (E-Mail) an Kunde und Mitarbeiter 
 `appointment-service` als eigenständiger Microservice mit interner Clean-Architecture-Schichtung: Domain-Layer: `Appointment` als Aggregate Root mit Invarianten zur Kollisionsprüfung (keine Infrastruktur-Abhängigkeit; Verfügbarkeitsdaten werden als Parameter/Snapshot in die Domain-Logik übergeben, nicht per direktem Fremdservice-Call aus der Domain). Application-Layer: CQRS Commands (`CreateAppointmentCommand`, `RescheduleAppointmentCommand`, `CancelAppointmentCommand`) und Queries (`GetCalendarQuery`) via Wolverine, inkl. Application-seitiger Orchestrierung der Aufrufe zu `customer-service`/`employee-service`. Infrastructure: EF Core Repository gegen `appointment_db`, HTTP-Clients (mit Polly-Resilienz) für Inter-Service-Calls, Messaging-Publisher für Integration Events. Der Erinnerungs-Job läuft als Hintergunddienst (z.B. Hosted Service/Aspire Worker) und konsumiert `AppointmentCreated`/`AppointmentCancelled`. Die Gesamt-Microservices-Topologie (Servicegrenzen zwischen `customer-service`, `employee-service`, `appointment-service`, API-Gateway, Message Broker, Datenkonsistenz-/Saga-Strategie bei fehlschlagenden Cross-Service-Validierungen) ist dokumentiert in `docs/adr/0001-microservices-architektur-crm.md`.
 
 ## 8. Tasks (Implementierungs-Checkliste)
-- [ ] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/`
-- [ ] 2. Backend implementieren (Domain → Application → Infrastructure → Web)
+- [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/` (`Tests/AppointmentService.Tests`, 34 Tests: Domain/Application/Web)
+- [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web) – `Services/appointment-service/`
 - [ ] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
 - [ ] 4. E2E-/Compliance-Tests (QA) grün
 - [ ] 5. Doku/OpenAPI aktualisiert
-- [ ] 6. Aspire AppHost-Ressource für `appointment-service` + `appointment_db` + RabbitMQ gemäß ADR 0001 registrieren (devops-agent)
-- [ ] 7. HTTP-Client-Contracts mit Polly-Resilienz (Timeout ~2-3s, max. 2 Retries, Circuit-Breaker) für Calls zu `customer-service`/`employee-service` implementieren (backend-agent, ADR 0001)
-- [ ] 8. Wolverine-Event-Schemas für `AppointmentCreated`/`AppointmentCancelled`/`AppointmentRescheduled` definieren und publizieren; Erinnerungs-Job als Hosted Service konsumiert diese (backend-agent, ADR 0001)
-- [ ] 9. Kompensationslogik `RequiresReview`-Status implementieren für den Fall, dass ein referenzierter Kunde während der Terminanlage deaktiviert wird (backend-agent, ADR 0001)
-- [ ] 10. YARP-Gateway-Route für `appointment-service` inkl. Auth-Termination konfigurieren (devops-agent/sec-agent, ADR 0001)
+- [x] 6. Aspire AppHost-Ressource für `appointment-service` + `appointment_db` + RabbitMQ gemäß ADR 0001 registrieren (backend-agent, siehe `AppHost/Crm.AppHost/AppHost.cs`)
+- [x] 7. HTTP-Client-Contracts mit Polly-Resilienz (Timeout ~2-3s, max. 2 Retries, Circuit-Breaker) für Calls zu `customer-service`/`employee-service` implementieren (backend-agent, ADR 0001; siehe `AppointmentService.Infrastructure/Clients/` + `DependencyInjection.cs`)
+- [x] 8. Wolverine-Event-Schemas für `AppointmentCreated`/`AppointmentCancelled`/`AppointmentRescheduled` definieren und publizieren; Erinnerungs-Job als Hosted Service konsumiert diese (backend-agent, ADR 0001; siehe `AppointmentService.Application/Appointments/IntegrationEvents/` + `AppointmentService.Infrastructure/BackgroundJobs/AppointmentReminderHostedService.cs`). Erinnerungs-Job ist ein einfacher Polling-Hosted-Service mit Log-Stub-Notifier (`IReminderNotifier`/`LogReminderNotifier`), kein echter E-Mail-Versand (bewusste Vereinfachung, kein Notification-Service im Projekt vorhanden).
+- [x] 9. Kompensationslogik `RequiresReview`-Status implementieren für den Fall, dass ein referenzierter Kunde während der Terminanlage deaktiviert wird (backend-agent, ADR 0001; siehe `Appointment.MarkRequiresReview` + `CustomerDeactivatedConsumer`, konsumiert das von `customer-service` publizierte `CustomerDeactivated`-Integration-Event)
+- [x] 10. YARP-Gateway-Route für `appointment-service` inkl. Auth-Termination konfigurieren (backend-agent, ADR 0001; siehe `Gateway/Crm.Gateway/appsettings.json`, Route `/api/appointments/**`)
 
 ## 9. Acceptance Criteria (DoD)
 - [ ] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün.
