@@ -20,6 +20,11 @@ public sealed class EmployeeServiceWebFactory : WebApplicationFactory<Program>
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:employee_db"] = "Host=localhost;Database=unused;Username=unused;Password=unused",
+                // Nur fuer Tests: Program.cs validiert beim Start, dass ein SigningKey konfiguriert ist.
+                // Die tatsaechliche Authentifizierung in Tests laeuft ueber TestAuthHandler, nicht JwtBearer.
+                ["Authentication:JwtBearer:Issuer"] = "https://crm-identity-test",
+                ["Authentication:JwtBearer:Audience"] = "crm-api-test",
+                ["Authentication:JwtBearer:SigningKey"] = "test-only-signing-key-not-for-production-012345",
             });
         });
 

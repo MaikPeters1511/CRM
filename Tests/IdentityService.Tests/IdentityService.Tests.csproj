@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+    <PackageReference Include="TUnit" Version="1.7*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Services\identity-service\src\IdentityService.Domain\IdentityService.Domain.csproj" />
+    <ProjectReference Include="..\..\Services\identity-service\src\IdentityService.Application\IdentityService.Application.csproj" />
+    <ProjectReference Include="..\..\Services\identity-service\src\IdentityService.Infrastructure\IdentityService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Services\identity-service\src\IdentityService.Web\IdentityService.Web.csproj" />
+  </ItemGroup>
+
+</Project>

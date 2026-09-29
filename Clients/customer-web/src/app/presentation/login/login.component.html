@@ -1,0 +1,55 @@
+<section aria-labelledby="login-heading" class="flex justify-center pt-8">
+  <div class="card w-full max-w-sm bg-base-200">
+    <div class="card-body">
+      <h1 id="login-heading" class="card-title">{{ 'auth.login.heading' | translate }}</h1>
+
+      @if (state.error()) {
+        <div class="alert alert-error" role="alert">
+          <p>{{ state.error() | translate }}</p>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="login()" class="flex flex-col gap-4">
+        <div class="form-control">
+          <label class="label" for="email">{{ 'auth.login.email' | translate }}</label>
+          <input
+            id="email"
+            type="email"
+            autocomplete="username"
+            class="input input-bordered"
+            formControlName="email"
+            [attr.aria-invalid]="form.controls.email.invalid && form.controls.email.touched"
+            [attr.aria-describedby]="form.controls.email.invalid && form.controls.email.touched ? 'email-error' : null"
+          />
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <p id="email-error" class="text-error" role="alert">
+              {{ 'auth.login.errors.emailRequired' | translate }}
+            </p>
+          }
+        </div>
+
+        <div class="form-control">
+          <label class="label" for="password">{{ 'auth.login.password' | translate }}</label>
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            class="input input-bordered"
+            formControlName="password"
+            [attr.aria-invalid]="form.controls.password.invalid && form.controls.password.touched"
+            [attr.aria-describedby]="form.controls.password.invalid && form.controls.password.touched ? 'password-error' : null"
+          />
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <p id="password-error" class="text-error" role="alert">
+              {{ 'auth.login.errors.passwordRequired' | translate }}
+            </p>
+          }
+        </div>
+
+        <button type="submit" class="btn btn-primary" [disabled]="state.loading()">
+          {{ 'auth.login.submit' | translate }}
+        </button>
+      </form>
+    </div>
+  </div>
+</section>

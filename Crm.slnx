@@ -7,6 +7,12 @@
     <Project Path="Gateway/Crm.Gateway/Crm.Gateway.csproj" />
   </Folder>
   <Folder Name="/Services/" />
+  <Folder Name="/Services/identity-service/">
+    <Project Path="Services/identity-service/src/IdentityService.Domain/IdentityService.Domain.csproj" />
+    <Project Path="Services/identity-service/src/IdentityService.Application/IdentityService.Application.csproj" />
+    <Project Path="Services/identity-service/src/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj" />
+    <Project Path="Services/identity-service/src/IdentityService.Web/IdentityService.Web.csproj" />
+  </Folder>
   <Folder Name="/Services/customer-service/" />
   <Folder Name="/Services/customer-service/src/">
     <Project Path="Services/customer-service/src/CustomerService.Application/CustomerService.Application.csproj" />
@@ -24,5 +30,6 @@
   <Folder Name="/Tests/">
     <Project Path="Tests/CustomerService.Tests/CustomerService.Tests.csproj" />
     <Project Path="Tests/EmployeeService.Tests/EmployeeService.Tests.csproj" />
+    <Project Path="Tests/IdentityService.Tests/IdentityService.Tests.csproj" />
   </Folder>
 </Solution>

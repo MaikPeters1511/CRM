@@ -1,4 +1,20 @@
 {
+  "auth": {
+    "nav": {
+      "logout": "Abmelden"
+    },
+    "login": {
+      "heading": "Anmelden",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "errors": {
+        "emailRequired": "Bitte eine gültige E-Mail-Adresse angeben.",
+        "passwordRequired": "Passwort ist ein Pflichtfeld.",
+        "invalidCredentials": "E-Mail oder Passwort ist falsch."
+      }
+    }
+  },
   "customer": {
     "nav": {
       "title": "Kundenverwaltung"
