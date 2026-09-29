@@ -69,6 +69,24 @@ Das System SHALL eine Kalenderansicht mit Tages-, Wochen- und Monatsansicht pro 
 - **WHEN** ein Nutzer die Wochenansicht für diesen Mitarbeiter öffnet
 - **THEN** werden alle Termine der Woche zeitlich korrekt positioniert und mit Kunde/Leistung/Status angezeigt
 
+#### Requirement: Sichtbarkeit von Terminen nach Rolle (RBAC)
+Das System SHALL Mitarbeitern mit Rolle `Employee` ausschließlich die eigenen Termine (als zugeordneter `EmployeeId`) anzeigen; Nutzer mit Rolle `Admin` SHALL alle Termine aller Mitarbeiter (Gesamtübersicht) sehen können.
+
+##### Scenario: Employee sieht nur eigene Termine
+- **GIVEN** ein Mitarbeiter A mit Rolle `Employee` ist eingeloggt und Mitarbeiter B hat ebenfalls Termine im selben Zeitraum
+- **WHEN** Mitarbeiter A die Kalenderansicht/`GET /api/appointments` ohne explizite Admin-Berechtigung aufruft
+- **THEN** enthält die zurückgegebene Terminliste ausschließlich Termine, bei denen `EmployeeId` der eigenen Mitarbeiter-Id von A entspricht — Termine von Mitarbeiter B werden nicht zurückgegeben, auch nicht bei explizitem `employeeId`-Filter auf B
+
+##### Scenario: Admin sieht alle Termine
+- **GIVEN** mehrere Mitarbeiter haben Termine im selben Zeitraum
+- **WHEN** ein Nutzer mit Rolle `Admin` die Gesamtübersicht/`GET /api/appointments` ohne `employeeId`-Filter aufruft
+- **THEN** enthält die zurückgegebene Terminliste die Termine aller Mitarbeiter
+
+##### Scenario: Employee versucht Termin eines anderen Mitarbeiters zu verschieben/stornieren
+- **GIVEN** ein Termin ist Mitarbeiter B zugeordnet
+- **WHEN** Mitarbeiter A (Rolle `Employee`, nicht `Admin`) versucht, diesen Termin zu verschieben oder zu stornieren
+- **THEN** wird die Anfrage mit `403 Forbidden` abgelehnt und der Termin bleibt unverändert
+
 #### Requirement: Terminerinnerung
 Das System SHALL eine automatische Erinnerung (E-Mail) an Kunde und Mitarbeiter vor Terminbeginn versenden.
 
@@ -84,7 +102,7 @@ Das System SHALL eine automatische Erinnerung (E-Mail) an Kunde und Mitarbeiter 
 
 ## 5. API & Backend Requirements
 - **Service:** `appointment-service` (eigenständig deploybar, eigene PostgreSQL-Instanz `appointment_db`, eigenes Aspire-Ressourcen-Modul).
-- **Authentifizierung/Autorisierung**: `[Authorize]` Standard; Rolle `Employee` für Anlegen/Verschieben/Stornieren eigener bzw. aller Termine (abhängig von RBAC-Feinheit aus `mitarbeiterverwaltung.openspec.md`), Rolle `Admin` für Gesamtübersicht.
+- **Authentifizierung/Autorisierung**: `[Authorize]` Standard. Rolle `Employee`: darf Termine anlegen; darf nur eigene Termine (per `EmployeeId`-Ownership-Check gegen den `NameIdentifier`-Claim, analog Abwesenheiten in `mitarbeiterverwaltung.openspec.md`) lesen/verschieben/stornieren — Zugriff auf fremde `EmployeeId` liefert `403 Forbidden`. Rolle `Admin`: uneingeschränkter Lese-/Schreibzugriff auf alle Termine (Gesamtübersicht).
 - **Endpoints**:
   - `GET /api/appointments?employeeId=&customerId=&from=&to=`: Gefilterte Terminliste für Kalenderansicht
   - `GET /api/appointments/{id}`: Termindetails
@@ -106,7 +124,7 @@ Das System SHALL eine automatische Erinnerung (E-Mail) an Kunde und Mitarbeiter 
 ## 8. Tasks (Implementierungs-Checkliste)
 - [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/` (`Tests/AppointmentService.Tests`, 34 Tests: Domain/Application/Web)
 - [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web) – `Services/appointment-service/`
-- [ ] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
+- [x] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA) – `Clients/appointment-web/`, 45 Tests in `Tests/AppointmentWeb.Tests/` (frontend-agent). `calendar-view.component.ts` (Tag/Woche/Monat, Mitarbeiterfilter, Grid mit `role="grid"`/`role="gridcell"` + Pfeiltasten/Enter-Navigation), `appointment-form.component.ts` (Kunde-Autocomplete gegen `customer-service`, Mitarbeiter-/Leistungsauswahl + Live-Verfuegbarkeit gegen `employee-service`), `appointment-detail.component.ts` (Verschieben/Stornieren mit DaisyUI-Bestaetigungsmodal). State via `CalendarStateService` (Signals, optimistische Updates mit Rollback bei 409). Login/Auth-Flow 1:1 von `customer-web`/`employee-web` uebernommen.
 - [ ] 4. E2E-/Compliance-Tests (QA) grün
 - [ ] 5. Doku/OpenAPI aktualisiert
 - [x] 6. Aspire AppHost-Ressource für `appointment-service` + `appointment_db` + RabbitMQ gemäß ADR 0001 registrieren (backend-agent, siehe `AppHost/Crm.AppHost/AppHost.cs`)
@@ -114,6 +132,8 @@ Das System SHALL eine automatische Erinnerung (E-Mail) an Kunde und Mitarbeiter 
 - [x] 8. Wolverine-Event-Schemas für `AppointmentCreated`/`AppointmentCancelled`/`AppointmentRescheduled` definieren und publizieren; Erinnerungs-Job als Hosted Service konsumiert diese (backend-agent, ADR 0001; siehe `AppointmentService.Application/Appointments/IntegrationEvents/` + `AppointmentService.Infrastructure/BackgroundJobs/AppointmentReminderHostedService.cs`). Erinnerungs-Job ist ein einfacher Polling-Hosted-Service mit Log-Stub-Notifier (`IReminderNotifier`/`LogReminderNotifier`), kein echter E-Mail-Versand (bewusste Vereinfachung, kein Notification-Service im Projekt vorhanden).
 - [x] 9. Kompensationslogik `RequiresReview`-Status implementieren für den Fall, dass ein referenzierter Kunde während der Terminanlage deaktiviert wird (backend-agent, ADR 0001; siehe `Appointment.MarkRequiresReview` + `CustomerDeactivatedConsumer`, konsumiert das von `customer-service` publizierte `CustomerDeactivated`-Integration-Event)
 - [x] 10. YARP-Gateway-Route für `appointment-service` inkl. Auth-Termination konfigurieren (backend-agent, ADR 0001; siehe `Gateway/Crm.Gateway/appsettings.json`, Route `/api/appointments/**`)
+- [x] 11a. RBAC Backend-Teil "Employee sieht nur eigene Termine, Admin sieht alle" umsetzen: Ownership-Filter in `GetCalendarQuery`/`GetCalendarHandler` und `GetAppointmentByIdQuery`/`GetAppointmentByIdHandler` (client-seitiger `employeeId`-Filter wird für Rolle `Employee` ignoriert/überschrieben) sowie 403-Check (neuer `Forbidden`-Status, gemappt in `AppointmentsController`) in `RescheduleAppointmentCommand`/-Handler und `CancelAppointmentCommand`/-Handler (backend-agent; siehe `AppointmentService.Application/Appointments/Calendar/`, `.../GetById/`, `.../Reschedule/`, `.../Cancel/` und `AppointmentService.Web/Controllers/AppointmentsController.cs`; Tests in `Tests/AppointmentService.Tests/Application/` und `Tests/AppointmentService.Tests/Web/AppointmentsApiTests.cs`)
+- [ ] 11b. RBAC Frontend-Teil: Mitarbeiterfilter in `Clients/appointment-web` für `Employee`-Rolle ausblenden/fixieren auf eigene Id (frontend-agent) — noch offen
 
 ## 9. Acceptance Criteria (DoD)
 - [ ] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün.

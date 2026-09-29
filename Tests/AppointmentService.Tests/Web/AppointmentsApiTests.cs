@@ -98,6 +98,7 @@ public class AppointmentsApiTests
 
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Test-Role", "Employee");
+        client.DefaultRequestHeaders.Add("X-Test-UserId", employeeId.ToString());
 
         await client.PostAsJsonAsync("/api/appointments",
             new CreateAppointmentRequest(customerId, employeeId, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11)));
@@ -123,6 +124,7 @@ public class AppointmentsApiTests
 
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Test-Role", "Employee");
+        client.DefaultRequestHeaders.Add("X-Test-UserId", employeeId.ToString());
 
         var createResponse = await client.PostAsJsonAsync("/api/appointments",
             new CreateAppointmentRequest(customerId, employeeId, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11)));
@@ -134,5 +136,124 @@ public class AppointmentsApiTests
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
         await Assert.That(factory.Repository.Appointments.Single().Status)
             .IsEqualTo(AppointmentService.Domain.Appointments.AppointmentStatus.Cancelled);
+    }
+
+    [Test]
+    public async Task GetCalendar_AsEmployee_ReturnsOnlyOwnAppointmentsEvenWhenQueryingAnotherEmployeeId()
+    {
+        using var factory = new AppointmentServiceWebFactory();
+        var customerId = Guid.NewGuid();
+        var employeeA = Guid.NewGuid();
+        var employeeB = Guid.NewGuid();
+        factory.CustomerVerificationClient.SeedActive(customerId);
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeA, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeB, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+
+        using var adminClient = factory.CreateClient();
+        adminClient.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+
+        var createdA = await adminClient.PostAsJsonAsync("/api/appointments",
+            new CreateAppointmentRequest(customerId, employeeA, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11)));
+        await Assert.That(createdA.StatusCode).IsEqualTo(HttpStatusCode.Created);
+
+        var createdB = await adminClient.PostAsJsonAsync("/api/appointments",
+            new CreateAppointmentRequest(customerId, employeeB, Guid.NewGuid(), Day.AddHours(13), Day.AddHours(14)));
+        await Assert.That(createdB.StatusCode).IsEqualTo(HttpStatusCode.Created);
+
+        using var employeeClient = factory.CreateClient();
+        employeeClient.DefaultRequestHeaders.Add("X-Test-Role", "Employee");
+        employeeClient.DefaultRequestHeaders.Add("X-Test-UserId", employeeA.ToString());
+
+        // Employee A explicitly filters by employee B's id - the server MUST ignore this and only
+        // return A's own appointments (terminverwaltung.openspec.md, Abschnitt 3).
+        var response = await employeeClient.GetAsync(
+            $"/api/appointments?employeeId={employeeB}&from={Day:yyyy-MM-dd}&to={Day:yyyy-MM-dd}");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var appointments = await response.Content.ReadFromJsonAsync<List<AppointmentService.Application.Appointments.AppointmentListItemDto>>(JsonOptions);
+
+        await Assert.That(appointments!).Count().IsEqualTo(1);
+        await Assert.That(appointments![0].EmployeeId).IsEqualTo(employeeA);
+    }
+
+    [Test]
+    public async Task GetCalendar_AsAdmin_ReturnsAppointmentsOfAllEmployees()
+    {
+        using var factory = new AppointmentServiceWebFactory();
+        var customerId = Guid.NewGuid();
+        var employeeA = Guid.NewGuid();
+        var employeeB = Guid.NewGuid();
+        factory.CustomerVerificationClient.SeedActive(customerId);
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeA, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeB, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+
+        using var adminClient = factory.CreateClient();
+        adminClient.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+
+        await adminClient.PostAsJsonAsync("/api/appointments",
+            new CreateAppointmentRequest(customerId, employeeA, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11)));
+        await adminClient.PostAsJsonAsync("/api/appointments",
+            new CreateAppointmentRequest(customerId, employeeB, Guid.NewGuid(), Day.AddHours(13), Day.AddHours(14)));
+
+        var response = await adminClient.GetAsync($"/api/appointments?from={Day:yyyy-MM-dd}&to={Day:yyyy-MM-dd}");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var appointments = await response.Content.ReadFromJsonAsync<List<AppointmentService.Application.Appointments.AppointmentListItemDto>>(JsonOptions);
+
+        await Assert.That(appointments!).Count().IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task PutReschedule_AsEmployeeForAnotherEmployeesAppointment_ReturnsForbiddenAndLeavesAppointmentUnchanged()
+    {
+        using var factory = new AppointmentServiceWebFactory();
+        var customerId = Guid.NewGuid();
+        var employeeB = Guid.NewGuid();
+        factory.CustomerVerificationClient.SeedActive(customerId);
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeB, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+
+        using var adminClient = factory.CreateClient();
+        adminClient.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+        var createResponse = await adminClient.PostAsJsonAsync("/api/appointments",
+            new CreateAppointmentRequest(customerId, employeeB, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11)));
+        var created = await createResponse.Content.ReadFromJsonAsync<AppointmentService.Application.Appointments.AppointmentDto>(JsonOptions);
+
+        using var employeeClient = factory.CreateClient();
+        employeeClient.DefaultRequestHeaders.Add("X-Test-Role", "Employee");
+        employeeClient.DefaultRequestHeaders.Add("X-Test-UserId", Guid.NewGuid().ToString());
+
+        var response = await employeeClient.PutAsJsonAsync(
+            $"/api/appointments/{created!.Id}/reschedule",
+            new RescheduleAppointmentRequest(Day.AddHours(13), Day.AddHours(14)));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        await Assert.That(factory.Repository.Appointments.Single().Start).IsEqualTo(Day.AddHours(10));
+    }
+
+    [Test]
+    public async Task PostCancel_AsEmployeeForAnotherEmployeesAppointment_ReturnsForbiddenAndLeavesAppointmentUnchanged()
+    {
+        using var factory = new AppointmentServiceWebFactory();
+        var customerId = Guid.NewGuid();
+        var employeeB = Guid.NewGuid();
+        factory.CustomerVerificationClient.SeedActive(customerId);
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeB, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+
+        using var adminClient = factory.CreateClient();
+        adminClient.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+        var createResponse = await adminClient.PostAsJsonAsync("/api/appointments",
+            new CreateAppointmentRequest(customerId, employeeB, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11)));
+        var created = await createResponse.Content.ReadFromJsonAsync<AppointmentService.Application.Appointments.AppointmentDto>(JsonOptions);
+
+        using var employeeClient = factory.CreateClient();
+        employeeClient.DefaultRequestHeaders.Add("X-Test-Role", "Employee");
+        employeeClient.DefaultRequestHeaders.Add("X-Test-UserId", Guid.NewGuid().ToString());
+
+        var response = await employeeClient.PostAsJsonAsync(
+            $"/api/appointments/{created!.Id}/cancel", new CancelAppointmentRequest("Kunde krank"));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Forbidden);
+        await Assert.That(factory.Repository.Appointments.Single().Status)
+            .IsEqualTo(AppointmentService.Domain.Appointments.AppointmentStatus.Confirmed);
     }
 }

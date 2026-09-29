@@ -20,9 +20,13 @@ public sealed class TestAuthHandler(
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
+        var userId = Request.Headers.TryGetValue("X-Test-UserId", out var userIdHeader) && userIdHeader.Count > 0
+            ? userIdHeader.ToString()
+            : "test-user";
+
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, "test-user"),
+            new(ClaimTypes.NameIdentifier, userId),
             new(ClaimTypes.Role, role.ToString()),
         };
 

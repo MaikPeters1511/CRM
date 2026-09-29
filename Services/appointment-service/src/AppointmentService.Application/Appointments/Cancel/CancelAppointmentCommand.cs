@@ -1,12 +1,19 @@
 namespace AppointmentService.Application.Appointments.Cancel;
 
-public sealed record CancelAppointmentCommand(Guid AppointmentId, string Reason, string CancelledBy);
+/// <summary>
+/// <paramref name="IsAdmin"/>/<paramref name="CurrentEmployeeId"/> carry the caller's authorization
+/// context (terminverwaltung.openspec.md, Abschnitt 3 "Sichtbarkeit von Terminen nach Rolle (RBAC)").
+/// Role <c>Employee</c> may only cancel appointments assigned to their own <c>EmployeeId</c>.
+/// </summary>
+public sealed record CancelAppointmentCommand(
+    Guid AppointmentId, string Reason, string CancelledBy, bool IsAdmin, Guid? CurrentEmployeeId);
 
 public enum CancelAppointmentStatus
 {
     Success,
     NotFound,
     ValidationFailed,
+    Forbidden,
 }
 
 public sealed record CancelAppointmentResult(

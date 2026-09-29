@@ -21,6 +21,14 @@ public static class RescheduleAppointmentHandler
             return RescheduleAppointmentResult.Failure(RescheduleAppointmentStatus.NotFound, ["Appointment not found."]);
         }
 
+        // RBAC (terminverwaltung.openspec.md, Abschnitt 3): Employee-Rolle darf nur eigene Termine
+        // verschieben; der Termin bleibt in diesem Fall unveraendert.
+        if (!command.IsAdmin && appointment.EmployeeId != command.CurrentEmployeeId)
+        {
+            return RescheduleAppointmentResult.Failure(
+                RescheduleAppointmentStatus.Forbidden, ["You are not allowed to reschedule this appointment."]);
+        }
+
         if (command.NewStart >= command.NewEnd)
         {
             return RescheduleAppointmentResult.Failure(

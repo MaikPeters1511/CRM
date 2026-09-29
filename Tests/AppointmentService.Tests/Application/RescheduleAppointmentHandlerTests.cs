@@ -28,7 +28,8 @@ public class RescheduleAppointmentHandlerTests
         employeeClient.SeedSlot(employeeId, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
         var messageBus = Substitute.For<IMessageBus>();
 
-        var command = new RescheduleAppointmentCommand(appointment.Id, Day.AddHours(13), Day.AddHours(14), "employee-1");
+        var command = new RescheduleAppointmentCommand(
+            appointment.Id, Day.AddHours(13), Day.AddHours(14), "employee-1", IsAdmin: true, CurrentEmployeeId: null);
 
         var result = await RescheduleAppointmentHandler.Handle(
             command, repository, employeeClient, Clock, messageBus, CancellationToken.None);
@@ -45,7 +46,8 @@ public class RescheduleAppointmentHandlerTests
         var employeeClient = new FakeEmployeeAvailabilityClient();
         var messageBus = Substitute.For<IMessageBus>();
 
-        var command = new RescheduleAppointmentCommand(Guid.NewGuid(), Day.AddHours(13), Day.AddHours(14), "employee-1");
+        var command = new RescheduleAppointmentCommand(
+            Guid.NewGuid(), Day.AddHours(13), Day.AddHours(14), "employee-1", IsAdmin: true, CurrentEmployeeId: null);
 
         var result = await RescheduleAppointmentHandler.Handle(
             command, repository, employeeClient, Clock, messageBus, CancellationToken.None);
@@ -74,11 +76,36 @@ public class RescheduleAppointmentHandlerTests
         var messageBus = Substitute.For<IMessageBus>();
 
         var command = new RescheduleAppointmentCommand(
-            appointment.Id, Day.AddHours(13).AddMinutes(30), Day.AddHours(14).AddMinutes(30), "employee-1");
+            appointment.Id, Day.AddHours(13).AddMinutes(30), Day.AddHours(14).AddMinutes(30), "employee-1", IsAdmin: true, CurrentEmployeeId: null);
 
         var result = await RescheduleAppointmentHandler.Handle(
             command, repository, employeeClient, Clock, messageBus, CancellationToken.None);
 
         await Assert.That(result.Status).IsEqualTo(RescheduleAppointmentStatus.Conflict);
+    }
+
+    [Test]
+    public async Task Handle_AsEmployeeForAnotherEmployeesAppointment_ReturnsForbiddenAndLeavesAppointmentUnchanged()
+    {
+        var repository = new FakeAppointmentRepository();
+        var employeeB = Guid.NewGuid();
+        var appointment = Appointment.Create(
+            Guid.NewGuid(), employeeB, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11),
+            [new AvailabilityWindow(Day.AddHours(9), Day.AddHours(17))], [], "employee-2", Clock.GetUtcNow()).Appointment!;
+        repository.Seed(appointment);
+
+        var employeeClient = new FakeEmployeeAvailabilityClient();
+        var messageBus = Substitute.For<IMessageBus>();
+
+        var employeeA = Guid.NewGuid();
+        var command = new RescheduleAppointmentCommand(
+            appointment.Id, Day.AddHours(13), Day.AddHours(14), "employee-1", IsAdmin: false, CurrentEmployeeId: employeeA);
+
+        var result = await RescheduleAppointmentHandler.Handle(
+            command, repository, employeeClient, Clock, messageBus, CancellationToken.None);
+
+        await Assert.That(result.Status).IsEqualTo(RescheduleAppointmentStatus.Forbidden);
+        await Assert.That(appointment.Start).IsEqualTo(Day.AddHours(10));
+        await messageBus.DidNotReceive().PublishAsync(Arg.Any<AppointmentRescheduledIntegrationEvent>());
     }
 }

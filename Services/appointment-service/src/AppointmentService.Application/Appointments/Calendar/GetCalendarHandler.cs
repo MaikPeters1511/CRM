@@ -9,8 +9,18 @@ public static class GetCalendarHandler
         IAppointmentRepository repository,
         CancellationToken cancellationToken)
     {
+        // RBAC (terminverwaltung.openspec.md, Abschnitt 3): Employee-Rolle sieht ausschliesslich
+        // eigene Termine - der client-seitige employeeId-Filter wird dafuer nicht vertraut/verwendet.
+        if (!query.IsAdmin && query.CurrentEmployeeId is null)
+        {
+            // Kein eindeutiger NameIdentifier-Claim vorhanden -> fail-closed, keine Termine zurueckgeben.
+            return new GetCalendarResult([]);
+        }
+
+        var effectiveEmployeeId = query.IsAdmin ? query.EmployeeId : query.CurrentEmployeeId;
+
         var appointments = await repository.SearchAsync(
-            query.EmployeeId, query.CustomerId, query.From, query.To, includeCancelled: false, cancellationToken);
+            effectiveEmployeeId, query.CustomerId, query.From, query.To, includeCancelled: false, cancellationToken);
 
         var items = appointments
             .OrderBy(a => a.Start)

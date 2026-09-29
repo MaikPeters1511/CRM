@@ -23,7 +23,7 @@ public class CancelAppointmentHandlerTests
         repository.Seed(appointment);
 
         var messageBus = Substitute.For<IMessageBus>();
-        var command = new CancelAppointmentCommand(appointment.Id, "Kunde krank", "employee-1");
+        var command = new CancelAppointmentCommand(appointment.Id, "Kunde krank", "employee-1", IsAdmin: true, CurrentEmployeeId: null);
 
         var result = await CancelAppointmentHandler.Handle(command, repository, Clock, messageBus, CancellationToken.None);
 
@@ -41,7 +41,7 @@ public class CancelAppointmentHandlerTests
     {
         var repository = new FakeAppointmentRepository();
         var messageBus = Substitute.For<IMessageBus>();
-        var command = new CancelAppointmentCommand(Guid.NewGuid(), "Grund", "employee-1");
+        var command = new CancelAppointmentCommand(Guid.NewGuid(), "Grund", "employee-1", IsAdmin: true, CurrentEmployeeId: null);
 
         var result = await CancelAppointmentHandler.Handle(command, repository, Clock, messageBus, CancellationToken.None);
 
@@ -58,10 +58,32 @@ public class CancelAppointmentHandlerTests
         repository.Seed(appointment);
 
         var messageBus = Substitute.For<IMessageBus>();
-        var command = new CancelAppointmentCommand(appointment.Id, "", "employee-1");
+        var command = new CancelAppointmentCommand(appointment.Id, "", "employee-1", IsAdmin: true, CurrentEmployeeId: null);
 
         var result = await CancelAppointmentHandler.Handle(command, repository, Clock, messageBus, CancellationToken.None);
 
         await Assert.That(result.Status).IsEqualTo(CancelAppointmentStatus.ValidationFailed);
+    }
+
+    [Test]
+    public async Task Handle_AsEmployeeForAnotherEmployeesAppointment_ReturnsForbiddenAndLeavesAppointmentUnchanged()
+    {
+        var repository = new FakeAppointmentRepository();
+        var employeeB = Guid.NewGuid();
+        var appointment = Appointment.Create(
+            Guid.NewGuid(), employeeB, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11),
+            [new AvailabilityWindow(Day.AddHours(9), Day.AddHours(17))], [], "employee-2", Clock.GetUtcNow()).Appointment!;
+        repository.Seed(appointment);
+
+        var messageBus = Substitute.For<IMessageBus>();
+        var employeeA = Guid.NewGuid();
+        var command = new CancelAppointmentCommand(
+            appointment.Id, "Kunde krank", "employee-1", IsAdmin: false, CurrentEmployeeId: employeeA);
+
+        var result = await CancelAppointmentHandler.Handle(command, repository, Clock, messageBus, CancellationToken.None);
+
+        await Assert.That(result.Status).IsEqualTo(CancelAppointmentStatus.Forbidden);
+        await Assert.That(appointment.Status).IsEqualTo(AppointmentStatus.Confirmed);
+        await messageBus.DidNotReceive().PublishAsync(Arg.Any<AppointmentCancelledIntegrationEvent>());
     }
 }

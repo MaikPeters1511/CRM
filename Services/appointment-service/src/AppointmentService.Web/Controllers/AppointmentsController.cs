@@ -32,7 +32,7 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         CancellationToken cancellationToken)
     {
         var result = await messageBus.InvokeAsync<GetCalendarResult>(
-            new GetCalendarQuery(employeeId, customerId, from, to), cancellationToken);
+            new GetCalendarQuery(employeeId, customerId, from, to, IsAdmin(), GetCurrentEmployeeId()), cancellationToken);
 
         return Ok(result.Appointments);
     }
@@ -42,7 +42,7 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await messageBus.InvokeAsync<GetAppointmentByIdResult>(
-            new GetAppointmentByIdQuery(id), cancellationToken);
+            new GetAppointmentByIdQuery(id, IsAdmin(), GetCurrentEmployeeId()), cancellationToken);
 
         return result.Found ? Ok(result.Appointment) : NotFound();
     }
@@ -73,7 +73,8 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
     public async Task<IActionResult> Reschedule(
         Guid id, [FromBody] RescheduleAppointmentRequest request, CancellationToken cancellationToken)
     {
-        var command = new RescheduleAppointmentCommand(id, request.NewStart, request.NewEnd, GetActorId());
+        var command = new RescheduleAppointmentCommand(
+            id, request.NewStart, request.NewEnd, GetActorId(), IsAdmin(), GetCurrentEmployeeId());
 
         var result = await messageBus.InvokeAsync<RescheduleAppointmentResult>(command, cancellationToken);
 
@@ -81,6 +82,7 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         {
             RescheduleAppointmentStatus.Success => Ok(result.Appointment),
             RescheduleAppointmentStatus.NotFound => NotFound(),
+            RescheduleAppointmentStatus.Forbidden => Forbid(),
             RescheduleAppointmentStatus.Conflict => Conflict(BuildProblem(result.Errors)),
             RescheduleAppointmentStatus.EmployeeNotFound => NotFound(BuildProblem(result.Errors)),
             RescheduleAppointmentStatus.DependencyUnavailable => StatusCode(StatusCodes.Status503ServiceUnavailable, BuildProblem(result.Errors)),
@@ -93,7 +95,8 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
     public async Task<IActionResult> Cancel(
         Guid id, [FromBody] CancelAppointmentRequest request, CancellationToken cancellationToken)
     {
-        var command = new CancelAppointmentCommand(id, request.Reason, GetActorId());
+        var command = new CancelAppointmentCommand(
+            id, request.Reason, GetActorId(), IsAdmin(), GetCurrentEmployeeId());
 
         var result = await messageBus.InvokeAsync<CancelAppointmentResult>(command, cancellationToken);
 
@@ -101,9 +104,15 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         {
             CancelAppointmentStatus.Success => Ok(result.Appointment),
             CancelAppointmentStatus.NotFound => NotFound(),
+            CancelAppointmentStatus.Forbidden => Forbid(),
             _ => ValidationProblem(BuildValidationProblem(result.Errors)),
         };
     }
+
+    private bool IsAdmin() => User.IsInRole("Admin");
+
+    private Guid? GetCurrentEmployeeId() =>
+        Guid.TryParse(GetActorId(), out var employeeId) ? employeeId : null;
 
     private string GetActorId() =>
         User.FindFirstValue(ClaimTypes.NameIdentifier)
