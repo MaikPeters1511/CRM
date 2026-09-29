@@ -1,0 +1,21 @@
+<a class="skip-link sr-only focus:not-sr-only" href="#main-content">{{ 'customer.nav.title' | translate }}</a>
+<header class="navbar bg-base-200 px-4" role="banner">
+  <div class="flex-1">
+    <span class="text-lg font-semibold">{{ 'customer.nav.title' | translate }}</span>
+  </div>
+  <nav class="flex gap-2" aria-label="language switch">
+    @for (lang of languages; track lang) {
+      <button
+        type="button"
+        class="btn btn-sm btn-ghost"
+        [attr.aria-label]="lang"
+        (click)="useLanguage(lang)"
+      >
+        {{ lang.toUpperCase() }}
+      </button>
+    }
+  </nav>
+</header>
+<main id="main-content" class="container mx-auto p-4">
+  <router-outlet />
+</main>

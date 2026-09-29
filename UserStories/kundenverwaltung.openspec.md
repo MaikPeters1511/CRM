@@ -95,7 +95,7 @@ Das System SHALL in der Kundendetailsicht alle zugeordneten Termine (vergangen/z
 ## 8. Tasks (Implementierungs-Checkliste)
 - [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/`
 - [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web) — mit Einschränkung: `GET /api/customers/{id}` liefert noch keine Terminreferenzen aus `appointment-service` (dieser Service existiert im Projekt noch nicht, siehe Bericht des backend-agent)
-- [ ] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA)
+- [x] 3. Frontend implementieren (Angular 22, DaisyUI 5, i18n, ARIA) — Standalone-App `Clients/customer-web` mit `customer-list`/`customer-form`/`customer-detail`-Komponenten, State-Service (Signals, Fehler-Rollback), i18n (DE/EN via ngx-translate, Keys `customer.*`), ARIA (aria-sort, aria-invalid/-describedby, Modal mit Esc-Handling); Terminhistorie im Detail-Tab zeigt bewusst einen Hinweis "noch nicht verfügbar", da `GET /api/customers/{id}` aktuell keine Terminreferenzen liefert (siehe Task 2)
 - [ ] 4. E2E-/Compliance-Tests (QA) grün
 - [ ] 5. Doku/OpenAPI aktualisiert — Swagger/OpenAPI ist über Swashbuckle im Web-Projekt aktiv (`/swagger`), separate Doku-Artefakte durch doc-agent stehen noch aus
 - [ ] 6. Aspire AppHost-Ressource für `customer-service` + `customer_db` gemäß ADR 0001 registrieren (devops-agent)
