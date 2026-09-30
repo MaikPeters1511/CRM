@@ -1,0 +1,19 @@
+{
+  "name": "crm-e2e-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-End-Tests (Playwright) fuer die CRM-Microservices-Landschaft, siehe README.md. Laeuft gegen die tatsaechlich gestarteten Angular-Apps (customer-web/employee-web/appointment-web) und Backend-Services (identity-service/customer-service/employee-service/appointment-service), nicht gegen Unit-/Integrations-Mocks.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "list": "playwright test --list",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

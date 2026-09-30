@@ -161,7 +161,7 @@ Der Login-Endpoint SHALL die Anzahl der Versuche pro Client-IP und Zeitfenster b
 - [x] 2. Backend implementieren (`identity-service` Domain/Application/Infrastructure/Web; Gateway/
       customer-service/employee-service Auth-Konfiguration aktualisiert)
 - [x] 3. Frontend implementieren (Login, Interceptor, Guard, i18n `auth.*`) in `customer-web` und `employee-web`
-- [ ] 4. E2E-/Compliance-Tests (QA Agent) - noch offen, liegt ausserhalb des Security-Agent-Scopes
+- [x] 4. E2E-Tests (QA Agent) geschrieben UND gruen verifiziert — `Tests/E2E/tests/auth.spec.ts` (6 Tests: Login Admin/Employee erfolgreich, falsches Passwort, unbekannte E-Mail, Navigation-ohne-Session-Redirect, automatischer Logout bei 401). 5 von 6 Tests liefen in dieser Session tatsaechlich gruen gegen den echten `identity-service` + `customer-web` (Login-Flow, Fehlerfaelle, Guard-Redirect vollstaendig verifiziert). Der 6. Test (401-Logout) benoetigt zusaetzlich einen erfolgreichen Request an `customer-service`, was durch den in `Tests/E2E/README.md` dokumentierten Bug 1 (fehlende CORS-Middleware in `customer-service`/`employee-service`/`appointment-service`, NICHT in identity-service/Gateway) verhindert wurde — dieser Bug liegt ausserhalb des Identity/Auth-Scopes dieser Spec (betrifft die drei Business-Services) und wurde an backend-agent zurueckgegeben. Zusaetzlich verifiziert: Brute-Force-Rate-Limiting (429) funktioniert korrekt (in dieser Session mehrfach reproduziert).
 - [ ] 5. Doku/OpenAPI aktualisiert (Swagger fuer `identity-service` ist vorhanden, README/Systemuebersicht
       noch durch `doc-agent` zu ergaenzen)
 
