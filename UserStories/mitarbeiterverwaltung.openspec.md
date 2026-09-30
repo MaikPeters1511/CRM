@@ -9,7 +9,7 @@
   - Neuer eigenständiger Microservice `employee-service` (Bounded Context "Employee Management").
   - Anlegen/Bearbeiten/Deaktivieren von Mitarbeitern inkl. Rollen (RBAC-Grundlage) und Qualifikationen/Leistungen.
   - Verwaltung von Arbeitszeiten und Abwesenheiten (Urlaub, Krankheit) als Grundlage für die Verfügbarkeitsprüfung im `appointment-service`.
-- **Impact:** Neuer Microservice `employee-service` mit eigener PostgreSQL-Datenbank `employee_db`. Wird vom `appointment-service` (Change `terminverwaltung.openspec.md`) zur Verfügbarkeitsprüfung referenziert (Mitarbeiter ⇄ Termin). Rollen-/Claims-Modell ist mit `sec-agent` (Microsoft Identity) abzustimmen. Servicegrenzen und Kommunikationsmuster sind festgelegt in `docs/adr/0001-microservices-architektur-crm.md`.
+- **Impact:** Neuer Microservice `employee-service` mit eigener PostgreSQL-Datenbank `employee_db`. Wird vom `appointment-service` (Change `terminverwaltung.openspec.md`) zur Verfügbarkeitsprüfung referenziert (Mitarbeiter ⇄ Termin). Rollen-/Claims-Modell ist mit `sec-agent` (Microsoft Identity) abzustimmen. Servicegrenzen und Kommunikationsmuster sind festgelegt in `docs/adr/0001-microservices-architektur-crm.md`. **Hinweis:** Die in Abschnitt 4 genannten Frontend-Komponenten werden gemäß `frontend-konsolidierung.openspec.md` aus dem eigenständigen `employee-web` in die gemeinsame Anwendung `crm-web` migriert; die Requirements/Scenarios in Abschnitt 3 bleiben davon unberührt.
 
 ## 2. User Stories
 - Als Admin möchte ich einen neuen Mitarbeiter mit Stammdaten, Rolle und Leistungen anlegen, damit er Terminen zugeordnet werden kann.

@@ -10,7 +10,7 @@
   - Termin anlegen/verschieben/stornieren mit Zuordnung zu Kunde (`customer-service`) und Mitarbeiter (`employee-service`).
   - Kalenderansicht (Tag/Woche/Monat) je Mitarbeiter und Gesamtübersicht.
   - Kollisionsprüfung gegen Arbeitszeiten/Abwesenheiten (`employee-service`) und bestehende Termine.
-- **Impact:** Neuer Microservice `appointment-service` mit eigener PostgreSQL-Datenbank `appointment_db`. Konsumiert Daten aus `customer-service` (Change `kundenverwaltung.openspec.md`) und `employee-service` (Change `mitarbeiterverwaltung.openspec.md`) und veröffentlicht Integration Events (`AppointmentCreated`, `AppointmentCancelled`, `AppointmentRescheduled`). Servicegrenzen/Kommunikationsmuster gemäß `docs/adr/0001-microservices-architektur-crm.md`.
+- **Impact:** Neuer Microservice `appointment-service` mit eigener PostgreSQL-Datenbank `appointment_db`. Konsumiert Daten aus `customer-service` (Change `kundenverwaltung.openspec.md`) und `employee-service` (Change `mitarbeiterverwaltung.openspec.md`) und veröffentlicht Integration Events (`AppointmentCreated`, `AppointmentCancelled`, `AppointmentRescheduled`). Servicegrenzen/Kommunikationsmuster gemäß `docs/adr/0001-microservices-architektur-crm.md`. **Hinweis:** Die in Abschnitt 4 genannten Frontend-Komponenten werden gemäß `frontend-konsolidierung.openspec.md` aus dem eigenständigen `appointment-web` in die gemeinsame Anwendung `crm-web` migriert; die Requirements/Scenarios in Abschnitt 3 bleiben davon unberührt.
 
 ## 2. User Stories
 - Als Mitarbeiter möchte ich einen Termin für einen bestehenden Kunden mit einem verfügbaren Mitarbeiter anlegen, damit Kunde und Mitarbeiter zur passenden Zeit zusammenkommen.

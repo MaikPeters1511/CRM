@@ -9,7 +9,7 @@
   - Neue Capability `Customers` (Anlegen, Anzeigen, Bearbeiten, Deaktivieren/Löschen von Kunden).
   - Suche/Filterung von Kunden.
   - Kundendetailsicht inkl. Historie (Termine referenzieren später den Kunden).
-- **Impact:** Neuer eigenständiger Microservice `customer-service` (Bounded Context "Customer Management") mit eigener Datenbank (PostgreSQL, Schema/DB pro Service). Wird vom `appointment-service` (Change `terminverwaltung.openspec.md`) per synchronem API-Call oder Integration Event referenziert (Kunde ⇄ Termin) – kein direkter DB-Zugriff über Servicegrenzen hinweg. Architekturentscheidung "Microservices statt Modularer Monolith" (Service-Grenzen, Kommunikationsmuster, Datenkonsistenz) ist dokumentiert in `docs/adr/0001-microservices-architektur-crm.md`.
+- **Impact:** Neuer eigenständiger Microservice `customer-service` (Bounded Context "Customer Management") mit eigener Datenbank (PostgreSQL, Schema/DB pro Service). Wird vom `appointment-service` (Change `terminverwaltung.openspec.md`) per synchronem API-Call oder Integration Event referenziert (Kunde ⇄ Termin) – kein direkter DB-Zugriff über Servicegrenzen hinweg. Architekturentscheidung "Microservices statt Modularer Monolith" (Service-Grenzen, Kommunikationsmuster, Datenkonsistenz) ist dokumentiert in `docs/adr/0001-microservices-architektur-crm.md`. **Hinweis:** Die in Abschnitt 4 genannten Frontend-Komponenten werden gemäß `frontend-konsolidierung.openspec.md` aus dem eigenständigen `customer-web` in die gemeinsame Anwendung `crm-web` migriert; die Requirements/Scenarios in Abschnitt 3 bleiben davon unberührt.
 
 ## 2. User Stories
 - Als Mitarbeiter möchte ich einen neuen Kunden mit Stammdaten (Name, Kontakt, Adresse) anlegen, damit ich ihn später Terminen zuordnen kann.
