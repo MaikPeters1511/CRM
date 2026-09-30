@@ -180,6 +180,22 @@ korrekte Testverteilung auf 4 Projekte/Origins.
 
 ## Gefundene Bugs (an die zustaendigen Dev-Agenten zurueckgegeben, nicht selbst gefixt)
 
+### Bug 1 (P0, backend-agent): Fehlende CORS-Konfiguration in customer-service/employee-service/appointment-service — BEHOBEN
+
+**Status:** Behoben (backend-agent, 2026-09-30). `builder.Services.AddCors(...)` (Policy
+`"frontend"`, Quelle `Cors:AllowedOrigins`, kein Wildcard) + `app.UseCors("frontend")` (vor
+`UseAuthentication`) wurden analog zu `identity-service`/Gateway in allen drei `Program.cs`
+ergaenzt (`Services/customer-service/src/CustomerService.Web/Program.cs`,
+`Services/employee-service/src/EmployeeService.Web/Program.cs`,
+`Services/appointment-service/src/AppointmentService.Web/Program.cs`), inklusive
+`"Cors": { "AllowedOrigins": ["http://localhost:4200"] }` in den jeweiligen `appsettings.json`
+(einziger gueltiger Origin nach der Frontend-Konsolidierung, ADR 0002). Real gegen den laufenden
+AppHost verifiziert: `OPTIONS`-Preflight mit `Origin: http://localhost:4200` liefert jetzt
+`204` mit `Access-Control-Allow-Origin: http://localhost:4200` auf allen drei Services; ein
+nicht erlaubter Origin (`http://evil.example`) erhaelt weiterhin keine CORS-Header. `dotnet build`/
+`dotnet test` (124 Tests) bleiben gruen. Die urspruengliche Bug-Beschreibung unten bleibt zur
+Nachvollziehbarkeit unveraendert erhalten.
+
 ### Bug 1 (P0, backend-agent): Fehlende CORS-Konfiguration in customer-service/employee-service/appointment-service
 
 `customer-service`, `employee-service` und `appointment-service` haben **keine**

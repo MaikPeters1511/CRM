@@ -20,6 +20,21 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddEmployeeServiceInfrastructure(builder.Configuration);
 
+// OWASP A05 (Security Misconfiguration): restriktive CORS-Policy nur fuer den bekannten
+// Angular-Origin statt AllowAnyOrigin. Notwendig, da Browser-Requests mit Authorization-Header
+// (Defense in Depth, ADR 0001 Abschnitt 4) sonst am CORS-Preflight scheitern, auch wenn das
+// Gateway bereits eine eigene Policy hat. Gleiches Muster wie identity-service/Gateway.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:4200"];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("frontend", policy => policy
+        .WithOrigins(allowedOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 builder.Host.UseWolverine(opts =>
 {
     opts.Discovery.IncludeAssembly(typeof(EmployeeService.Application.Employees.Create.CreateEmployeeHandler).Assembly);
@@ -89,6 +104,8 @@ app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 
 app.UseHttpsRedirection();
+
+app.UseCors("frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
