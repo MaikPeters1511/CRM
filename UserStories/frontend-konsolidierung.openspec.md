@@ -64,19 +64,19 @@ Neue eigenständige Angular-Anwendung `Clients/crm-web`, die die drei bisherigen
 
 ## 8. Tasks (Implementierungs-Checkliste)
 - [x] 1. ADR-Ergänzung durch `architect-agent`: Frontend-Konsolidierung als Ausnahme zur Client-pro-Service-Praxis dokumentiert (`docs/adr/0002-frontend-konsolidierung.md`)
-- [ ] 2. Tests aus den neuen Scenarios (Shell/Navigation ohne Re-Login, rollenbasierte Navigation) schreiben (Red) – `Tests/CrmWeb.Tests/`
-- [ ] 3. Neue App `Clients/crm-web` anlegen (Shell, Routing, gemeinsamer Auth-Flow, zusammengeführte i18n)
-- [ ] 4. Feature-Bereiche `customers`, `employees`, `appointments` aus den drei bisherigen Apps migrieren (Komponenten, State, API-Clients unverändert übernehmen)
-- [ ] 5. Bestehende Tests aus `Tests/CustomerWeb.Tests`, `Tests/EmployeeWeb.Tests`, `Tests/AppointmentWeb.Tests` nach `Tests/CrmWeb.Tests` migrieren, alle grün
-- [ ] 6. Gateway-CORS auf einen Frontend-Origin reduzieren (`Gateway/Crm.Gateway/appsettings.json` + `Program.cs`-Fallback)
-- [ ] 7. `Tests/E2E/` auf einzige Basis-URL umstellen, alle 30 bestehenden E2E-Tests weiterhin ausführbar
-- [ ] 8. Alte Projekte entfernen: `Clients/customer-web`, `Clients/employee-web`, `Clients/appointment-web`
-- [ ] 9. Doku aktualisieren (`AppHost/README.md`, ggf. weitere READMEs mit Verweis auf die drei alten Ports)
+- [x] 2. Tests aus den neuen Scenarios (Shell/Navigation ohne Re-Login, rollenbasierte Navigation) schreiben (Red) – `Tests/CrmWeb.Tests/shell/app.spec.ts`
+- [x] 3. Neue App `Clients/crm-web` anlegen (Shell, Routing, gemeinsamer Auth-Flow, zusammengeführte i18n)
+- [x] 4. Feature-Bereiche `customers`, `employees`, `appointments` aus den drei bisherigen Apps migrieren (Komponenten, State, API-Clients unverändert übernommen; jeweils `domain|infrastructure|application|presentation` + Lazy-Route-Datei)
+- [x] 5. Bestehende Tests aus `Tests/CustomerWeb.Tests`, `Tests/EmployeeWeb.Tests`, `Tests/AppointmentWeb.Tests` nach `Tests/CrmWeb.Tests` migriert, alle grün (22 Testdateien, 122 Tests, `npm test` in `Clients/crm-web`)
+- [x] 6. Gateway-CORS auf einen Frontend-Origin reduziert (`Gateway/Crm.Gateway/appsettings.json` + `Program.cs`-Fallback, `http://localhost:4200`)
+- [x] 7. `Tests/E2E/` auf einzige Basis-URL umgestellt (`fixtures/env.ts`: `urls.customerWeb`/`employeeWeb`/`appointmentWeb` sind Aliase auf `urls.crmWeb`); alle 30 bestehenden E2E-Tests weiterhin per `npx playwright test --list` auflistbar. Ein echter Lauf gegen laufende Services war in dieser Session nicht möglich/nicht Teil dieses Auftrags (weiterhin blockiert durch den vom `qa-agent` dokumentierten CORS-Bug in `customer-service`/`employee-service`/`appointment-service`, siehe `Tests/E2E/README.md` Bug 1 – offen für `backend-agent`)
+- [x] 8. Alte Projekte entfernt: `Clients/customer-web`, `Clients/employee-web`, `Clients/appointment-web` sowie `Tests/CustomerWeb.Tests`, `Tests/EmployeeWeb.Tests`, `Tests/AppointmentWeb.Tests`
+- [x] 9. Doku aktualisiert (`AppHost/README.md`, `Tests/E2E/README.md`, `Tests/E2E/playwright.config.ts` mit Verweis auf die drei alten Ports/Apps)
 
 ## 9. Acceptance Criteria (DoD)
-- [ ] Jedes Scenario aus Abschnitt 3 dieser Spec sowie alle bisherigen Scenarios aus `kundenverwaltung.openspec.md`, `mitarbeiterverwaltung.openspec.md`, `terminverwaltung.openspec.md` (Abschnitt 3) sind gegen `crm-web` durch automatisierte Tests abgedeckt und grün.
-- [ ] `ng build` für `crm-web` läuft fehlerfrei.
-- [ ] E2E-Tests (`Tests/E2E/`) laufen gegen die konsolidierte App grün.
-- [ ] Die drei alten Angular-Projekte sind entfernt, keine toten Referenzen (Gateway-CORS, AppHost, Doku) verbleiben.
-- [ ] `architect-agent` hat die ADR-Ergänzung zu ADR 0001 dokumentiert.
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/frontend-shell.openspec.md` übernommen).
+- [x] Jedes Scenario aus Abschnitt 3 dieser Spec sowie alle bisherigen Scenarios aus `kundenverwaltung.openspec.md`, `mitarbeiterverwaltung.openspec.md`, `terminverwaltung.openspec.md` (Abschnitt 3) sind gegen `crm-web` durch automatisierte Tests abgedeckt und grün (`Tests/CrmWeb.Tests`, 122 Unit-/Komponententests; strukturelle E2E-Abdeckung unverändert in `Tests/E2E/`).
+- [x] `ng build` für `crm-web` läuft fehlerfrei.
+- [ ] E2E-Tests (`Tests/E2E/`) laufen gegen die konsolidierte App grün. **Teilweise:** Basis-URL-Konsolidierung ist umgesetzt und `npx playwright test --list` funktioniert (30 Tests); ein echter grüner Lauf gegen laufende Services ist weiterhin durch den vorbestehenden, dokumentierten CORS-Bug in `customer-service`/`employee-service`/`appointment-service` blockiert (`Tests/E2E/README.md` Bug 1, Zuständigkeit `backend-agent`) – kein durch diese Änderung neu eingeführtes Problem.
+- [x] Die drei alten Angular-Projekte sind entfernt, keine toten Referenzen (Gateway-CORS, AppHost, Doku) verbleiben.
+- [x] `architect-agent` hat die ADR-Ergänzung zu ADR 0001 dokumentiert.
+- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/frontend-shell.openspec.md` übernommen). Ausstehend: Abnahme durch `po-agent`/`architect-agent` vor Archivierung.

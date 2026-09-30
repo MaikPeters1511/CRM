@@ -6,11 +6,15 @@ import { defineConfig, devices } from '@playwright/test';
  * Diese Suite startet KEINE Server selbst (kein `webServer`-Block): sie erwartet, dass
  * - die vier Backend-Services (identity-service, customer-service, employee-service,
  *   appointment-service) und
- * - die drei Angular-Dev-Server (customer-web, employee-web, appointment-web)
+ * - das eine konsolidierte Angular-Frontend (`Clients/crm-web`, siehe
+ *   `docs/adr/0002-frontend-konsolidierung.md`)
  * bereits laufen (siehe README.md fuer die genauen Start-Kommandos, Aspire AppHost vs.
  * manueller Einzelstart). Alle Basis-URLs sind ueber Umgebungsvariablen konfigurierbar,
- * mit Defaults, die zu den fest hinterlegten Ports aus den Angular-`environment.ts`-Dateien
- * passen (Clients/*-web/src/environments/environment.ts).
+ * mit Defaults, die zum fest hinterlegten Port aus `Clients/crm-web/src/environments/environment.ts`
+ * passen. Die Projektnamen unten (`customer-web`/`employee-web`/`appointment-web`) sind
+ * historisch gewachsene Labels zur Testgruppierung nach Feature-Bereich, nicht mehr eigene Apps -
+ * `urls.customerWeb`/`urls.employeeWeb`/`urls.appointmentWeb` zeigen alle auf dieselbe
+ * `crm-web`-Basis-URL (siehe `fixtures/env.ts`).
  */
 export default defineConfig({
   testDir: './tests',

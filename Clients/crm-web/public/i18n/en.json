@@ -1,0 +1,290 @@
+{
+  "auth": {
+    "nav": {
+      "logout": "Log out"
+    },
+    "login": {
+      "heading": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "errors": {
+        "emailRequired": "Please enter a valid email address.",
+        "passwordRequired": "Password is required.",
+        "invalidCredentials": "Email or password is incorrect."
+      }
+    }
+  },
+  "customer": {
+    "nav": {
+      "title": "Customer Management"
+    },
+    "list": {
+      "heading": "Customers",
+      "searchLabel": "Search by name, email or phone",
+      "searchPlaceholder": "e.g. Doe",
+      "statusLabel": "Status",
+      "statusAll": "All",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "newCustomer": "New customer",
+      "empty": "No customers found.",
+      "loading": "Loading customers…",
+      "columns": {
+        "lastName": "Last name",
+        "firstName": "First name",
+        "email": "Email",
+        "phone": "Phone",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "view": "View",
+      "edit": "Edit",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {{page}} of {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Create new customer",
+      "editHeading": "Edit customer",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "street": "Street",
+      "city": "City",
+      "zipCode": "Zip code",
+      "country": "Country",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "firstNameRequired": "First name is required.",
+        "lastNameRequired": "Last name is required.",
+        "contactRequired": "Please provide an email address or phone number."
+      }
+    },
+    "detail": {
+      "heading": "Customer details",
+      "tabs": {
+        "masterData": "Master data",
+        "appointments": "Appointments"
+      },
+      "appointmentsUnavailable": "Appointment history is not available yet because the appointment service is not connected.",
+      "createdAt": "Created at",
+      "createdBy": "Created by",
+      "modifiedAt": "Modified at",
+      "modifiedBy": "Modified by",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "deactivate": "Deactivate",
+      "edit": "Edit",
+      "back": "Back to list"
+    },
+    "deactivateModal": {
+      "title": "Deactivate customer",
+      "message": "Do you really want to deactivate {{name}}? The customer will no longer appear in the active customer list, but the history is preserved.",
+      "confirm": "Deactivate",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "loadFailed": "Customer data could not be loaded.",
+      "saveFailed": "The changes could not be saved.",
+      "deactivateFailed": "The customer could not be deactivated."
+    }
+  },
+  "employee": {
+    "nav": {
+      "title": "Employee Management"
+    },
+    "role": {
+      "admin": "Admin",
+      "employee": "Employee"
+    },
+    "weekday": {
+      "Monday": "Monday",
+      "Tuesday": "Tuesday",
+      "Wednesday": "Wednesday",
+      "Thursday": "Thursday",
+      "Friday": "Friday",
+      "Saturday": "Saturday",
+      "Sunday": "Sunday"
+    },
+    "list": {
+      "heading": "Employees",
+      "searchLabel": "Search by name or email",
+      "searchPlaceholder": "e.g. Doe",
+      "roleLabel": "Role",
+      "roleAll": "All",
+      "serviceLabel": "Service (service id)",
+      "servicePlaceholder": "e.g. 3f2c...",
+      "newEmployee": "New employee",
+      "empty": "No employees found.",
+      "loading": "Loading employees…",
+      "columns": {
+        "lastName": "Last name",
+        "firstName": "First name",
+        "email": "Email",
+        "role": "Role",
+        "services": "Services",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "edit": "Edit",
+      "schedule": "Working hours",
+      "addAbsence": "Absence",
+      "deactivate": "Deactivate",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {{page}} of {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Create new employee",
+      "editHeading": "Edit employee",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "role": "Role",
+      "services": "Services",
+      "noServices": "No services assigned yet.",
+      "serviceId": "Service id",
+      "serviceName": "Name",
+      "addService": "Add service",
+      "removeService": "Remove {{name}}",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "firstNameRequired": "First name is required.",
+        "lastNameRequired": "Last name is required.",
+        "emailRequired": "A valid email address is required."
+      }
+    },
+    "schedule": {
+      "heading": "Working hours (weekly schedule)",
+      "instructions": "Select the available time slots per weekday. Navigate with the arrow keys.",
+      "gridLabel": "Weekly schedule time grid",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "absence": {
+      "heading": "Record absence",
+      "type": "Type",
+      "typeVacation": "Vacation",
+      "typeSick": "Sick leave",
+      "typeOther": "Other",
+      "from": "From",
+      "to": "To",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirmOverride": "Confirm despite conflict",
+      "cancelConflict": "Cancel",
+      "errors": {
+        "fromRequired": "Start date is required.",
+        "toRequired": "End date is required.",
+        "conflict": "The absence conflicts with existing appointments. Please confirm explicitly or reschedule the appointments."
+      }
+    },
+    "deactivateModal": {
+      "title": "Deactivate employee",
+      "message": "Do you really want to deactivate {{name}}? The employee will no longer appear in availability selection, but the history is preserved.",
+      "confirm": "Deactivate",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "loadFailed": "Employee data could not be loaded.",
+      "saveFailed": "The changes could not be saved.",
+      "deactivateFailed": "The employee could not be deactivated."
+    }
+  },
+  "appointment": {
+    "nav": {
+      "title": "Appointment Scheduling"
+    },
+    "calendar": {
+      "heading": "Calendar",
+      "newAppointment": "New appointment",
+      "viewModeLabel": "Select view",
+      "viewModes": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month"
+      },
+      "previous": "Previous",
+      "today": "Today",
+      "next": "Next",
+      "employeeFilter": "Employee",
+      "allEmployees": "All employees",
+      "loading": "Loading appointments…",
+      "gridLabel": "Appointment calendar"
+    },
+    "status": {
+      "Confirmed": "Confirmed",
+      "Cancelled": "Cancelled",
+      "Completed": "Completed",
+      "RequiresReview": "Requires review"
+    },
+    "form": {
+      "heading": "Create appointment",
+      "customer": "Customer",
+      "employee": "Employee",
+      "employeePlaceholder": "Select an employee",
+      "service": "Service",
+      "servicePlaceholder": "Select a service",
+      "date": "Date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "availableSlots": "Available time slots",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "customerRequired": "Please select a customer.",
+        "employeeRequired": "Please select an employee.",
+        "serviceRequired": "Please select a service.",
+        "conflict": "The selected time slot is already booked. Please choose a different time slot."
+      }
+    },
+    "detail": {
+      "heading": "Appointment details",
+      "loading": "Loading appointment…",
+      "back": "Back to calendar",
+      "status": "Status",
+      "start": "Start",
+      "end": "End",
+      "cancellationReason": "Cancellation reason",
+      "rescheduleHeading": "Reschedule appointment",
+      "reschedule": "Reschedule",
+      "cancel": "Cancel appointment"
+    },
+    "cancelModal": {
+      "title": "Cancel appointment",
+      "reasonLabel": "Cancellation reason",
+      "reasonRequired": "Please provide a reason.",
+      "confirm": "Cancel appointment",
+      "cancel": "Close"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "loadFailed": "The appointment data could not be loaded.",
+      "saveFailed": "The appointment could not be saved.",
+      "rescheduleFailed": "The appointment could not be rescheduled.",
+      "cancelFailed": "The appointment could not be cancelled.",
+      "forbidden": "You are not allowed to change this appointment because it belongs to another employee."
+    }
+  },
+  "crm": {
+    "nav": {
+      "title": "CRM",
+      "main": "Main navigation",
+      "customers": "Customers",
+      "employees": "Employees",
+      "appointments": "Appointments"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+<a class="skip-link sr-only focus:not-sr-only" href="#main-content">{{ 'crm.nav.title' | translate }}</a>
+<header class="navbar bg-base-200 px-4" role="banner">
+  <div class="flex-1">
+    <span class="text-lg font-semibold">{{ 'crm.nav.title' | translate }}</span>
+  </div>
+  @if (authState.isAuthenticated()) {
+    <nav class="flex gap-2 items-center" aria-label="{{ 'crm.nav.main' | translate }}">
+      <a
+        class="btn btn-sm btn-ghost"
+        routerLink="/customers"
+        routerLinkActive="btn-active"
+      >
+        {{ 'crm.nav.customers' | translate }}
+      </a>
+      <a
+        class="btn btn-sm btn-ghost"
+        routerLink="/employees"
+        routerLinkActive="btn-active"
+      >
+        {{ 'crm.nav.employees' | translate }}
+      </a>
+      <a
+        class="btn btn-sm btn-ghost"
+        routerLink="/appointments"
+        routerLinkActive="btn-active"
+      >
+        {{ 'crm.nav.appointments' | translate }}
+      </a>
+    </nav>
+  }
+  <nav class="flex gap-2 items-center" aria-label="language switch">
+    @for (lang of languages; track lang) {
+      <button
+        type="button"
+        class="btn btn-sm btn-ghost"
+        [attr.aria-label]="lang"
+        (click)="useLanguage(lang)"
+      >
+        {{ lang.toUpperCase() }}
+      </button>
+    }
+    @if (authState.isAuthenticated()) {
+      <span class="text-sm">{{ authState.currentUser()?.displayName }}</span>
+      <button type="button" class="btn btn-sm btn-ghost" (click)="logout()">
+        {{ 'auth.nav.logout' | translate }}
+      </button>
+    }
+  </nav>
+</header>
+<main id="main-content" class="container mx-auto p-4">
+  <router-outlet />
+</main>

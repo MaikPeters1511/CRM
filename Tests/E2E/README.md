@@ -11,10 +11,12 @@ Scenarios (GIVEN/WHEN/THEN) in:
 
 ## Warum Playwright (statt Cypress)
 
-- Ein Testlauf muss ueber **drei unabhaengige Angular-Origins** (customer-web:4200,
-  employee-web:4201, appointment-web:4202) hinweg funktionieren, inkl. echtem Cross-Origin-Login
-  gegen `identity-service`. Playwright hat dafuer kein Origin-Lock-in (anders als Cypress'
-  `cy.origin()`-Workaround) und startet pro Test einen frischen Browser-Context.
+- Ein Testlauf muss echten Cross-Origin-Login gegen `identity-service` unterstuetzen. Playwright
+  hat dafuer kein Origin-Lock-in (anders als Cypress' `cy.origin()`-Workaround) und startet pro
+  Test einen frischen Browser-Context. (Historisch lief die Suite gegen drei unabhaengige
+  Angular-Origins (customer-web:4200, employee-web:4201, appointment-web:4202); seit der
+  Frontend-Konsolidierung, siehe `docs/adr/0002-frontend-konsolidierung.md`, gibt es nur noch
+  einen Origin: `crm-web:4200`.)
 - Native `request`-/Fetch-Unterstuetzung fuer das "API-first, UI-second"-Testdatenmuster
   (siehe `fixtures/api.ts`): Testdaten (Kunde, Mitarbeiter, Termin) schnell per API anlegen,
   die eigentliche Handlung (Formular, Klick, Fehlermeldung) ausschliesslich per echter
@@ -27,10 +29,9 @@ Scenarios (GIVEN/WHEN/THEN) in:
 
 - Node.js 20+ (getestet mit Node 26).
 - Die vier Backend-Services (`identity-service`, `customer-service`, `employee-service`,
-  `appointment-service`) UND die drei Angular-Dev-Server (`customer-web`, `employee-web`,
-  `appointment-web`) laufen bereits. Diese Suite startet selbst **keine** Server
-  (kein Playwright-`webServer`-Block), da in dieser Microservices-Landschaft zu viele
-  unabhaengige Prozesse beteiligt sind.
+  `appointment-service`) UND der eine konsolidierte Angular-Dev-Server (`crm-web`, Port 4200)
+  laufen bereits. Diese Suite startet selbst **keine** Server (kein Playwright-`webServer`-Block),
+  da in dieser Microservices-Landschaft zu viele unabhaengige Backend-Prozesse beteiligt sind.
 
 ### Seed-Testnutzer (identity-service)
 
@@ -89,16 +90,16 @@ vor dem Start entweder:
   # appointment-service (Port 5169, ConnectionStrings__appointment_db,
   # CUSTOMER_SERVICE_BASE_URL=http://localhost:5149, EMPLOYEE_SERVICE_BASE_URL=http://localhost:5159)
   ```
-  Danach die drei Angular-Apps:
+  Danach das konsolidierte Angular-Frontend:
   ```bash
-  cd Clients/customer-web && npx ng serve --port 4200
-  cd Clients/employee-web && npx ng serve --port 4201
-  cd Clients/appointment-web && npx ng serve --port 4202
+  cd Clients/crm-web && npx ng serve --port 4200
   ```
 
 Alle Basis-URLs (Web + API) sind zusaetzlich per Umgebungsvariable ueberschreibbar
-(siehe `fixtures/env.ts`), falls Ports abweichen (z.B. `E2E_CUSTOMER_WEB_URL`,
-`E2E_CUSTOMER_API_URL`, `E2E_ADMIN_PASSWORD`, ...).
+(siehe `fixtures/env.ts`), falls Ports abweichen (z.B. `E2E_CRM_WEB_URL`,
+`E2E_CUSTOMER_API_URL`, `E2E_ADMIN_PASSWORD`, ...). `urls.customerWeb`/`urls.employeeWeb`/
+`urls.appointmentWeb` sind Aliase auf dieselbe `crm-web`-Basis-URL, damit die bestehenden
+Spec-Dateien unveraendert funktionieren.
 
 ## Setup & Ausfuehrung
 

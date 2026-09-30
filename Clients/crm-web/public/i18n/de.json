@@ -1,0 +1,290 @@
+{
+  "auth": {
+    "nav": {
+      "logout": "Abmelden"
+    },
+    "login": {
+      "heading": "Anmelden",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "errors": {
+        "emailRequired": "Bitte eine gültige E-Mail-Adresse angeben.",
+        "passwordRequired": "Passwort ist ein Pflichtfeld.",
+        "invalidCredentials": "E-Mail oder Passwort ist falsch."
+      }
+    }
+  },
+  "customer": {
+    "nav": {
+      "title": "Kundenverwaltung"
+    },
+    "list": {
+      "heading": "Kunden",
+      "searchLabel": "Suche nach Name, E-Mail oder Telefon",
+      "searchPlaceholder": "z. B. Mustermann",
+      "statusLabel": "Status",
+      "statusAll": "Alle",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "newCustomer": "Neuer Kunde",
+      "empty": "Keine Kunden gefunden.",
+      "loading": "Kunden werden geladen…",
+      "columns": {
+        "lastName": "Nachname",
+        "firstName": "Vorname",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "view": "Ansehen",
+      "edit": "Bearbeiten",
+      "pagination": {
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageInfo": "Seite {{page}} von {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Neuen Kunden anlegen",
+      "editHeading": "Kunden bearbeiten",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "street": "Straße",
+      "city": "Stadt",
+      "zipCode": "Postleitzahl",
+      "country": "Land",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "firstNameRequired": "Vorname ist ein Pflichtfeld.",
+        "lastNameRequired": "Nachname ist ein Pflichtfeld.",
+        "contactRequired": "Bitte E-Mail oder Telefonnummer angeben."
+      }
+    },
+    "detail": {
+      "heading": "Kundendetails",
+      "tabs": {
+        "masterData": "Stammdaten",
+        "appointments": "Termine"
+      },
+      "appointmentsUnavailable": "Die Terminhistorie ist noch nicht verfügbar, da der Termin-Service noch nicht angebunden ist.",
+      "createdAt": "Angelegt am",
+      "createdBy": "Angelegt von",
+      "modifiedAt": "Geändert am",
+      "modifiedBy": "Geändert von",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "deactivate": "Deaktivieren",
+      "edit": "Bearbeiten",
+      "back": "Zurück zur Liste"
+    },
+    "deactivateModal": {
+      "title": "Kunden deaktivieren",
+      "message": "Möchten Sie {{name}} wirklich deaktivieren? Der Kunde erscheint danach nicht mehr in der aktiven Kundenliste, die Historie bleibt erhalten.",
+      "confirm": "Deaktivieren",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "generic": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Die Kundendaten konnten nicht geladen werden.",
+      "saveFailed": "Die Änderungen konnten nicht gespeichert werden.",
+      "deactivateFailed": "Der Kunde konnte nicht deaktiviert werden."
+    }
+  },
+  "employee": {
+    "nav": {
+      "title": "Mitarbeiterverwaltung"
+    },
+    "role": {
+      "admin": "Admin",
+      "employee": "Mitarbeiter"
+    },
+    "weekday": {
+      "Monday": "Montag",
+      "Tuesday": "Dienstag",
+      "Wednesday": "Mittwoch",
+      "Thursday": "Donnerstag",
+      "Friday": "Freitag",
+      "Saturday": "Samstag",
+      "Sunday": "Sonntag"
+    },
+    "list": {
+      "heading": "Mitarbeiter",
+      "searchLabel": "Suche nach Name oder E-Mail",
+      "searchPlaceholder": "z. B. Mustermann",
+      "roleLabel": "Rolle",
+      "roleAll": "Alle",
+      "serviceLabel": "Leistung (Service-Id)",
+      "servicePlaceholder": "z. B. 3f2c...",
+      "newEmployee": "Neuer Mitarbeiter",
+      "empty": "Keine Mitarbeiter gefunden.",
+      "loading": "Mitarbeiter werden geladen…",
+      "columns": {
+        "lastName": "Nachname",
+        "firstName": "Vorname",
+        "email": "E-Mail",
+        "role": "Rolle",
+        "services": "Leistungen",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "edit": "Bearbeiten",
+      "schedule": "Arbeitszeiten",
+      "addAbsence": "Abwesenheit",
+      "deactivate": "Deaktivieren",
+      "pagination": {
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageInfo": "Seite {{page}} von {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Neuen Mitarbeiter anlegen",
+      "editHeading": "Mitarbeiter bearbeiten",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "role": "Rolle",
+      "services": "Leistungen",
+      "noServices": "Noch keine Leistungen zugeordnet.",
+      "serviceId": "Service-Id",
+      "serviceName": "Bezeichnung",
+      "addService": "Leistung hinzufügen",
+      "removeService": "{{name}} entfernen",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "firstNameRequired": "Vorname ist ein Pflichtfeld.",
+        "lastNameRequired": "Nachname ist ein Pflichtfeld.",
+        "emailRequired": "Eine gültige E-Mail-Adresse ist erforderlich."
+      }
+    },
+    "schedule": {
+      "heading": "Arbeitszeiten (Wochenplan)",
+      "instructions": "Wählen Sie die Zeitfenster je Wochentag aus. Navigation mit den Pfeiltasten möglich.",
+      "gridLabel": "Wochenplan-Zeitraster",
+      "save": "Speichern",
+      "cancel": "Abbrechen"
+    },
+    "absence": {
+      "heading": "Abwesenheit erfassen",
+      "type": "Art",
+      "typeVacation": "Urlaub",
+      "typeSick": "Krankheit",
+      "typeOther": "Sonstige",
+      "from": "Von",
+      "to": "Bis",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "confirmOverride": "Trotz Konflikt bestätigen",
+      "cancelConflict": "Abbrechen",
+      "errors": {
+        "fromRequired": "Startdatum ist ein Pflichtfeld.",
+        "toRequired": "Enddatum ist ein Pflichtfeld.",
+        "conflict": "Die Abwesenheit kollidiert mit bestehenden Terminen. Bitte explizit bestätigen oder die Termine verschieben."
+      }
+    },
+    "deactivateModal": {
+      "title": "Mitarbeiter deaktivieren",
+      "message": "Möchten Sie {{name}} wirklich deaktivieren? Der Mitarbeiter erscheint danach nicht mehr in der Verfügbarkeitsauswahl, die Historie bleibt erhalten.",
+      "confirm": "Deaktivieren",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "generic": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Die Mitarbeiterdaten konnten nicht geladen werden.",
+      "saveFailed": "Die Änderungen konnten nicht gespeichert werden.",
+      "deactivateFailed": "Der Mitarbeiter konnte nicht deaktiviert werden."
+    }
+  },
+  "appointment": {
+    "nav": {
+      "title": "Terminverwaltung"
+    },
+    "calendar": {
+      "heading": "Kalender",
+      "newAppointment": "Neuer Termin",
+      "viewModeLabel": "Ansicht wählen",
+      "viewModes": {
+        "day": "Tag",
+        "week": "Woche",
+        "month": "Monat"
+      },
+      "previous": "Zurück",
+      "today": "Heute",
+      "next": "Weiter",
+      "employeeFilter": "Mitarbeiter",
+      "allEmployees": "Alle Mitarbeiter",
+      "loading": "Termine werden geladen…",
+      "gridLabel": "Terminkalender"
+    },
+    "status": {
+      "Confirmed": "Bestätigt",
+      "Cancelled": "Storniert",
+      "Completed": "Abgeschlossen",
+      "RequiresReview": "Prüfung erforderlich"
+    },
+    "form": {
+      "heading": "Termin anlegen",
+      "customer": "Kunde",
+      "employee": "Mitarbeiter",
+      "employeePlaceholder": "Mitarbeiter auswählen",
+      "service": "Leistung",
+      "servicePlaceholder": "Leistung auswählen",
+      "date": "Datum",
+      "startTime": "Startzeit",
+      "endTime": "Endzeit",
+      "availableSlots": "Verfügbare Zeitfenster",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "customerRequired": "Bitte einen Kunden auswählen.",
+        "employeeRequired": "Bitte einen Mitarbeiter auswählen.",
+        "serviceRequired": "Bitte eine Leistung auswählen.",
+        "conflict": "Der gewählte Zeitraum ist bereits belegt. Bitte ein anderes Zeitfenster wählen."
+      }
+    },
+    "detail": {
+      "heading": "Termindetails",
+      "loading": "Termin wird geladen…",
+      "back": "Zurück zum Kalender",
+      "status": "Status",
+      "start": "Beginn",
+      "end": "Ende",
+      "cancellationReason": "Stornierungsgrund",
+      "rescheduleHeading": "Termin verschieben",
+      "reschedule": "Verschieben",
+      "cancel": "Stornieren"
+    },
+    "cancelModal": {
+      "title": "Termin stornieren",
+      "reasonLabel": "Grund der Stornierung",
+      "reasonRequired": "Bitte einen Grund angeben.",
+      "confirm": "Stornieren",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "generic": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Die Termindaten konnten nicht geladen werden.",
+      "saveFailed": "Der Termin konnte nicht gespeichert werden.",
+      "rescheduleFailed": "Der Termin konnte nicht verschoben werden.",
+      "cancelFailed": "Der Termin konnte nicht storniert werden.",
+      "forbidden": "Sie haben keine Berechtigung, diesen Termin zu ändern, da er einem anderen Mitarbeiter zugeordnet ist."
+    }
+  },
+  "crm": {
+    "nav": {
+      "title": "CRM",
+      "main": "Hauptnavigation",
+      "customers": "Kunden",
+      "employees": "Mitarbeiter",
+      "appointments": "Termine"
+    }
+  }
+}
