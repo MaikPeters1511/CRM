@@ -71,6 +71,42 @@ public sealed class Employee : AggregateRoot
         return EmployeeMutationResult.Success(employee);
     }
 
+    /// <summary>
+    /// Wie <see cref="Create"/>, erlaubt aber die explizite Vorgabe der Id statt <see cref="Guid.NewGuid"/>.
+    /// Einziger vorgesehener Aufrufer: dev-/test-only Seeding-Infrastruktur (siehe
+    /// EmployeeService.Infrastructure.Seed.DevEmployeeSeedHostedService), die einen Employee-Datensatz
+    /// mit derselben Id wie der geseedete identity-service-Testnutzer anlegen muss, damit der
+    /// Ownership-Check (JWT NameIdentifier == EmployeeId) end-to-end testbar ist
+    /// (siehe Tests/E2E/README.md, Bug 2). Im regulaeren Anwendungsfall (API-Erstellung durch Admin)
+    /// bleibt <see cref="Create"/> mit serverseitig generierter Id die einzige Quelle.
+    /// </summary>
+    public static EmployeeMutationResult CreateWithId(
+        Guid id,
+        string firstName,
+        string lastName,
+        string email,
+        EmployeeRole role,
+        string createdBy,
+        DateTimeOffset createdAt)
+    {
+        var errors = Validate(firstName, lastName, email, role);
+        if (errors.Count > 0)
+        {
+            return EmployeeMutationResult.Failure(errors);
+        }
+
+        var employee = new Employee(
+            id,
+            firstName.Trim(),
+            lastName.Trim(),
+            email.Trim(),
+            role,
+            createdBy,
+            createdAt);
+
+        return EmployeeMutationResult.Success(employee);
+    }
+
     public EmployeeMutationResult Update(
         string firstName,
         string lastName,

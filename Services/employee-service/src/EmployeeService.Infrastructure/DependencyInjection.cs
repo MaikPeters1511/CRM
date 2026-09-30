@@ -1,9 +1,11 @@
 using EmployeeService.Application.Abstractions;
 using EmployeeService.Infrastructure.Clients;
 using EmployeeService.Infrastructure.Persistence;
+using EmployeeService.Infrastructure.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Polly;
 
 namespace EmployeeService.Infrastructure;
@@ -12,7 +14,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddEmployeeServiceInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var connectionString = configuration.GetConnectionString("employee_db")
             ?? Environment.GetEnvironmentVariable("EMPLOYEE_DB_CONNECTION_STRING")
@@ -25,6 +28,14 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
 
         AddAppointmentAvailabilityClient(services, configuration);
+
+        // Dev-/Test-only: verknuepft den geseedeten identity-service-Testnutzer mit einem echten
+        // Employee-Datensatz (Tests/E2E/README.md, Bug 2). NIEMALS ausserhalb von Development aktiv.
+        if (environment.IsDevelopment())
+        {
+            services.Configure<DevEmployeeSeedOptions>(configuration.GetSection(DevEmployeeSeedOptions.SectionName));
+            services.AddHostedService<DevEmployeeSeedHostedService>();
+        }
 
         return services;
     }

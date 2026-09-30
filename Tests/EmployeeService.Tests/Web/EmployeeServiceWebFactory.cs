@@ -1,6 +1,7 @@
 using EmployeeService.Application.Abstractions;
 using EmployeeService.Tests.Support;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,14 @@ public sealed class EmployeeServiceWebFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
+        // Bewusst NICHT "Development": Integrationstests ersetzen IEmployeeRepository durch
+        // FakeEmployeeRepository und pruefen exakte Count()-Erwartungen. Waere die Umgebung
+        // "Development", wuerde DevEmployeeSeedHostedService (dev-/test-only, siehe
+        // EmployeeService.Infrastructure.Seed) zusaetzlich einen Employee seeden und diese
+        // Erwartungen verfaelschen. "Testing" ist ein eigenstaendiger ASP.NET-Core-Umgebungsname,
+        // der von IsDevelopment()-Checks nicht erfasst wird.
+        builder.UseEnvironment("Testing");
+
         builder.ConfigureAppConfiguration((_, configBuilder) =>
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>

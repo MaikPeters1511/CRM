@@ -225,7 +225,30 @@ aufgefallen ist.
 `app.UseCors(...)` (vor `UseAuthentication`) in allen drei `Program.cs` ergaenzen, plus
 `"Cors": { "AllowedOrigins": [...] }` in den jeweiligen `appsettings.json`.
 
-### Bug 2 (P1, backend-agent/sec-agent): Keine Verknuepfung zwischen identity-service-User und employee-service-Employee
+### Bug 2 (P1, backend-agent/sec-agent): Keine Verknuepfung zwischen identity-service-User und employee-service-Employee — VORAUSSETZUNG BEHOBEN
+
+**Status:** Die fehlende Id-Verknuepfung ist behoben (backend-agent, 2026-09-30). Der geseedete
+identity-service-Testnutzer `employee@crm.local` hatte bereits eine DETERMINISTISCHE
+User-Id (`InMemorySeedUserRepository.DeterministicIdFor`, MD5-Hash der lowercased E-Mail,
+nicht zufaellig - keine Aenderung noetig). Neu: `employee-service` besitzt jetzt einen
+dev-/test-only Seeder (`EmployeeService.Infrastructure.Seed.DevEmployeeSeedHostedService`,
+NUR in `Development` aktiv), der beim Start genau einen `Employee`-Datensatz mit exakt
+dieser bekannten Id (`e573eed0-8c40-749f-f05c-aa6839c81cb4`, Default in
+`DevEmployeeSeedOptions.EmployeeUserId`) anlegt, falls noch keiner existiert. Domain-Layer:
+neue Factory `Employee.CreateWithId(Guid id, ...)` (nur fuer diesen Seeder vorgesehen, regulaere
+API-Erstellung nutzt weiterhin `Employee.Create` mit serverseitig generierter Id). Real gegen
+den laufenden AppHost verifiziert: `POST /api/auth/login` mit `employee@crm.local` liefert
+`userId: e573eed0-8c40-749f-f05c-aa6839c81cb4`; in `employee_db` existiert nach Service-Start
+ein `Employee`-Datensatz mit exakt dieser Id (per `psql` gegen den laufenden Postgres-Container
+geprueft). Damit ist die VORAUSSETZUNG fuer den positiven Ownership-Pfad jetzt erfuellt - das
+`test.fixme(...)` in `rbac.spec.ts` bleibt bewusst unveraendert (wird vom qa-agent bei dessen
+Verifikationslauf entfernt), da bei der Live-Verifikation zusaetzlich **Bug 4** (siehe unten)
+aufgefallen ist, der `GET /api/employees/{id}` und `GET /api/employees` aktuell unabhaengig
+davon mit `500` fehlschlagen laesst - der qa-agent kann `rbac.spec.ts` daher erst nach Behebung
+von Bug 4 vollstaendig durchlaufen lassen. `dotnet build`/`dotnet test` (128 Tests ueber
+EmployeeService.Tests/IdentityService.Tests/CustomerService.Tests/AppointmentService.Tests)
+bleiben gruen. Die urspruengliche Bug-Beschreibung unten bleibt zur
+Nachvollziehbarkeit unveraendert erhalten.
 
 Der RBAC-Ownership-Check in `appointment-service`/`employee-service` vergleicht den
 `NameIdentifier`-Claim des JWT direkt mit `Appointment.EmployeeId`/`Employee.Id`. Der
@@ -282,6 +305,51 @@ Service-Direktport statt eine Antwort ueber das Gateway durchzureichen).
 liegt laut ADR 0001 sowieso beim Gateway) oder `ForwardedHeaders`-Middleware mit korrektem
 `X-Forwarded-Proto` einsetzen, damit die Redirect-Middleware den vom Gateway bereits
 TLS-terminierten Request nicht faelschlich als "unsicher" einstuft.
+
+### Bug 4 (P0, backend-agent): Wolverine-Codegen scheitert fuer Handler mit scoped EF-Core-Repository gegen echte Datenbank
+
+**Neu entdeckt** (backend-agent, 2026-09-30) bei der Live-Verifikation von Bug 2: gegen eine
+ECHTE `employee_db` (Migration angewendet, kein Fake-Repository) liefern `GET /api/employees`
+und `GET /api/employees/{id}` beide `500 Internal Server Error`. Server-Log (siehe
+`GlobalExceptionHandler`):
+
+```
+Wolverine.Configuration.InvalidServiceLocationException: Found service locations while
+generating code for Message Handler for EmployeeService.Application.Employees.GetById.GetEmployeeByIdQuery,
+but ServiceLocationPolicy.NotAllowed is in effect (it is the default).
+Service EmployeeService.Application.Abstractions.IEmployeeRepository:
+Dependency: ... EmployeeDbContext ... 
+Dependency: ... DbContextOptions<EmployeeDbContext> ... 'opaque' lambda factory with the
+Scoped lifetime and requires service location
+```
+
+Wolverines Codegen kann fuer Handler, die (transitiv ueber `IEmployeeRepository` ->
+`EfEmployeeRepository` -> `EmployeeDbContext`) von der scoped `DbContextOptions<T>`-Factory
+abhaengen, standardmaessig keinen kompilierten Aufrufcode erzeugen (`ServiceLocationPolicy.NotAllowed`
+ist Wolverine-Default). **Warum bisher unentdeckt:** (1) In keinem der vier Services wird je eine
+EF-Core-Migration automatisch angewendet (siehe Bug 2-Fix-Notiz), reale `_db`-Schemata waren daher
+in der Vergangenheit fast nie befuellt/nutzbar; (2) alle Integrationstests
+(`Tests/*.Tests/Web/*WebFactory.cs`) ersetzen das jeweilige `I*Repository` durch ein
+Singleton-Fake OHNE eigene Abhaengigkeiten - das umgeht genau die DI-Kette, die den Fehler ausloest,
+weshalb `dotnet test` durchgehend gruen bleibt. Da `CustomerService`/`AppointmentService`/
+`IdentityService` denselben `EfXRepository(XDbContext)`-Aufbau + identisches `UseWolverine(...)`-
+Muster verwenden (siehe deren `Program.cs`), ist derselbe Fehler dort mit hoher Wahrscheinlichkeit
+ebenfalls reproduzierbar, sobald echte Migrationen angewendet sind - noch nicht einzeln verifiziert.
+**Tragweite:** blockiert aktuell JEDEN echten End-to-End-Test von `employee-service`
+(und vermutlich der anderen Services) gegen eine real migrierte Datenbank, unabhaengig von Bug 2 -
+insbesondere `rbac.spec.ts` (Employee-Ownership-Erfolgspfad) kann trotz des Bug-2-Fixes nicht
+gruen laufen, solange dieser Fehler besteht.
+**Fix-Vorschlag (nicht in diesem Scope umgesetzt, da eigenstaendiges, tieferliegendes
+Architekturthema - siehe `architect-agent`):** entweder Wolverine ueber
+`opts.CodeGeneration.TypeLoadMode` / eine explizite `ServiceLocationPolicy`-Konfiguration erlauben,
+diese Scoped-Dependency aufzuloesen, oder die `DbContextOptions<T>`-Registrierung so anpassen, dass
+sie kein "opaque lambda factory"-Pattern mehr ist (z.B. durch einen eigenen
+`IConfigureOptions<DbContextOptions<T>>`), oder Wolverine-Handler explizit mit
+`[Transactional]`/eigener DI-Scope-Strategie versehen. Ausserdem: automatisches Anwenden der
+vorhandenen EF-Core-Migrationen in `Development` fehlt in allen vier Services (nur fuer
+`employee-service` jetzt als Nebeneffekt des Bug-2-Fixes im `DevEmployeeSeedHostedService`
+ergaenzt, siehe oben) - sollte als eigenstaendiges Thema (devops-agent/backend-agent) behandelt
+werden.
 
 ## Rate-Limiting-Hinweis (kein Bug, aber relevant fuer Testlaeufe)
 

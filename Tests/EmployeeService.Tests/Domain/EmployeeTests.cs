@@ -43,6 +43,35 @@ public class EmployeeTests
     }
 
     [Test]
+    public async Task CreateWithId_WithValidData_ReturnsEmployeeWithExactlyTheGivenId()
+    {
+        var seedId = Guid.Parse("e573eed0-8c40-749f-f05c-aa6839c81cb4");
+
+        var result = Employee.CreateWithId(
+            seedId,
+            firstName: "CRM",
+            lastName: "Employee",
+            email: "employee@crm.local",
+            role: EmployeeRole.Employee,
+            createdBy: "dev-seed",
+            createdAt: Now);
+
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Employee!.Id).IsEqualTo(seedId);
+        await Assert.That(result.Employee.Role).IsEqualTo(EmployeeRole.Employee);
+    }
+
+    [Test]
+    public async Task CreateWithId_WithoutRequiredFields_ReturnsValidationErrorAndNoEmployee()
+    {
+        var result = Employee.CreateWithId(Guid.NewGuid(), "", "Employee", "employee@crm.local", EmployeeRole.Employee, "dev-seed", Now);
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Employee).IsNull();
+        await Assert.That(result.Errors).IsNotEmpty();
+    }
+
+    [Test]
     public async Task AssignService_AddsServiceToEmployee()
     {
         var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;

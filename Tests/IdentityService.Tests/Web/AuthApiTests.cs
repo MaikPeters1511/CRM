@@ -64,4 +64,31 @@ public class AuthApiTests
         await Assert.That(body!.Role).IsEqualTo("Employee");
         await Assert.That(Guid.TryParse(body.UserId, out _)).IsTrue();
     }
+
+    /// <summary>
+    /// Regressionstest fuer Tests/E2E/README.md, Bug 2: der deterministisch geseedete UserId des
+    /// Test-Login-Nutzers "employee@crm.local" (MD5-Hash der lowercased E-Mail, siehe
+    /// InMemorySeedUserRepository.DeterministicIdFor) MUSS exakt der Id entsprechen, mit der
+    /// employee-service seinen dev-only Employee-Datensatz seedet
+    /// (siehe EmployeeService.Infrastructure.Seed.DevEmployeeSeedOptions.EmployeeUserId).
+    /// Nur wenn beide Werte uebereinstimmen, greift der Ownership-Check (JWT NameIdentifier ==
+    /// EmployeeId) fuer diesen Testnutzer end-to-end.
+    /// </summary>
+    [Test]
+    public async Task PostLogin_WithValidEmployeeCredentials_ReturnsUserIdMatchingEmployeeServiceDevSeed()
+    {
+        using var factory = new IdentityServiceWebFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest(IdentityServiceWebFactory.EmployeeEmail, IdentityServiceWebFactory.EmployeePassword));
+
+        var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions);
+
+        // Muss mit EmployeeService.Infrastructure.Seed.DevEmployeeSeedOptions.EmployeeUserId
+        // (Default) uebereinstimmen - siehe dortige Dokumentation.
+        const string expectedEmployeeUserId = "e573eed0-8c40-749f-f05c-aa6839c81cb4";
+
+        await Assert.That(body!.UserId).IsEqualTo(expectedEmployeeUserId);
+    }
 }
