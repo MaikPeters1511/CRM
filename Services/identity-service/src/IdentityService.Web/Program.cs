@@ -63,8 +63,12 @@ app.UseExceptionHandler();
 
 app.MapDefaultEndpoints();
 
-app.UseHttpsRedirection();
-
+// Kein UseHttpsRedirection() hier: dieser Service ist NICHT direkt von aussen erreichbar
+// (siehe docs/adr/0001-microservices-architektur-crm.md, Abschnitt 4 - das Gateway ist der
+// einzige oeffentliche HTTPS-Eintrittspunkt, TLS-Termination erfolgt dort). Interne
+// Gateway-zu-Service- und Service-zu-Service-Kommunikation laeuft ueber Aspire Service
+// Discovery per HTTP; ein Redirect auf den eigenen HTTPS-Port wuerde diesen Pfad brechen
+// (siehe Tests/E2E/README.md, Bug 3).
 app.UseCors("frontend");
 app.UseRateLimiter();
 

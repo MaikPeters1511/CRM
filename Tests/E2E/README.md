@@ -58,12 +58,14 @@ vor dem Start entweder:
   dotnet user-secrets set "Parameters:identity-employee-password" "Employee123!"
   dotnet run
   ```
-  **Wichtig (siehe Bug-Report unten):** Beim aktuellen Stand bindet Aspire dynamische Ports
-  UND sowohl HTTP als auch HTTPS auf jedem Service - dadurch erzwingt `UseHttpsRedirection()`
-  in jedem Service einen 307-Redirect auf den **eigenen** Port, was den YARP-Gateway-Pfad und
-  jede Inter-Service-Kommunikation ueber die vom AppHost zugewiesenen Adressen bricht. Diese
-  Suite wurde deshalb tatsaechlich gegen einen **manuellen Einzelstart** verifiziert (naechster
-  Punkt), nicht gegen den AppHost.
+  **Hinweis (siehe Bug 3 unten, mittlerweile behoben):** Fruehere Sessions in diesem Dokument
+  beschrieben einen 307-Redirect-Konflikt zwischen Aspire-HTTP/HTTPS-Doppelbindung und
+  `UseHttpsRedirection()` in den internen Services, der den AppHost-Start fuer diese Suite
+  unbrauchbar machte. Der Fix (devops-agent, 2026-09-30) hat `UseHttpsRedirection()` aus den
+  vier internen Services entfernt; der AppHost-Start ist seitdem real gegen `GET /api/customers`
+  ueber das Gateway verifiziert (kein 307 mehr). Diese Suite wurde in der urspruenglichen Session
+  trotzdem gegen einen **manuellen Einzelstart** verifiziert (naechster Punkt) - das bleibt als
+  historische, weiterhin gueltige Alternative erhalten.
 
 - **Manueller Einzelstart** (so wurde in dieser Session tatsaechlich verifiziert): jeden
   Service einzeln mit seinem `http`-Launch-Profile starten (feste Ports aus
@@ -244,7 +246,25 @@ vorgegebenen Id (z.B. der User-Id aus identity-service) anlegen lassen, oder ein
 "Employee-Self-Service-Onboarding" einfuehren, das beim ersten Login eines Employee-Nutzers
 automatisch einen Employee-Datensatz mit passender Id anlegt/verknuepft.
 
-### Bug 3 (P1, devops-agent): AppHost bindet Services gleichzeitig auf HTTP und HTTPS -> UseHttpsRedirection bricht Gateway-Pfad
+### Bug 3 (P1, devops-agent): AppHost bindet Services gleichzeitig auf HTTP und HTTPS -> UseHttpsRedirection bricht Gateway-Pfad — BEHOBEN
+
+**Status:** Behoben (devops-agent, 2026-09-30). `app.UseHttpsRedirection()` wurde aus den
+vier internen Services entfernt (`Services/identity-service/src/IdentityService.Web/Program.cs`,
+`Services/customer-service/src/CustomerService.Web/Program.cs`,
+`Services/employee-service/src/EmployeeService.Web/Program.cs`,
+`Services/appointment-service/src/AppointmentService.Web/Program.cs`), da diese laut ADR 0001
+ohnehin nicht direkt von aussen erreichbar sein sollen - TLS-Termination bleibt ausschliesslich
+beim Gateway (`Gateway/Crm.Gateway/Program.cs`, `UseHttpsRedirection()` dort unveraendert). Kein
+Eingriff in `AppHost/Crm.AppHost/AppHost.cs` noetig (geringste Abweichung von der bestehenden
+Struktur); ein optionaler naechster Schritt waere, den internen Services im AppHost gar keinen
+HTTPS-Endpoint mehr zuzuweisen, ist aber fuer diesen Fix nicht erforderlich, da ohne die
+Redirect-Middleware kein 307 mehr entsteht, selbst wenn der ungenutzte HTTPS-Port weiterhin
+existiert. Real gegen den laufenden AppHost verifiziert: `GET /api/customers` ueber
+`https://localhost:<gateway-port>` liefert ohne Token jetzt `401` (statt vorher `307` mit
+`Location` auf den Service-Direktport) und mit gueltigem Admin-Token eine echte Antwort vom
+Gateway-Pfad (kein Redirect mehr, siehe Response-Header ohne `Location`). `dotnet build`/
+`dotnet test` (124 Tests) bleiben gruen. Die urspruengliche Bug-Beschreibung unten bleibt zur
+Nachvollziehbarkeit unveraendert erhalten.
 
 Wird das System ueber `AppHost/Crm.AppHost` gestartet, weist Aspire jedem Service sowohl
 einen HTTP- als auch einen HTTPS-Endpunkt zu (`ASPNETCORE_URLS=https://...;http://...`).
