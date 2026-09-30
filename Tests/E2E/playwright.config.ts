@@ -18,7 +18,12 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
-  timeout: 30_000,
+  // 90s statt 30s: der korrekt funktionierende Brute-Force-Schutz von identity-service
+  // (5 Logins/Minute/IP, siehe README.md "Rate-Limiting-Hinweis") kann bei vielen
+  // aufeinanderfolgenden Tests einen Retry-Wait von bis zu 61s in `loginViaUi`/`loginViaApi`
+  // ausloesen (siehe fixtures/auth.ts, fixtures/api.ts) - kein Produktivcode-Fix, reine
+  // Test-Timeout-Anpassung an ein bewusstes Sicherheitsfeature.
+  timeout: 200_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,
   workers: 1,

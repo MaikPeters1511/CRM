@@ -161,7 +161,7 @@ Der Login-Endpoint SHALL die Anzahl der Versuche pro Client-IP und Zeitfenster b
 - [x] 2. Backend implementieren (`identity-service` Domain/Application/Infrastructure/Web; Gateway/
       customer-service/employee-service Auth-Konfiguration aktualisiert)
 - [x] 3. Frontend implementieren (Login, Interceptor, Guard, i18n `auth.*`) in `customer-web` und `employee-web`
-- [x] 4. E2E-Tests (QA Agent) geschrieben UND gruen verifiziert — `Tests/E2E/tests/auth.spec.ts` (6 Tests: Login Admin/Employee erfolgreich, falsches Passwort, unbekannte E-Mail, Navigation-ohne-Session-Redirect, automatischer Logout bei 401). 5 von 6 Tests liefen in dieser Session tatsaechlich gruen gegen den echten `identity-service` + `customer-web` (Login-Flow, Fehlerfaelle, Guard-Redirect vollstaendig verifiziert). Der 6. Test (401-Logout) benoetigt zusaetzlich einen erfolgreichen Request an `customer-service`, was durch den in `Tests/E2E/README.md` dokumentierten Bug 1 (fehlende CORS-Middleware in `customer-service`/`employee-service`/`appointment-service`, NICHT in identity-service/Gateway) verhindert wurde — dieser Bug liegt ausserhalb des Identity/Auth-Scopes dieser Spec (betrifft die drei Business-Services) und wurde an backend-agent zurueckgegeben. Zusaetzlich verifiziert: Brute-Force-Rate-Limiting (429) funktioniert korrekt (in dieser Session mehrfach reproduziert).
+- [x] 4. E2E-Tests (QA Agent) geschrieben UND vollstaendig gruen verifiziert (qa-agent, 2026-09-30) — `Tests/E2E/tests/auth.spec.ts` (6 Tests: Login Admin/Employee erfolgreich, falsches Passwort, unbekannte E-Mail, Navigation-ohne-Session-Redirect, automatischer Logout bei 401). **6 von 6 Tests gruen**, real gegen den laufenden AppHost + `Clients/crm-web` verifiziert (mehrfach wiederholt, stabil) — der zuvor durch Bug 1 (fehlende CORS-Middleware) blockierte 401-Logout-Test laeuft jetzt vollstaendig durch, da Bug 1 behoben ist. Zusaetzlich verifiziert: Brute-Force-Rate-Limiting (429) funktioniert korrekt (in dieser Session mehrfach reproduziert; die E2E-Suite kompensiert dies inzwischen per Retry-mit-Wartezeit in `fixtures/auth.ts`/`fixtures/api.ts`, siehe `Tests/E2E/README.md`).
 - [ ] 5. Doku/OpenAPI aktualisiert (Swagger fuer `identity-service` ist vorhanden, README/Systemuebersicht
       noch durch `doc-agent` zu ergaenzen)
 
@@ -172,6 +172,6 @@ Der Login-Endpoint SHALL die Anzahl der Versuche pro Client-IP und Zeitfenster b
 - [x] Backend API (C# 14) ist implementiert und getestet (TUnit): 82 Tests gruen
       (35 CustomerService + 40 EmployeeService + 7 IdentityService).
 - [x] Angular 22 Komponente ist implementiert und gestylt (DaisyUI 5) in beiden Clients.
-- [ ] E2E Tests (QA Agent) sind gruen - nicht Teil dieser Change (siehe Task 4).
+- [x] E2E Tests (QA Agent) sind gruen (siehe Task 4, 6/6 gruen).
 - [x] Swagger/OpenAPI fuer `identity-service` ist vorhanden (analog zu den anderen Services).
 - [ ] Spec ist archiviert - verbleibt `in-progress`, bis QA/Doc-Agent Tasks 4/5 abgeschlossen haben.

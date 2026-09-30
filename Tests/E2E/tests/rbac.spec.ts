@@ -11,6 +11,7 @@ import {
   nextWeekday,
   toDateInputValue,
 } from '../fixtures/api';
+import { settleAfterNavigation } from '../fixtures/ui';
 
 /**
  * Deckt das Requirement "Sichtbarkeit von Terminen nach Rolle (RBAC)" aus
@@ -18,26 +19,21 @@ import {
  * Cross-Service-RBAC-Flow im System (Gateway/Identity-Claims -> appointment-service
  * Ownership-Filter -> UI-Fehlerbehandlung).
  *
- * WICHTIGER HINWEIS ZU EINER ARCHITEKTUR-LUECKE (siehe QA-Abschlussbericht):
- * Der Ownership-Check in appointment-service vergleicht den `NameIdentifier`-Claim des
- * JWT direkt mit `Appointment.EmployeeId`. Der geseedete `identity-service`-Testnutzer
- * "employee@crm.local" hat aber eine deterministische User-Id, die NIE mit einer echten
- * `Employee.Id` aus employee-service uebereinstimmt (employee-service vergibt beim Anlegen
- * server-seitig eine neue `Guid.NewGuid()`, ohne Moeglichkeit, die Id von aussen vorzugeben).
- * Es gibt aktuell keinen Mechanismus, der einen identity-service-User mit einem
- * employee-service-Employee-Datensatz verknuepft.
- * Ergebnis: der reale Login als "employee@crm.local" kann NIEMALS Termine sehen, die einem
- * per Admin angelegten Employee-Datensatz zugeordnet sind - das negative Verhalten
- * ("sieht keine fremden Termine") ist dadurch immer erfuellt, das positive Verhalten
- * ("sieht die eigenen Termine") kann mit den aktuellen Seed-Daten nicht ueber die echte
- * Login-UI erzeugt werden. Die Tests unten pruefen das tatsaechlich beobachtbare,
- * spezifizierte Verhalten (Negativfall + 403 bei Fremdzugriff + Admin sieht alles) und
- * markieren den positiven "sieht eigene Termine"-Fall explizit als `test.fixme`, bis die
- * Luecke architektonisch geschlossen ist (z.B. durch ein Employee-Self-Registration- oder
- * User<->Employee-Link-Konzept).
+ * HISTORISCHER HINWEIS ZU BUG 2 (jetzt behoben, siehe Tests/E2E/README.md):
+ * Frueher hatte der geseedete `identity-service`-Testnutzer "employee@crm.local" eine
+ * deterministische User-Id, die NIE mit einer echten `Employee.Id` aus employee-service
+ * uebereinstimmte, wodurch das positive Ownership-Scenario nicht ueber einen echten Login-Flow
+ * erzeugbar war. Seit dem Bug-2-Fix (backend-agent, 2026-09-30) existiert in employee-service
+ * ein dev-/test-only Seeder (`DevEmployeeSeedHostedService`), der genau einen Employee-Datensatz
+ * mit exakt der `identity-service`-User-Id von "employee@crm.local" anlegt
+ * (`seedUsers.employee.id` in `fixtures/env.ts`). Der positive "sieht eigene Termine"-Fall ist
+ * daher jetzt als echter Test aktiviert (siehe unten).
  */
 
-const SERVICE = { serviceId: 'e2e-rbac', serviceName: 'E2E RBAC Leistung' };
+// serviceId muss eine echte Guid sein (EmployeeServiceAssignmentDto.ServiceId: Guid) -
+// ein sprechender String wie zuvor "e2e-rbac" wird von System.Text.Json mit 400
+// "The JSON value could not be converted" abgelehnt (Testcode-Fix, kein Produktbug).
+const SERVICE = { serviceId: '33333333-3333-3333-3333-333333333333', serviceName: 'E2E RBAC Leistung' };
 
 function unique(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
@@ -80,6 +76,7 @@ test('Admin sieht alle Termine (Gesamtuebersicht ueber mehrere Mitarbeiter)', as
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.appointmentWeb}/appointments`);
+  await settleAfterNavigation(page);
   await page.getByRole('tab', { name: /woche|week/i }).click();
   await page.getByRole('button', { name: /n[äa]chste|next/i }).click();
 
@@ -96,6 +93,10 @@ test('Employee sieht ueber die Kalenderansicht keine fremden Termine (Negativfal
   const { dateIso } = await setupEmployeeWithAppointment(admin.accessToken, 'FremdTermin', '09:00', '10:00');
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.employee.email, seedUsers.employee.password);
+  // Seit der Frontend-Konsolidierung landet der Login IMMER auf `/customers` (App-Default) -
+  // explizit zum Termine-Bereich navigieren (Testcode-Korrektur, kein Produktbug).
+  await page.goto(`${urls.appointmentWeb}/appointments`);
+  await settleAfterNavigation(page);
   await expect(page).toHaveURL(new RegExp(`${urls.appointmentWeb}/appointments$`));
 
   // Der eingeloggte Employee hat laut identity-service KEINE Ownership an dem soeben von
@@ -108,14 +109,46 @@ test('Employee sieht ueber die Kalenderansicht keine fremden Termine (Negativfal
   await expect(page.getByText('09:00')).not.toBeVisible();
 });
 
-test.fixme(
-  'Employee sieht eigene Termine in der Kalenderansicht (blockiert durch fehlende User<->Employee-Verknuepfung, siehe Hinweis oben)',
-  async () => {
-    // Sobald identity-service-User und employee-service-Employee-Datensaetze verknuepft sind
-    // (z.B. gleiche Id oder expliziter Link), kann dieser Test durch echten Login als
-    // "employee@crm.local" + einen fuer diesen Employee angelegten Termin ersetzt/aktiviert werden.
-  },
-);
+test('Employee sieht eigene Termine in der Kalenderansicht (Ownership-Positivfall, Bug 2 behoben)', async ({ page }) => {
+  const admin = await loginAsAdmin();
+
+  // Der dev-geseedete Employee-Datensatz mit exakt der identity-service-User-Id von
+  // "employee@crm.local" existiert bereits beim Service-Start (DevEmployeeSeedHostedService) -
+  // hier nur Leistung + Arbeitszeit fuer diesen bestehenden Datensatz ergaenzen (kein erneutes
+  // Anlegen, sonst 409/Email-Konflikt).
+  const ownEmployee = {
+    id: seedUsers.employee.id,
+    firstName: 'CRM',
+    lastName: 'Employee',
+    email: seedUsers.employee.email,
+    role: 'Employee' as const,
+  };
+  await assignService(admin.accessToken, ownEmployee, SERVICE);
+  await setWorkingHours(admin.accessToken, ownEmployee.id, [
+    { weekday: 'Monday', startTime: '09:00:00', endTime: '17:00:00' },
+  ]);
+  const customer = await createCustomer(admin.accessToken, { firstName: 'RBAC', lastName: unique('EigenerKunde') });
+  const monday = nextWeekday(1);
+  const dateIso = toDateInputValue(monday);
+  const appointment = await createAppointment(admin.accessToken, {
+    customerId: customer.id,
+    employeeId: ownEmployee.id,
+    serviceId: SERVICE.serviceId,
+    start: `${dateIso}T13:00:00`,
+    end: `${dateIso}T14:00:00`,
+  });
+  expect(appointment, 'Vorbedingung: eigener Termin muss anlegbar sein').not.toBeNull();
+
+  await loginViaUi(page, urls.appointmentWeb, seedUsers.employee.email, seedUsers.employee.password);
+  // Seit der Frontend-Konsolidierung landet der Login IMMER auf `/customers` (App-Default) -
+  // explizit zum Termine-Bereich navigieren (Testcode-Korrektur, kein Produktbug).
+  await page.goto(`${urls.appointmentWeb}/appointments`);
+  await settleAfterNavigation(page);
+  await expect(page.locator('#employee-filter')).not.toBeVisible();
+  await page.getByRole('tab', { name: /woche|week/i }).click();
+  await page.getByRole('button', { name: /n[äa]chste|next/i }).click();
+  await expect(page.getByText('13:00')).toBeVisible();
+});
 
 test('Employee-Versuch, Termin eines anderen Mitarbeiters zu verschieben, wird mit Fehlermeldung im UI abgelehnt (403)', async ({
   page,
@@ -125,6 +158,7 @@ test('Employee-Versuch, Termin eines anderen Mitarbeiters zu verschieben, wird m
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.employee.email, seedUsers.employee.password);
   await page.goto(`${urls.appointmentWeb}/appointments/${appointment.id}`);
+  await settleAfterNavigation(page);
 
   await page.locator('#reschedule-date').fill(dateIso);
   await page.locator('#reschedule-start').fill('16:00');
@@ -149,10 +183,11 @@ test('Employee-Versuch, Termin eines anderen Mitarbeiters zu stornieren, wird mi
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.employee.email, seedUsers.employee.password);
   await page.goto(`${urls.appointmentWeb}/appointments/${appointment.id}`);
+  await settleAfterNavigation(page);
 
   await page.getByRole('button', { name: /stornieren|cancel/i }).first().click();
   await page.locator('#cancel-reason').fill('Fremder Storno-Versuch');
-  await page.getByRole('button', { name: /best[äa]tig|confirm/i }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /stornieren|cancel/i }).click();
 
   await expect(page.getByRole('alert').filter({ hasText: /berechtigung|allowed|forbidden/i }).first()).toBeVisible();
 

@@ -16,16 +16,28 @@ export interface LoginResult {
   displayName: string;
 }
 
+/**
+ * Retry bei 429: siehe ausfuehrlichen Kommentar in `fixtures/auth.ts` (`loginViaUi`) - derselbe
+ * korrekt funktionierende Brute-Force-Schutz (5 Versuche/Minute/IP) greift hier ebenfalls, da
+ * viele Tests zusaetzlich per API einloggen (Testdaten-Vorbereitung "API-first").
+ */
 export async function loginViaApi(email: string, password: string): Promise<LoginResult> {
-  const response = await fetch(`${urls.identityApi}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!response.ok) {
-    throw new Error(`Login fehlgeschlagen fuer ${email}: HTTP ${response.status}`);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const response = await fetch(`${urls.identityApi}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (response.status === 429 && attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 61_000));
+      continue;
+    }
+    if (!response.ok) {
+      throw new Error(`Login fehlgeschlagen fuer ${email}: HTTP ${response.status}`);
+    }
+    return response.json();
   }
-  return response.json();
+  throw new Error(`Login fehlgeschlagen fuer ${email}: wiederholt HTTP 429`);
 }
 
 export async function loginAsAdmin(): Promise<LoginResult> {

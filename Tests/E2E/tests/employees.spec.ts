@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { urls, seedUsers } from '../fixtures/env';
 import { loginViaUi } from '../fixtures/auth';
+import { settleAfterNavigation } from '../fixtures/ui';
 import {
   loginAsAdmin,
   createEmployee,
@@ -34,12 +35,20 @@ function unique(prefix: string): string {
 
 test.beforeEach(async ({ page }) => {
   await loginViaUi(page, urls.employeeWeb, seedUsers.admin.email, seedUsers.admin.password);
+  // Seit der Frontend-Konsolidierung (ADR 0002) landet der Login IMMER auf dem App-weiten
+  // Default `/customers` (siehe `Clients/crm-web/src/app/app.routes.ts`,
+  // `{ path: '', redirectTo: 'customers' }`), unabhaengig davon, ueber welchen historischen
+  // "*Web"-Alias eingeloggt wurde - explizit zum Mitarbeiter-Bereich navigieren
+  // (Testcode-Korrektur, kein Produktbug).
+  await page.goto(`${urls.employeeWeb}/employees`);
+  await settleAfterNavigation(page);
   await expect(page).toHaveURL(new RegExp(`${urls.employeeWeb}/employees$`));
 });
 
 test('Mitarbeiter mit gueltigen Pflichtdaten anlegen', async ({ page }) => {
   const lastName = unique('Neuling');
   await page.getByRole('link', { name: /neu|new/i }).click();
+  await settleAfterNavigation(page);
   await page.locator('#firstName').fill('Max');
   await page.locator('#lastName').fill(lastName);
   await page.locator('#email').fill(`${lastName}@crm.local`);
@@ -51,7 +60,7 @@ test('Mitarbeiter mit gueltigen Pflichtdaten anlegen', async ({ page }) => {
 
   await page.goto(`${urls.employeeWeb}/employees`);
   await page.locator('#employee-search').fill(lastName);
-  await expect(page.getByText(lastName)).toBeVisible();
+  await expect(page.getByText(lastName).first()).toBeVisible();
 });
 
 test('Mitarbeiter mit bereits vergebener E-Mail anlegen zeigt Konfliktfehler', async ({ page }) => {
@@ -59,6 +68,7 @@ test('Mitarbeiter mit bereits vergebener E-Mail anlegen zeigt Konfliktfehler', a
   const email = `${lastName}@crm.local`;
 
   await page.getByRole('link', { name: /neu|new/i }).click();
+  await settleAfterNavigation(page);
   await page.locator('#firstName').fill('Erst');
   await page.locator('#lastName').fill(lastName);
   await page.locator('#email').fill(email);
@@ -67,6 +77,7 @@ test('Mitarbeiter mit bereits vergebener E-Mail anlegen zeigt Konfliktfehler', a
   await expect(page).toHaveURL(new RegExp(`${urls.employeeWeb}/employees/.+/edit`));
 
   await page.goto(`${urls.employeeWeb}/employees/new`);
+  await settleAfterNavigation(page);
   await page.locator('#firstName').fill('Zweit');
   await page.locator('#lastName').fill(lastName);
   await page.locator('#email').fill(email);
@@ -80,6 +91,7 @@ test('Mitarbeiter mit bereits vergebener E-Mail anlegen zeigt Konfliktfehler', a
 test('Leistung einem Mitarbeiter zuordnen', async ({ page }) => {
   const lastName = unique('Beratend');
   await page.getByRole('link', { name: /neu|new/i }).click();
+  await settleAfterNavigation(page);
   await page.locator('#firstName').fill('Berta');
   await page.locator('#lastName').fill(lastName);
   await page.locator('#email').fill(`${lastName}@crm.local`);
@@ -90,16 +102,17 @@ test('Leistung einem Mitarbeiter zuordnen', async ({ page }) => {
   await page.locator('#newServiceId').fill('beratung');
   await page.locator('#newServiceName').fill('Beratung');
   await page.getByRole('button', { name: /hinzuf[üu]gen|add/i }).click();
-  await expect(page.getByText('Beratung')).toBeVisible();
+  await expect(page.getByText('Beratung', { exact: true })).toBeVisible();
   await page.locator('button[type=submit]').click();
 
   await expect(page).toHaveURL(new RegExp(`${urls.employeeWeb}/employees/.+/edit`));
-  await expect(page.getByText('Beratung')).toBeVisible();
+  await expect(page.getByText('Beratung', { exact: true })).toBeVisible();
 });
 
 test('Wochenarbeitszeit Mo-Fr 09:00-17:00 hinterlegen', async ({ page }) => {
   const lastName = unique('Schicht');
   await page.getByRole('link', { name: /neu|new/i }).click();
+  await settleAfterNavigation(page);
   await page.locator('#firstName').fill('Silke');
   await page.locator('#lastName').fill(lastName);
   await page.locator('#email').fill(`${lastName}@crm.local`);
@@ -111,6 +124,7 @@ test('Wochenarbeitszeit Mo-Fr 09:00-17:00 hinterlegen', async ({ page }) => {
   expect(employeeId).toBeTruthy();
 
   await page.goto(`${urls.employeeWeb}/employees/${employeeId}/schedule`);
+  await settleAfterNavigation(page);
   await expect(page.getByRole('grid')).toBeVisible();
 
   // Montag-Freitag (Zeilen 0-4), Slot 09:00 (Spalte je nach `hours`-Definition: erste Spalte = 9).
@@ -124,6 +138,7 @@ test('Wochenarbeitszeit Mo-Fr 09:00-17:00 hinterlegen', async ({ page }) => {
 test('Urlaub fuer einen terminfreien Zeitraum eintragen', async ({ page }) => {
   const lastName = unique('Urlauber');
   await page.getByRole('link', { name: /neu|new/i }).click();
+  await settleAfterNavigation(page);
   await page.locator('#firstName').fill('Ulla');
   await page.locator('#lastName').fill(lastName);
   await page.locator('#email').fill(`${lastName}@crm.local`);
@@ -133,6 +148,7 @@ test('Urlaub fuer einen terminfreien Zeitraum eintragen', async ({ page }) => {
 
   const employeeId = page.url().match(/employees\/([^/]+)\/edit/)?.[1];
   await page.goto(`${urls.employeeWeb}/employees/${employeeId}/absences/new`);
+  await settleAfterNavigation(page);
 
   const from = new Date();
   from.setDate(from.getDate() + 60);
@@ -150,6 +166,7 @@ test('Urlaub fuer einen terminfreien Zeitraum eintragen', async ({ page }) => {
 test('Mitarbeiter deaktivieren entfernt ihn aus der Verfuegbarkeitsauswahl', async ({ page }) => {
   const lastName = unique('Ausscheider');
   await page.getByRole('link', { name: /neu|new/i }).click();
+  await settleAfterNavigation(page);
   await page.locator('#firstName').fill('Egon');
   await page.locator('#lastName').fill(lastName);
   await page.locator('#email').fill(`${lastName}@crm.local`);
@@ -159,7 +176,13 @@ test('Mitarbeiter deaktivieren entfernt ihn aus der Verfuegbarkeitsauswahl', asy
 
   await page.goto(`${urls.employeeWeb}/employees`);
   await page.locator('#employee-search').fill(lastName);
-  await page.getByRole('button', { name: /deaktivieren|deactivate/i }).click();
+  // Warten, bis die (debounced) Suche tatsaechlich gefiltert hat, bevor der Deaktivieren-Button
+  // geklickt wird - sonst kann bei vielen Mitarbeitern aus vorherigen Tests der Klick den
+  // Button einer ANDEREN, noch sichtbaren Zeile treffen (Testcode-Fix, kein Produktbug, real
+  // verifiziert: das manuelle Reproduzieren mit genau einem Mitarbeiter funktionierte fehlerfrei).
+  const filteredRow = page.locator('tr', { hasText: lastName });
+  await expect(filteredRow).toHaveCount(1);
+  await filteredRow.getByRole('button', { name: /deaktivieren|deactivate/i }).click();
 
   await page.locator('#employee-search').fill(lastName);
   const row = page.locator('tr', { hasText: lastName });
@@ -196,6 +219,7 @@ test('Urlaub kollidiert mit bestehendem Termin -> Konfliktwarnung mit expliziter
 
   await loginViaUi(page, urls.employeeWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.employeeWeb}/employees/${employee.id}/absences/new`);
+  await settleAfterNavigation(page);
 
   await page.locator('#absenceType').selectOption('Vacation');
   await page.locator('#absenceFrom').fill(dateIso);

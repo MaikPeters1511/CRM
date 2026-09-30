@@ -11,6 +11,7 @@ import {
   nextWeekday,
   toDateInputValue,
 } from '../fixtures/api';
+import { settleAfterNavigation } from '../fixtures/ui';
 
 /**
  * Deckt die Scenarios aus `UserStories/terminverwaltung.openspec.md`, Abschnitt 3, ab
@@ -27,7 +28,10 @@ import {
  * stornieren/Kalender) laeuft ausschliesslich ueber die echte Browser-UI.
  */
 
-const SERVICE = { serviceId: 'e2e-beratung', serviceName: 'E2E Beratung' };
+// serviceId muss eine echte Guid sein (EmployeeServiceAssignmentDto.ServiceId: Guid) -
+// ein sprechender String wie zuvor "e2e-beratung" wird von System.Text.Json mit 400
+// "The JSON value could not be converted" abgelehnt (Testcode-Fix, kein Produktbug).
+const SERVICE = { serviceId: '22222222-2222-2222-2222-222222222222', serviceName: 'E2E Beratung' };
 
 function unique(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
@@ -61,6 +65,7 @@ test('Termin im verfuegbaren Zeitfenster anlegen', async ({ page }) => {
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.appointmentWeb}/appointments/new`);
+  await settleAfterNavigation(page);
 
   await page.locator('#customer-search').fill(customer.lastName ?? 'Anna');
   await page.locator('#employee-select').selectOption(employee.id);
@@ -85,6 +90,7 @@ test('Termin ausserhalb der Arbeitszeit zeigt Validierungsfehler und persistiert
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.appointmentWeb}/appointments/new`);
+  await settleAfterNavigation(page);
 
   await page.locator('#customer-search').fill(customer.lastName);
   await page.locator('#employee-select').selectOption(employee.id);
@@ -118,6 +124,7 @@ test('Doppelbuchung fuer denselben Mitarbeiter wird verhindert', async ({ page }
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.appointmentWeb}/appointments/new`);
+  await settleAfterNavigation(page);
 
   await page.locator('#customer-search').fill(customerB.lastName);
   await page.locator('#employee-select').selectOption(employee.id);
@@ -150,6 +157,7 @@ test('Termin erfolgreich verschieben', async ({ page }) => {
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.appointmentWeb}/appointments/${appointment!.id}`);
+  await settleAfterNavigation(page);
 
   await page.locator('#reschedule-date').fill(dateIso);
   await page.locator('#reschedule-start').fill('13:00');
@@ -177,10 +185,11 @@ test('Termin stornieren markiert ihn als Cancelled und gibt den Slot frei', asyn
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.appointmentWeb}/appointments/${appointment!.id}`);
+  await settleAfterNavigation(page);
 
   await page.getByRole('button', { name: /stornieren|cancel/i }).first().click();
   await page.locator('#cancel-reason').fill('E2E Testabsage');
-  await page.getByRole('button', { name: /best[äa]tig|confirm/i }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /stornieren|cancel/i }).click();
 
   await expect(page.getByText(/cancelled|storniert/i)).toBeVisible();
 });
@@ -203,6 +212,7 @@ test('Wochenansicht zeigt Termine eines Mitarbeiters zeitlich korrekt', async ({
 
   await loginViaUi(page, urls.appointmentWeb, seedUsers.admin.email, seedUsers.admin.password);
   await page.goto(`${urls.appointmentWeb}/appointments`);
+  await settleAfterNavigation(page);
 
   await page.getByRole('tab', { name: /woche|week/i }).click();
   await page.locator('#employee-filter').selectOption(employee.id);

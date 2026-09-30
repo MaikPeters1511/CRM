@@ -40,5 +40,11 @@ export const seedUsers = {
   employee: {
     email: env('E2E_EMPLOYEE_EMAIL', 'employee@crm.local'),
     password: env('E2E_EMPLOYEE_PASSWORD', 'Employee123!'),
+    // Deterministische Id des dev-geseedeten Employee-Datensatzes, der genau diesem
+    // identity-service-Testnutzer zugeordnet ist (siehe Bug 2, Tests/E2E/README.md,
+    // Services/employee-service/.../Seed/DevEmployeeSeedOptions.EmployeeUserId).
+    // Beide Seiten (identity-service, employee-service) muessen bei einer Aenderung
+    // manuell synchron gehalten werden - kein gemeinsames Assembly (bewusst, kein Gold-Plating).
+    id: env('E2E_EMPLOYEE_USER_ID', 'e573eed0-8c40-749f-f05c-aa6839c81cb4'),
   },
 };
