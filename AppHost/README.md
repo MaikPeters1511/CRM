@@ -36,14 +36,17 @@ dotnet run
 Der Aspire-Dashboard-Link wird in der Konsole ausgegeben (Standard: `https://localhost:17172`).
 Dort sind alle Ressourcen, Logs, Traces und die dynamisch vergebenen Endpunkte einsehbar.
 
-**Hinweis (lokale Entwicklung, Frontend):** Die Angular-Clients (`Clients/customer-web`,
-`Clients/employee-web`) sprechen im Dev-Modus aktuell noch direkt gegen den jeweiligen Service
-(`environment.ts`), im Produktions-Build bereits gegen den relativen Pfad `/api` (für das Gateway).
-Sobald das Gateway lokal über Aspire läuft, ist es unter der vom AppHost zugewiesenen externen
-HTTP-Endpoint-URL erreichbar (sichtbar im Aspire-Dashboard als Endpunkt der Ressource `gateway`,
-z.B. `http://localhost:<zufälliger-port>`), mit Routen `/api/customers/**` → `customer-service` und
-`/api/employees/**` → `employee-service`. Eine Umstellung der Angular-Dev-Configs auf das Gateway
-ist eine separate Frontend-Aufgabe und nicht Teil dieser Änderung.
+**Hinweis (lokale Entwicklung, Frontend):** Seit der Frontend-Konsolidierung
+(`docs/adr/0002-frontend-konsolidierung.md`) existiert nur noch ein einziges Angular-Frontend
+`Clients/crm-web` (Dev-Port `4200`) statt vormals drei getrennter Apps (`customer-web` 4200,
+`employee-web` 4201, `appointment-web` 4202). `crm-web` spricht im Dev-Modus aktuell noch direkt
+gegen die jeweiligen Services (`environment.ts`), im Produktions-Build bereits gegen den relativen
+Pfad `/api` (für das Gateway). Sobald das Gateway lokal über Aspire läuft, ist es unter der vom
+AppHost zugewiesenen externen HTTP-Endpoint-URL erreichbar (sichtbar im Aspire-Dashboard als
+Endpunkt der Ressource `gateway`, z.B. `http://localhost:<zufälliger-port>`), mit Routen
+`/api/customers/**` → `customer-service`, `/api/employees/**` → `employee-service` und
+`/api/appointments/**` → `appointment-service`. Eine Umstellung der Angular-Dev-Configs auf das
+Gateway ist eine separate Frontend-Aufgabe und nicht Teil dieser Änderung.
 
 ## Verifikation
 

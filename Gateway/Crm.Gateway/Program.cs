@@ -50,9 +50,11 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("gateway-authenticated", policy => policy.RequireAuthenticatedUser());
 });
 
-// OWASP A05: restriktive CORS-Policy nur fuer die bekannten Angular-Dev-Origins statt AllowAnyOrigin.
+// OWASP A05: restriktive CORS-Policy nur fuer den bekannten Angular-Dev-Origin statt AllowAnyOrigin.
+// Seit der Frontend-Konsolidierung (docs/adr/0002-frontend-konsolidierung.md) existiert nur noch
+// ein einziges Frontend (Clients/crm-web) statt drei getrennter Angular-Apps, daher genuegt ein Origin.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? ["http://localhost:4200", "http://localhost:4201", "http://localhost:4202"];
+    ?? ["http://localhost:4200"];
 
 builder.Services.AddCors(options =>
 {
