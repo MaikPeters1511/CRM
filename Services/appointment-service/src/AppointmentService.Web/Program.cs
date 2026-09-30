@@ -39,6 +39,11 @@ builder.Host.UseWolverine(opts =>
 {
     opts.Discovery.IncludeAssembly(typeof(AppointmentService.Application.Appointments.Create.CreateAppointmentCommand).Assembly);
 
+    // Tests/E2E/README.md, Bug 4: gleiche scoped-DbContext-Service-Location-Ursache wie in
+    // employee-service (siehe dort fuer die ausfuehrliche Begruendung); gezielter Opt-in statt
+    // globaler Lockerung der ServiceLocationPolicy.
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<AppointmentService.Application.Abstractions.IAppointmentRepository>();
+
     var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
         ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");
 

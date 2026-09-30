@@ -306,7 +306,38 @@ liegt laut ADR 0001 sowieso beim Gateway) oder `ForwardedHeaders`-Middleware mit
 `X-Forwarded-Proto` einsetzen, damit die Redirect-Middleware den vom Gateway bereits
 TLS-terminierten Request nicht faelschlich als "unsicher" einstuft.
 
-### Bug 4 (P0, backend-agent): Wolverine-Codegen scheitert fuer Handler mit scoped EF-Core-Repository gegen echte Datenbank
+### Bug 4 (P0, backend-agent): Wolverine-Codegen scheitert fuer Handler mit scoped EF-Core-Repository gegen echte Datenbank — BEHOBEN
+
+**Status:** Behoben (backend-agent, 2026-09-30). Ursache: `AddDbContext<TDbContext>()` registriert
+`DbContextOptions<TDbContext>` als scoped "opaque lambda factory"
+(`EntityFrameworkServiceCollectionExtensions.CreateDbContextOptions`); Wolverines Codegen kann
+daraus per Konstruktor-Injektion keinen Aufrufcode erzeugen und verlangt Service Location, was seit
+Wolverine 6.0 per Default (`ServiceLocationPolicy.NotAllowed`) verboten ist. Fix laut
+Wolverine-Dokumentation (https://wolverinefx.net/guide/codegen.html, Abschnitt "Service Location"):
+genau den betroffenen Service gezielt fuer Service Location freischalten, statt die Policy global
+zu lockern - `opts.CodeGeneration.AlwaysUseServiceLocationFor<T>()` in der jeweiligen
+`UseWolverine(...)`-Konfiguration. Betroffen und behoben: `employee-service`
+(`Services/employee-service/src/EmployeeService.Web/Program.cs`, `IEmployeeRepository`),
+`customer-service` (`Services/customer-service/src/CustomerService.Web/Program.cs`,
+`ICustomerRepository`), `appointment-service`
+(`Services/appointment-service/src/AppointmentService.Web/Program.cs`, `IAppointmentRepository`) -
+alle drei nutzen identisches `EfXRepository(XDbContext)` + `AddDbContext<XDbContext>`-Muster.
+`identity-service` ist NICHT betroffen (`IUserRepository` ist ein Singleton-In-Memory-Repository
+ohne `AddDbContext`/scoped Dependency). Real verifiziert: fuer alle drei Services wurde der Bug
+zunaechst gegen eine echte, per `dotnet ef database update` migrierte lokale PostgreSQL (kein Fake)
+reproduziert (`500` + `Wolverine.Configuration.InvalidServiceLocationException` im Log, identisch
+zur unten dokumentierten Fehlermeldung), dann der Fix eingespielt und derselbe Request erneut
+gegen dieselbe Datenbank gestellt: `GET /api/employees`, `GET /api/employees/{id}`,
+`GET /api/customers`, `GET /api/appointments` liefern jetzt alle real `200` mit korrekten Daten
+(u.a. der von `DevEmployeeSeedHostedService` geseedete `employee@crm.local`-Datensatz). Zusaetzlich
+neue Regressionstests, die - anders als alle bisherigen Tests - die echte EF-Core-Infrastruktur
+(kein Fake-Repository) ueber Testcontainers-PostgreSQL durchlaufen:
+`Tests/EmployeeService.Tests/Web/EmployeesRealInfrastructureApiTests.cs`,
+`Tests/CustomerService.Tests/Web/CustomersRealInfrastructureApiTests.cs`,
+`Tests/AppointmentService.Tests/Web/AppointmentsRealInfrastructureApiTests.cs` (jeweils mit
+zugehoeriger `*DbContainerFixture`/`*RealInfrastructureWebFactory` in `Support`/`Web`).
+`dotnet build Crm.slnx`/`dotnet test Crm.slnx` (132 Tests) bleiben gruen. Die urspruengliche
+Bug-Beschreibung unten bleibt zur Nachvollziehbarkeit unveraendert erhalten.
 
 **Neu entdeckt** (backend-agent, 2026-09-30) bei der Live-Verifikation von Bug 2: gegen eine
 ECHTE `employee_db` (Migration angewendet, kein Fake-Repository) liefern `GET /api/employees`

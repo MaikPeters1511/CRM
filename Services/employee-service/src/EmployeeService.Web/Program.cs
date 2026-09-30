@@ -39,6 +39,16 @@ builder.Host.UseWolverine(opts =>
 {
     opts.Discovery.IncludeAssembly(typeof(EmployeeService.Application.Employees.Create.CreateEmployeeHandler).Assembly);
 
+    // Tests/E2E/README.md, Bug 4: EF Core registriert DbContextOptions<EmployeeDbContext>
+    // ueber AddDbContext als scoped "opaque lambda factory" (EntityFrameworkServiceCollectionExtensions.
+    // CreateDbContextOptions). Wolverines Codegen kann daraus per Konstruktor-Injection keinen Aufrufcode
+    // erzeugen und wirft mit ServiceLocationPolicy.NotAllowed (Default seit Wolverine 6.0) eine
+    // InvalidServiceLocationException fuer jeden Handler, der (transitiv ueber IEmployeeRepository ->
+    // EfEmployeeRepository -> EmployeeDbContext) davon abhaengt. Fix laut Wolverine-Doku
+    // (https://wolverinefx.net/guide/codegen.html): den einzigen Service, dessen Registrierung das
+    // erfordert, gezielt fuer Service Location opt-in, statt die Policy global zu lockern.
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<EmployeeService.Application.Abstractions.IEmployeeRepository>();
+
     var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
         ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");
 
