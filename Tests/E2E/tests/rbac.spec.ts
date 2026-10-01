@@ -62,12 +62,15 @@ async function setupEmployeeWithAppointment(adminToken: string, lastNamePrefix: 
   });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
+  // Z-Suffix (UTC) bewusst explizit, da dies nur die Testdaten-Vorbereitung ist (API-first) -
+  // die eigentliche, per echter Browser-UI ausgeloeste Terminerstellung sendet bewusst KEIN
+  // Offset (siehe appointments.spec.ts, Bug 9 in README.md).
   const appointment = await createAppointment(adminToken, {
     customerId: customer.id,
     employeeId: employee.id,
     serviceId: SERVICE.serviceId,
-    start: `${dateIso}T${startHour}:00`,
-    end: `${dateIso}T${endHour}:00`,
+    start: `${dateIso}T${startHour}:00Z`,
+    end: `${dateIso}T${endHour}:00Z`,
   });
   expect(appointment, 'Vorbedingung: Termin fuer RBAC-Test muss anlegbar sein').not.toBeNull();
   return { employee, customer, appointment: appointment!, dateIso };
@@ -138,12 +141,14 @@ test('Employee sieht eigene Termine in der Kalenderansicht (Ownership-Positivfal
   });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
+  // Z-Suffix (UTC) bewusst explizit - reine Testdaten-Vorbereitung, siehe Kommentar in
+  // setupEmployeeWithAppointment() oben.
   const appointment = await createAppointment(admin.accessToken, {
     customerId: customer.id,
     employeeId: ownEmployee.id,
     serviceId: SERVICE.serviceId,
-    start: `${dateIso}T13:00:00`,
-    end: `${dateIso}T14:00:00`,
+    start: `${dateIso}T13:00:00Z`,
+    end: `${dateIso}T14:00:00Z`,
   });
   expect(appointment, 'Vorbedingung: eigener Termin muss anlegbar sein').not.toBeNull();
 

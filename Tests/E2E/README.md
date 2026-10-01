@@ -148,7 +148,85 @@ Jedes SHALL-Requirement aus den vier Change-Specs hat mindestens einen Test:
   Doppelbuchung, Verschieben, Stornieren, Wochenansicht, RBAC (Admin sieht alle, Employee
   sieht keine fremden, 403 bei Fremdzugriff auf Verschieben/Stornieren mit UI-Fehlermeldung).
 
-## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-01, nach Bug-5/6/7-Fixes)
+## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-01, nach Bug-8-Fix)
+
+**Setup:** Kompletter Stack real hochgefahren per `dotnet run --project AppHost/Crm.AppHost`
+(identity-/customer-/employee-/appointment-service + Gateway + 3x Postgres + RabbitMQ, vorhandene
+User Secrets, ephemere - nicht persistente - Postgres-Container), zusaetzlich manuell
+`npx ng serve --port 4200` fuer `Clients/crm-web`. Nach dem Bug-8-Fix (Auth-Header-Forwarding)
+wurde die komplette Suite mehrfach real durchlaufen lassen; zwischendurch der komplette Stack
+einmal bewusst neu gestartet (frische, leere Datenbanken), um Testdaten-Akkumulation ueber
+mehrere Laeufe als Stoerfaktor auszuschliessen (siehe Bug 10 unten - dessen Sichtbarkeit haengt
+von der Anzahl bereits vorhandener Mitarbeiter ab).
+
+**Ergebnis (mehrere Laeufe):**
+
+- **Lauf 1 (direkt nach Bug-8-Fix, auf dem seit der letzten Session weiterlaufenden Stack,
+  bereits mit Alt-Testdaten): 19 von 30 gruen, 11 rot.** Bug 8 ist damit fuer die zuvor
+  komplett blockierten Bereiche (Abwesenheits-Konfliktpruefung, Terminanlage) **vollstaendig
+  verifiziert behoben** - alle 11 verbliebenen Fehlschlaege hatten eine ANDERE, neue Ursache
+  (Root-Cause-Analyse via `aspire logs appointment-service`): 10 davon ausschliesslich eine
+  **Testcode-Race** in `fixtures/api.ts#toDateInputValue()` (siehe Testcode-Fix unten), 1 davon
+  real reproduziert als neuer Produktbug (**Bug 9**, siehe unten).
+- **Testcode-Fix (qa-agent, in dieser Session):** `toDateInputValue(date: Date): string` nutzte
+  `date.toISOString().slice(0, 10)`. `nextWeekday(1)` liefert ein `Date`-Objekt auf lokale
+  Mitternacht des naechsten Montags (z.B. "Mo 12.10.2026 00:00 GMT+02:00"); `toISOString()`
+  konvertiert zuerst nach UTC, was in jeder Zeitzone mit positivem UTC-Offset (hier:
+  Europe/Berlin, CEST +02:00) den Kalendertag um einen Tag zurueckdreht - aus Montag wird
+  Sonntag. Jeder nachfolgende API-Call (Arbeitszeit setzen fuer "Monday", Termin an diesem
+  Datum anlegen) traf dadurch real auf einen Sonntag ohne hinterlegte Arbeitszeit und scheiterte
+  mit "outside working hours" bzw. (ohne Z-Suffix zusaetzlich mit Bug 9, siehe unten) einem
+  500er. Fix: lokale Datumskomponenten (`getFullYear()`/`getMonth()`/`getDate()`) direkt
+  formatieren, keine UTC-Konvertierung (`Tests/E2E/fixtures/api.ts`). Zusaetzlich wurde bei
+  Terminen, die NUR als Testdaten-Vorbereitung dienen (nicht die Terminerstellung selbst
+  testen, z.B. Vorbedingung fuer "Doppelbuchung"/"Verschieben"/"Stornieren"/"Wochenansicht"/RBAC),
+  ein explizites `Z`-Suffix (UTC) ergaenzt (`Tests/E2E/tests/appointments.spec.ts`,
+  `Tests/E2E/tests/rbac.spec.ts`) - bewusst NICHT beim einen echten UI-Formular-Test "Termin im
+  verfuegbaren Zeitfenster anlegen", da dieser Test absichtlich das reale, ungeschoente
+  Submit-Verhalten des Angular-Formulars prueft (das KEIN Z-Suffix sendet) und dabei den
+  echten Bug 9 aufdeckt.
+- **Lauf 2 (nach Testcode-Fix, auf demselben - durch Lauf 1 weiter gewachsenen - Alt-Datenbestand):
+  21 von 30 gruen, 9 rot.** Einige vorher gruene Tests ("Termin ausserhalb der Arbeitszeit",
+  "Doppelbuchung") wurden jetzt ROT, nicht wegen des Testcode-Fixes, sondern weil der
+  akkumulierte Mitarbeiterbestand (aus mehreren vorherigen Laeufen ohne Teardown) inzwischen
+  37 aktive Mitarbeiter umfasste - und damit **Bug 10** (siehe unten) erstmals im Lauf selbst
+  sichtbar wurde.
+- **Lauf 3 (finaler Lauf, nach komplettem AppHost-Neustart mit frischen, leeren Datenbanken):
+  23 von 30 gruen, 7 rot - stabil und erklaerbar.** Mit wenigen vorhandenen Mitarbeitern (Start
+  bei 0) treten `appointments.spec.ts`-Tests, die frueh in der Dateireihenfolge laufen
+  ("ausserhalb der Arbeitszeit", "Doppelbuchung"), jetzt wieder korrekt gruen auf - die 7
+  verbleibenden Fehlschlaege sind auf genau zwei echte, real reproduzierte Produktbugs
+  zurueckzufuehren, KEINE Testcode-Probleme mehr:
+  - **Bug 9** (1 Test: "Termin im verfuegbaren Zeitfenster anlegen", `appointments.spec.ts`):
+    reale Terminanlage ueber das Angular-Formular sendet `start`/`end` ohne UTC-Offset -
+    `CreateAppointmentCommand`-Handling stuerzt serverseitig mit `ArgumentException` ab, sobald
+    der Server (hier: Europe/Berlin, UTC+2) das Fehlen eines Offsets als lokale Zeit statt UTC
+    interpretiert und das Ergebnis an PostgreSQL schreiben will. Reproduziert unabhaengig von
+    der Testsuite per direktem `curl` (siehe Bug 9 unten) - **kein Testdaten-Volumen-Effekt**,
+    tritt bei JEDEM Aufruf ohne Offset auf, unabhaengig von Mitarbeiterzahl.
+  - **Bug 10** (6 Tests: "Wochenansicht", alle 5 `rbac.spec.ts`-Tests): die Mitarbeiter-Auswahl
+    im Kalender/Terminformular laedt serverseitig IMMER nur Seite 1 (20 Mitarbeiter, kein
+    Suchfeld, keine Pagination) - je weiter hinten in der Testdateireihenfolge (und je mehr
+    Mitarbeiter bereits existieren, real oder durch vorherige Tests in DERSELBEN Ausfuehrung
+    angelegt), desto wahrscheinlicher faellt der neu angelegte Mitarbeiter aus Seite 1 heraus
+    und ist im UI nicht mehr auswaehlbar/filterbar. Bereits innerhalb EINES einzigen frischen
+    Laufs reicht die kumulierte Mitarbeiteranzahl aus `employees.spec.ts` (~7) +
+    `appointments.spec.ts` (bis zu 6, ein neuer Mitarbeiter pro Test) + `rbac.spec.ts`
+    (bis zu 2 pro Test) aus, um die 20er-Grenze gegen Ende der Suite zu ueberschreiten - echtes,
+    reproduzierbares Produktverhalten, kein Testdaten-Artefakt (siehe Bug 10 unten, inkl. realem
+    `GET /api/employees`-Beleg mit `totalCount: 37`).
+  - **Gruen (23):** `customers.spec.ts` 6/6, `employees.spec.ts` 7/7 (inkl. beider zuvor durch
+    Bug 6/7/8 blockierter Abwesenheits-Tests), `appointments.spec.ts` 5/6 (nur "Termin im
+    verfuegbaren Zeitfenster anlegen" rot, siehe Bug 9), `auth.spec.ts` 6/6.
+  - **Rot (7):** `appointments.spec.ts` "Termin im verfuegbaren Zeitfenster anlegen" (Bug 9),
+    "Wochenansicht zeigt Termine eines Mitarbeiters zeitlich korrekt" (Bug 10); `rbac.spec.ts`
+    alle 5 Tests (Bug 10).
+- **Fazit:** Bug 8 ist vollstaendig geschlossen - kein einziger der verbliebenen 7 roten Tests
+  scheitert mehr an fehlendem Auth-Header-Forwarding. Zwei NEUE, echte, unabhaengig von der
+  Testsuite reproduzierte Produktbugs (Bug 9, Bug 10) blockieren die verbliebenen 7 Tests.
+  **Archivierung wird noch NICHT empfohlen** - siehe Empfehlung am Ende dieses Dokuments.
+
+## Tatsaechliche Verifikation - vorheriger Stand (qa-agent, 2026-10-01, nach Bug-5/6/7-Fixes)
 
 **Setup:** Kompletter Stack real hochgefahren per `dotnet run --project AppHost/Crm.AppHost`
 (identity-/customer-/employee-/appointment-service + Gateway + 3x Postgres + RabbitMQ, vorhandene
@@ -765,6 +843,112 @@ Security-Architekturmuster entspricht. Betroffen sind die `AddHttpClient<...>()`
 `AppointmentService.Infrastructure.DependencyInjection` (jeweils `.AddHttpMessageHandler<...>()` mit
 einem neuen `AuthorizationForwardingHandler` ergaenzen, `IHttpContextAccessor` registrieren).
 
+### Bug 9 (P0, backend-agent): `POST /api/appointments` (und vermutlich `PUT /appointments/{id}/reschedule`) stuerzt mit 500 ab, wenn `start`/`end` KEIN explizites UTC-Offset enthalten - exakt das Format, das das echte Angular-Formular sendet
+
+**Status:** Offen, nicht gefixt (qa-agent, 2026-10-01, im finalen Verifikationslauf nach dem
+Bug-8-Fix real entdeckt und unabhaengig von der Testsuite per direktem `curl` reproduziert).
+
+**Reproduktion (real gegen den laufenden AppHost, frische Datenbanken, Admin-Token, gueltiger
+Kunde/Mitarbeiter mit passender Arbeitszeit/Leistung):**
+```
+POST /api/appointments
+{"customerId":"...","employeeId":"...","serviceId":"...",
+ "start":"2026-10-12T10:00:00","end":"2026-10-12T11:00:00"}
+-> 500 {"title":"An unexpected error occurred.","status":500,...}
+```
+Mit explizitem UTC-Suffix (`"2026-10-12T10:00:00Z"`) funktioniert derselbe Request anstandslos
+(`201 Created`). Server-Log (`aspire logs appointment-service`):
+```
+fail: AppointmentService.Web.ErrorHandling.GlobalExceptionHandler[0]
+      Unhandled exception while processing POST /api/appointments
+      System.ArgumentException: Cannot write DateTimeOffset with Offset=02:00:00 to PostgreSQL
+      type 'timestamp with time zone', only offset 0 (UTC) is supported.  (Parameter 'value')
+         at Npgsql.Internal.Converters.DateTimeOffsetConverter.WriteCore(PgWriter writer, DateTimeOffset value)
+         ...
+         at AppointmentService.Infrastructure.Persistence.EfAppointmentRepository.GetOverlappingForEmployeeAsync(...)
+         at AppointmentService.Application.Appointments.Create.CreateAppointmentHandler.Handle(...)
+```
+
+**Root Cause:** `CreateAppointmentCommand`/`CreateAppointmentRequest` (sowie
+`RescheduleAppointmentRequest`, identisches Risiko, selbe Codepfad-Familie) binden `start`/`end`
+als `DateTimeOffset`. System.Text.Json's Standard-Konverter interpretiert einen ISO-8601-String
+OHNE Offset-Angabe nicht als UTC, sondern uebernimmt den **lokalen Offset des ausfuehrenden
+Servers** (hier: Europe/Berlin, zur Zeit der Reproduktion CEST = `+02:00`). Npgsql/PostgreSQL
+akzeptiert fuer die Spaltenart `timestamp with time zone` beim Schreiben ausschliesslich
+`DateTimeOffset`-Werte mit Offset `0` (UTC) - jeder andere Offset wirft eine `ArgumentException`,
+bevor overlap-Pruefung/Persistierung ueberhaupt stattfinden. **Entscheidend:** das reale
+Angular-Formular (`Clients/crm-web/src/app/appointments/presentation/appointment-form/
+appointment-form.component.ts`, Zeile 132-133) baut den Request-Body exakt so:
+```ts
+const start = `${value.date}T${value.startTime}:00`;   // z.B. "2026-10-12T10:00:00" - KEIN Offset
+const end = `${value.date}T${value.endTime}:00`;
+```
+Dieselbe Komponente wird fuer Terminanlage UND -verschiebung (`#reschedule-date`/
+`#reschedule-start`/`#reschedule-end`) verwendet - beide Flows sind betroffen.
+
+**Auswirkung:** Blockiert JEDE echte Terminanlage/-verschiebung ueber die produktive
+Angular-UI, sobald der ausfuehrende Server NICHT in UTC laeuft (z.B. jede europaeische
+On-Premise-/Docker-Installation in Europe/Berlin o.ae.) - unabhaengig von Testdaten-Volumen,
+deterministisch bei jedem Aufruf reproduzierbar. In diesem Verifikationslauf betroffen:
+`appointments.spec.ts` "Termin im verfuegbaren Zeitfenster anlegen" (der einzige Test, der die
+reale Formular-Submission ungeschoent prueft, ohne per API-Vorbereitung ein Z-Suffix zu
+erzwingen).
+
+**Fix-Vorschlag:** Serverseitig robust gegen fehlendes Offset machen, NICHT vom Client-Format
+abhaengen - z.B. `start`/`end` im Request-DTO als UTC normalisieren
+(`DateTimeOffset.ToUniversalTime()`) BEVOR sie an EF Core/Npgsql weitergereicht werden, oder in
+`Program.cs` einen eigenen `JsonConverter<DateTimeOffset>` registrieren, der fehlendes Offset
+explizit als UTC (nicht als lokale Serverzeit) interpretiert (das in .NET uebliche, von vielen
+Teams erwartete Verhalten). Zusaetzlich/alternativ (frontend-agent): das Angular-Formular sollte
+beim Bauen von `start`/`end` ein explizites Offset mitsenden (`toISOString()` liefert bereits
+UTC mit `Z`), was das Problem fuer die UI loesen wuerde, aber NICHT die zugrunde liegende
+serverseitige Fragilitaet behebt (jeder andere/zukuenftige API-Konsument ohne Offset wuerde
+weiterhin 500 statt einer sauberen 400-Validierung erhalten - daher primaer ein Backend-Fix).
+
+### Bug 10 (P1, frontend-agent): Mitarbeiter-Auswahl im Terminformular/Kalenderfilter laedt serverseitig fest nur Seite 1 (20 Mitarbeiter) - keine Suche, keine Pagination
+
+**Status:** Offen, nicht gefixt (qa-agent, 2026-10-01, im finalen Verifikationslauf entdeckt und
+unabhaengig von der Testsuite per direktem `GET /api/employees` belegt).
+
+**Reproduktion:** Sobald mehr als 20 aktive Mitarbeiter existieren (real belegt:
+`GET /api/employees?page=1` liefert `{"totalCount":37,"pageSize":20,"items":[...20 Elemente...]}`),
+ist jeder Mitarbeiter ab Position 21 im Mitarbeiter-Auswahl-Dropdown des Terminformulars
+(`#employee-select`, `appointment-form.component.ts`, Zeile 73:
+`this.employeeApi.search({ search: null, page: 1 })`, KEIN Suchbegriff, KEINE Pagination,
+KEIN erhoehtes `pageSize`) sowie im Mitarbeiterfilter der Kalender-Wochenansicht
+(`#employee-filter`, `calendar-view.component.ts`, identisches Muster) **nicht mehr
+auswaehlbar** - der `<option>` fuer diesen Mitarbeiter existiert schlicht nicht im DOM.
+Playwright's `selectOption(employee.id)` wartet dadurch bis zum Timeout
+("did not find some options").
+
+**Root Cause:** Beide Komponenten laden beim Initialisieren einmalig
+`employeeApi.search({ search: null, page: 1 })` (Standard-`pageSize` serverseitig: 20, siehe
+`SearchEmployeesHandler.cs`) und zeigen ausschliesslich dieses erste Ergebnis-Fenster an - ohne
+Freitextsuche (anders als die bereits vorhandene Kundenauswahl, `#customer-search`, die ein
+Eingabefeld mit Live-Suche hat), ohne "naechste Seite laden", ohne dynamisches Erhoehen der
+Seitengroesse.
+
+**Auswirkung:** Reales Produktionsrisiko, kein Testartefakt: jedes Unternehmen mit mehr als 20
+aktiven Mitarbeitern kann fuer Mitarbeiter ab Position 21 (alphabetisch/nach Anlage-Reihenfolge,
+je nach Backend-Sortierung) UEBERHAUPT KEINE Termine mehr anlegen und sieht sie auch nicht in
+der Kalender-Wochenansicht filterbar - eine zentrale Kernfunktion wird fuer wachsende
+Unternehmen unbenutzbar. Im finalen Verifikationslauf (frische Datenbank, Start bei 0
+Mitarbeitern) real beobachtet: bereits VOR Ende der Testsuite (durch die kumulierten, in
+`employees.spec.ts`/`appointments.spec.ts`/`rbac.spec.ts` waehrend EINES einzigen Laufs neu
+angelegten Testmitarbeiter) wurde die 20er-Grenze ueberschritten, wodurch "Wochenansicht zeigt
+Termine eines Mitarbeiters zeitlich korrekt" sowie alle 5 `rbac.spec.ts`-Tests den jeweils
+frisch angelegten Mitarbeiter nicht mehr im Dropdown/Filter fanden.
+
+**Fix-Vorschlag:** Mitarbeiter-Auswahl analog zur bereits vorhandenen Kunden-Suche
+(`#customer-search`) um ein Freitext-Suchfeld erweitern, das `employeeApi.search({ search: term,
+page: 1 })` mit dem eingegebenen Namen aufruft (serverseitige Suche existiert laut
+`SearchEmployeesQuery.Search` bereits und wird nur nicht genutzt) - betrifft
+`appointment-form.component.ts` (`#employee-select`) und `calendar-view.component.ts`
+(`#employee-filter`). Alternativ/ergaenzend fuer kleinere Mitarbeiterzahlen: serverseitiges
+`pageSize` fuer diese beiden Lookup-Anwendungsfaelle deutlich erhoehen (z.B. 200) statt echter
+Pagination/Suche - pragmatischer Kurzfristig-Fix, loest das Problem aber nur bis zur naechsten
+Groessenordnung.
+
 ## Rate-Limiting-Hinweis (kein Bug, aber relevant fuer Testlaeufe)
 
 Der Brute-Force-Schutz auf `POST /api/auth/login` (max. 5 Versuche/Minute/IP, siehe
@@ -774,3 +958,28 @@ reproduziert: wiederholte Testlaeufe/manuelle `curl`-Aufrufe fuehrten zuverlaess
 einen Login durchfuehren, kann dies zu Flakiness fuehren - ggf. die Rate-Limit-Konfiguration
 fuer Test-/CI-Umgebungen ueber eine Umgebungsvariable grosszuegiger konfigurierbar machen
 (nicht Teil dieses QA-Auftrags, nur als Hinweis fuer den naechsten Sprint).
+
+## Empfehlung (qa-agent, 2026-10-01, Stand nach Bug-8-Fix)
+
+**Archivierung von `terminverwaltung.openspec.md` NICHT empfehlen.** 23 von 30 E2E-Tests sind
+gruen, die 7 roten Tests sind ausschliesslich auf zwei neue, echte, unabhaengig von der
+Testsuite reproduzierte Produktbugs zurueckzufuehren (Bug 9: Terminanlage/-verschiebung ueber
+die reale UI stuerzt bei fehlendem UTC-Offset serverseitig ab; Bug 10: Mitarbeiter-Dropdown/
+-Filter zeigt nur die ersten 20 Mitarbeiter, keine Suche/Pagination). Beide Bugs betreffen
+Kernfunktionalitaet der Terminverwaltung und muessen vor einer Archivierung behoben UND erneut
+per vollstaendigem E2E-Lauf verifiziert werden.
+
+**`kundenverwaltung.openspec.md`, `mitarbeiterverwaltung.openspec.md`,
+`authentifizierung.openspec.md`:** alle zugehoerigen E2E-Tests sind in diesem finalen Lauf
+durchgehend gruen (`customers.spec.ts` 6/6, `employees.spec.ts` 7/7, `auth.spec.ts` 6/6) - aus
+QA-Sicht fuer diese drei Specs **keine offenen funktionalen Bugs mehr**. Die jeweilige
+Tasks-Checkliste (Abschnitt 8) der drei Specs ist dahingehend zu pruefen, ob dort tatsaechlich
+nur noch der Doku/OpenAPI-Task (typischerweise Task 5, `doc-agent`) offen ist - falls ja, kann
+dieser als letzter Schritt vor der Archivierung beauftragt werden. Bitte dennoch konservativ
+pruefen, da QA ausschliesslich die E2E-Scenario-Abdeckung verifiziert hat, nicht jede einzelne
+Tasks-Checkbox der jeweiligen Spec-Datei.
+
+Naechste Schritte: Bug 9 und Bug 10 an `backend-agent`/`frontend-agent` zurueckgeben, nach deren
+Fix diesen Lauf (idealerweise gegen eine frische Datenbank, siehe Hinweis zu Bug 10) wiederholen.
+Bei dann durchgehend 30/30 gruen ist `terminverwaltung.openspec.md` archivierungsreif (vorbehaltlich
+offener Doku-Tasks, analog zu den anderen drei Specs).

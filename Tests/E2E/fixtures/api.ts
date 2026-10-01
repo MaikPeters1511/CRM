@@ -145,6 +145,19 @@ export function nextWeekday(targetIsoWeekday: number): Date {
   return date;
 }
 
+/**
+ * Formatiert ein lokales Datum (z.B. aus `nextWeekday()`, lokale Mitternacht) als `yyyy-MM-dd`.
+ * WICHTIG: bewusst NICHT `date.toISOString().slice(0, 10)` (Testcode-Fix, kein Produktbug) -
+ * `toISOString()` konvertiert zuerst nach UTC, was in jeder Zeitzone mit positivem UTC-Offset
+ * (z.B. Europe/Berlin, UTC+1/+2) den Kalendertag um einen Tag zurueckdreht (lokale Mitternacht
+ * Montag wird zu "Sonntag 22:00/23:00 UTC"). Dieser Bug wurde real reproduziert: `nextWeekday(1)`
+ * lieferte ein korrektes lokales "Montag 00:00"-Date-Objekt, aber `toISOString().slice(0, 10)`
+ * daraus einen Sonntags-Kalendertag - wodurch alle Folgeaufrufe (Arbeitszeiten/Termine) auf
+ * einen Tag ohne hinterlegte Arbeitszeit trafen. Fix: lokale Datumskomponenten direkt verwenden.
+ */
 export function toDateInputValue(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

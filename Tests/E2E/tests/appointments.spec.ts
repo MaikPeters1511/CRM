@@ -122,12 +122,16 @@ test('Doppelbuchung fuer denselben Mitarbeiter wird verhindert', async ({ page }
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 
+  // Z-Suffix (UTC) bewusst explizit, da dies nur die Testdaten-Vorbereitung ist (API-first) -
+  // die eigentliche, per echter Browser-UI ausgeloeste Terminerstellung (siehe Test "Termin im
+  // verfuegbaren Zeitfenster anlegen") sendet bewusst KEIN Offset, um das reale
+  // Produktverhalten der Angular-Formular-Submission ungeschoent zu pruefen (siehe Bug 9).
   const first = await createAppointment(admin.accessToken, {
     customerId: customerA.id,
     employeeId: employee.id,
     serviceId: SERVICE.serviceId,
-    start: `${dateIso}T10:00:00`,
-    end: `${dateIso}T11:00:00`,
+    start: `${dateIso}T10:00:00Z`,
+    end: `${dateIso}T11:00:00Z`,
   });
   expect(first, 'Vorbedingung: erster Termin muss erfolgreich angelegt werden').not.toBeNull();
 
@@ -159,12 +163,14 @@ test('Termin erfolgreich verschieben', async ({ page }) => {
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 
+  // Z-Suffix (UTC) bewusst explizit - reine Testdaten-Vorbereitung, siehe Kommentar oben
+  // bei "Doppelbuchung".
   const appointment = await createAppointment(admin.accessToken, {
     customerId: customer.id,
     employeeId: employee.id,
     serviceId: SERVICE.serviceId,
-    start: `${dateIso}T10:00:00`,
-    end: `${dateIso}T11:00:00`,
+    start: `${dateIso}T10:00:00Z`,
+    end: `${dateIso}T11:00:00Z`,
   });
   expect(appointment).not.toBeNull();
 
@@ -191,12 +197,14 @@ test('Termin stornieren markiert ihn als Cancelled und gibt den Slot frei', asyn
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 
+  // Z-Suffix (UTC) bewusst explizit - reine Testdaten-Vorbereitung, siehe Kommentar oben
+  // bei "Doppelbuchung".
   const appointment = await createAppointment(admin.accessToken, {
     customerId: customer.id,
     employeeId: employee.id,
     serviceId: SERVICE.serviceId,
-    start: `${dateIso}T15:00:00`,
-    end: `${dateIso}T16:00:00`,
+    start: `${dateIso}T15:00:00Z`,
+    end: `${dateIso}T16:00:00Z`,
   });
   expect(appointment).not.toBeNull();
 
@@ -222,12 +230,14 @@ test('Wochenansicht zeigt Termine eines Mitarbeiters zeitlich korrekt', async ({
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 
+  // Z-Suffix (UTC) bewusst explizit - reine Testdaten-Vorbereitung, siehe Kommentar oben
+  // bei "Doppelbuchung".
   const appointment = await createAppointment(admin.accessToken, {
     customerId: customer.id,
     employeeId: employee.id,
     serviceId: SERVICE.serviceId,
-    start: `${dateIso}T11:00:00`,
-    end: `${dateIso}T12:00:00`,
+    start: `${dateIso}T11:00:00Z`,
+    end: `${dateIso}T12:00:00Z`,
   });
   expect(appointment).not.toBeNull();
 
