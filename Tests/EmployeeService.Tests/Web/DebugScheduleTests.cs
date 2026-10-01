@@ -1,6 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using EmployeeService.Tests.Support;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace EmployeeService.Tests.Web;
 
@@ -66,10 +72,39 @@ public class ScheduleAndAbsenceRealInfrastructureApiTests(EmployeeDbContainerFix
     [Test]
     public async Task AddAbsence_ReturnsOkOrConflictInsteadOfInvalidServiceLocationException()
     {
-        using var factory = new EmployeeServiceRealInfrastructureWebFactory(dbFixture.ConnectionString);
-        using var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+        // EmployeeServiceRealInfrastructureWebFactory registriert bewusst den echten
+        // AddHttpClient<IAppointmentAvailabilityClient, ...>-Pfad (kein Fake) - nur so wird der
+        // Wolverine-Codegen-Fehler aus Bug 7 ueberhaupt reproduziert/verifiziert. Da in dieser
+        // Testumgebung kein echter appointment-service laeuft, stellt ein minimaler lokaler
+        // HTTP-Stub sicher, dass der nachgelagerte HTTP-Call (anders als Bug 7 selbst, der VOR
+        // jedem Call beim DI-Codegen auftrat) eine echte, erreichbare Gegenstelle findet.
+        await using var appointmentServiceStub = WebApplication.CreateBuilder().Build();
+        appointmentServiceStub.Urls.Add("http://127.0.0.1:0");
+        appointmentServiceStub.MapGet("/api/appointments", () => Results.Json(Array.Empty<object>()));
+        await appointmentServiceStub.StartAsync();
+        var stubBaseUrl = appointmentServiceStub.Services.GetRequiredService<IServer>()
+            .Features.Get<IServerAddressesFeature>()!.Addresses.First();
 
+        var previousBaseUrlEnvVar = Environment.GetEnvironmentVariable("APPOINTMENT_SERVICE_BASE_URL");
+        Environment.SetEnvironmentVariable("APPOINTMENT_SERVICE_BASE_URL", stubBaseUrl);
+
+        try
+        {
+            using var factory = new EmployeeServiceRealInfrastructureWebFactory(dbFixture.ConnectionString);
+            using var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+
+            await RunAddAbsenceAsync(client);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("APPOINTMENT_SERVICE_BASE_URL", previousBaseUrlEnvVar);
+            await appointmentServiceStub.StopAsync();
+        }
+    }
+
+    private static async Task RunAddAbsenceAsync(HttpClient client)
+    {
         var createResponse = await client.PostAsJsonAsync("/api/employees", new
         {
             firstName = "Debug",

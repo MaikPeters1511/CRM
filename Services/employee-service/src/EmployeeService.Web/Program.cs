@@ -49,6 +49,12 @@ builder.Host.UseWolverine(opts =>
     // erfordert, gezielt fuer Service Location opt-in, statt die Policy global zu lockern.
     opts.CodeGeneration.AlwaysUseServiceLocationFor<EmployeeService.Application.Abstractions.IEmployeeRepository>();
 
+    // Tests/E2E/README.md, Bug 7: derselbe "opaque lambda factory"-Registrierungsmechanismus
+    // (hier: AddHttpClient<TClient, TImplementation>, Transient statt Scoped, aber identisches
+    // Grundproblem fuer Wolverines Codegen) trifft auch auf IAppointmentAvailabilityClient zu
+    // (AddAbsenceHandler). Der Bug-4-Fix oben deckte nur IEmployeeRepository ab.
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<EmployeeService.Application.Abstractions.IAppointmentAvailabilityClient>();
+
     var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
         ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");
 

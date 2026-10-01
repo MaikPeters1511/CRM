@@ -48,9 +48,17 @@ public static class DependencyInjection
 
     private static void AddAppointmentAvailabilityClient(IServiceCollection services, IConfiguration configuration)
     {
-        var appointmentServiceBaseUrl = configuration["Services:AppointmentService:BaseUrl"]
-            ?? Environment.GetEnvironmentVariable("APPOINTMENT_SERVICE_BASE_URL")
-            ?? "http://appointment-service";
+        // Tests/E2E/README.md, Bug 7 (Folgefix): "Services:AppointmentService:BaseUrl" ist in
+        // appsettings.json bewusst als leerer String ("") vorbelegt (Platzhalter fuer die per
+        // Environment-Variable/Aspire gesetzte echte Adresse). Ein einfaches "??" greift bei einem
+        // bereits vorhandenen, aber leeren String NICHT - das fuehrte zu einer UriFormatException
+        // ("Invalid URI: The URI is empty") statt des beabsichtigten Fallbacks, sobald die
+        // Service-Location-Aufloesung (siehe Bug 7 in Program.cs) ueberhaupt erst bis zu dieser
+        // Stelle kommt. IsNullOrWhiteSpace deckt explizit auch den leeren Platzhalter-String ab.
+        var configuredBaseUrl = configuration["Services:AppointmentService:BaseUrl"];
+        var appointmentServiceBaseUrl = !string.IsNullOrWhiteSpace(configuredBaseUrl)
+            ? configuredBaseUrl
+            : Environment.GetEnvironmentVariable("APPOINTMENT_SERVICE_BASE_URL") ?? "http://appointment-service";
 
         services.AddHttpClient<IAppointmentAvailabilityClient, AppointmentAvailabilityHttpClient>(client =>
         {

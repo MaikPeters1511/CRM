@@ -44,6 +44,15 @@ builder.Host.UseWolverine(opts =>
     // globaler Lockerung der ServiceLocationPolicy.
     opts.CodeGeneration.AlwaysUseServiceLocationFor<AppointmentService.Application.Abstractions.IAppointmentRepository>();
 
+    // Tests/E2E/README.md, Bug 7: CreateAppointmentHandler/RescheduleAppointmentHandler haengen
+    // (transitiv ueber AddHttpClient<TClient, TImplementation>, identisches "opaque lambda
+    // factory"-Registrierungsmuster wie IAppointmentAvailabilityClient in employee-service) von
+    // ICustomerVerificationClient/IEmployeeAvailabilityClient ab - derselbe Codegen-Fehler ist
+    // hier mit hoher Wahrscheinlichkeit ebenfalls reproduzierbar, sobald diese Clients (statt
+    // eines Fakes) real registriert sind; vorsorglich im selben Zug behoben.
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<AppointmentService.Application.Abstractions.ICustomerVerificationClient>();
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<AppointmentService.Application.Abstractions.IEmployeeAvailabilityClient>();
+
     var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
         ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");
 

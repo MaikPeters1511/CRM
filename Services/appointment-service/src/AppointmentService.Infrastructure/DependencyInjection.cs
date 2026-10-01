@@ -45,9 +45,13 @@ public static class DependencyInjection
 
     private static void AddCustomerVerificationClient(IServiceCollection services, IConfiguration configuration)
     {
-        var customerServiceBaseUrl = configuration["Services:CustomerService:BaseUrl"]
-            ?? Environment.GetEnvironmentVariable("CUSTOMER_SERVICE_BASE_URL")
-            ?? "http://customer-service";
+        // Tests/E2E/README.md, Bug 7 (Folgefix, identisches Muster wie employee-service):
+        // "Services:CustomerService:BaseUrl" ist in appsettings.json bewusst als leerer String
+        // vorbelegt - ein einfaches "??" greift dafuer nicht, IsNullOrWhiteSpace schon.
+        var configuredBaseUrl = configuration["Services:CustomerService:BaseUrl"];
+        var customerServiceBaseUrl = !string.IsNullOrWhiteSpace(configuredBaseUrl)
+            ? configuredBaseUrl
+            : Environment.GetEnvironmentVariable("CUSTOMER_SERVICE_BASE_URL") ?? "http://customer-service";
 
         services.AddHttpClient<ICustomerVerificationClient, CustomerVerificationHttpClient>(client =>
         {
@@ -84,9 +88,13 @@ public static class DependencyInjection
 
     private static void AddEmployeeAvailabilityClient(IServiceCollection services, IConfiguration configuration)
     {
-        var employeeServiceBaseUrl = configuration["Services:EmployeeService:BaseUrl"]
-            ?? Environment.GetEnvironmentVariable("EMPLOYEE_SERVICE_BASE_URL")
-            ?? "http://employee-service";
+        // Tests/E2E/README.md, Bug 7 (Folgefix, identisches Muster wie employee-service):
+        // "Services:EmployeeService:BaseUrl" ist in appsettings.json bewusst als leerer String
+        // vorbelegt - ein einfaches "??" greift dafuer nicht, IsNullOrWhiteSpace schon.
+        var configuredBaseUrl = configuration["Services:EmployeeService:BaseUrl"];
+        var employeeServiceBaseUrl = !string.IsNullOrWhiteSpace(configuredBaseUrl)
+            ? configuredBaseUrl
+            : Environment.GetEnvironmentVariable("EMPLOYEE_SERVICE_BASE_URL") ?? "http://employee-service";
 
         services.AddHttpClient<IEmployeeAvailabilityClient, EmployeeAvailabilityHttpClient>(client =>
         {
