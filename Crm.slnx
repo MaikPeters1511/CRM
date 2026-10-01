@@ -6,6 +6,9 @@
   <Folder Name="/Gateway/">
     <Project Path="Gateway/Crm.Gateway/Crm.Gateway.csproj" />
   </Folder>
+  <Folder Name="/Clients/">
+    <Project Path="Clients/crm-web/crm-web.esproj" />
+  </Folder>
   <Folder Name="/Services/" />
   <Folder Name="/Services/identity-service/">
     <Project Path="Services/identity-service/src/IdentityService.Domain/IdentityService.Domain.csproj" />

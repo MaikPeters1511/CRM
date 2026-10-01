@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6887863">
+  <PropertyGroup>
+    <StartupCommand>npm start</StartupCommand>
+    <JavaScriptTestRoot>.</JavaScriptTestRoot>
+    <JavaScriptTestFramework>Vitest</JavaScriptTestFramework>
+    <!-- Allows IIS and IIS Express to host this project (https://aka.ms/vs/esproj/iis) -->
+    <UseIISForDebugging>false</UseIISForDebugging>
+    <ShouldRunDotNetWatch>false</ShouldRunDotNetWatch>
+    <ShouldWriteManifest>false</ShouldWriteManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="**" Exclude="node_modules\**;dist\**;.angular\**;bin\**;obj\**" />
+  </ItemGroup>
+</Project>
