@@ -84,6 +84,7 @@ test('Termin ausserhalb der Arbeitszeit zeigt Validierungsfehler und persistiert
   const customer = await createCustomer(admin.accessToken, {
     firstName: 'Otto',
     lastName: unique('Ausserhalb'),
+    email: `${unique('otto')}@example.com`,
   });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
@@ -108,8 +109,16 @@ test('Termin ausserhalb der Arbeitszeit zeigt Validierungsfehler und persistiert
 test('Doppelbuchung fuer denselben Mitarbeiter wird verhindert', async ({ page }) => {
   const admin = await loginAsAdmin();
   const employee = await setupEmployeeWithMondaySchedule(admin.accessToken);
-  const customerA = await createCustomer(admin.accessToken, { firstName: 'Erst', lastName: unique('Buchung') });
-  const customerB = await createCustomer(admin.accessToken, { firstName: 'Zweit', lastName: unique('Buchung') });
+  const customerA = await createCustomer(admin.accessToken, {
+    firstName: 'Erst',
+    lastName: unique('Buchung'),
+    email: `${unique('erst')}@example.com`,
+  });
+  const customerB = await createCustomer(admin.accessToken, {
+    firstName: 'Zweit',
+    lastName: unique('Buchung'),
+    email: `${unique('zweit')}@example.com`,
+  });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 
@@ -142,7 +151,11 @@ test('Doppelbuchung fuer denselben Mitarbeiter wird verhindert', async ({ page }
 test('Termin erfolgreich verschieben', async ({ page }) => {
   const admin = await loginAsAdmin();
   const employee = await setupEmployeeWithMondaySchedule(admin.accessToken);
-  const customer = await createCustomer(admin.accessToken, { firstName: 'Resch', lastName: unique('Edule') });
+  const customer = await createCustomer(admin.accessToken, {
+    firstName: 'Resch',
+    lastName: unique('Edule'),
+    email: `${unique('resch')}@example.com`,
+  });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 
@@ -170,7 +183,11 @@ test('Termin erfolgreich verschieben', async ({ page }) => {
 test('Termin stornieren markiert ihn als Cancelled und gibt den Slot frei', async ({ page }) => {
   const admin = await loginAsAdmin();
   const employee = await setupEmployeeWithMondaySchedule(admin.accessToken);
-  const customer = await createCustomer(admin.accessToken, { firstName: 'Storno', lastName: unique('Fall') });
+  const customer = await createCustomer(admin.accessToken, {
+    firstName: 'Storno',
+    lastName: unique('Fall'),
+    email: `${unique('storno')}@example.com`,
+  });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 
@@ -197,7 +214,11 @@ test('Termin stornieren markiert ihn als Cancelled und gibt den Slot frei', asyn
 test('Wochenansicht zeigt Termine eines Mitarbeiters zeitlich korrekt', async ({ page }) => {
   const admin = await loginAsAdmin();
   const employee = await setupEmployeeWithMondaySchedule(admin.accessToken);
-  const customer = await createCustomer(admin.accessToken, { firstName: 'Woche', lastName: unique('Ansicht') });
+  const customer = await createCustomer(admin.accessToken, {
+    firstName: 'Woche',
+    lastName: unique('Ansicht'),
+    email: `${unique('woche')}@example.com`,
+  });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
 

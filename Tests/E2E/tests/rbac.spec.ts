@@ -55,7 +55,11 @@ async function setupEmployeeWithAppointment(adminToken: string, lastNamePrefix: 
   await setWorkingHours(adminToken, employee.id, [
     { weekday: 'Monday', startTime: '09:00:00', endTime: '17:00:00' },
   ]);
-  const customer = await createCustomer(adminToken, { firstName: 'RBAC', lastName: unique('Kunde') });
+  const customer = await createCustomer(adminToken, {
+    firstName: 'RBAC',
+    lastName: unique('Kunde'),
+    email: `${unique('rbac')}@example.com`,
+  });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
   const appointment = await createAppointment(adminToken, {
@@ -127,7 +131,11 @@ test('Employee sieht eigene Termine in der Kalenderansicht (Ownership-Positivfal
   await setWorkingHours(admin.accessToken, ownEmployee.id, [
     { weekday: 'Monday', startTime: '09:00:00', endTime: '17:00:00' },
   ]);
-  const customer = await createCustomer(admin.accessToken, { firstName: 'RBAC', lastName: unique('EigenerKunde') });
+  const customer = await createCustomer(admin.accessToken, {
+    firstName: 'RBAC',
+    lastName: unique('EigenerKunde'),
+    email: `${unique('eigenerkunde')}@example.com`,
+  });
   const monday = nextWeekday(1);
   const dateIso = toDateInputValue(monday);
   const appointment = await createAppointment(admin.accessToken, {

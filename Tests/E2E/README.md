@@ -148,7 +148,72 @@ Jedes SHALL-Requirement aus den vier Change-Specs hat mindestens einen Test:
   Doppelbuchung, Verschieben, Stornieren, Wochenansicht, RBAC (Admin sieht alle, Employee
   sieht keine fremden, 403 bei Fremdzugriff auf Verschieben/Stornieren mit UI-Fehlermeldung).
 
-## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-09-30, nach Bug-1/2/3/4-Fixes)
+## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-01, nach Bug-5/6/7-Fixes)
+
+**Setup:** Kompletter Stack real hochgefahren per `dotnet run --project AppHost/Crm.AppHost`
+(identity-/customer-/employee-/appointment-service + Gateway + 3x Postgres + RabbitMQ, vorhandene
+User Secrets), zusaetzlich manuell `npx ng serve --port 4200` fuer `Clients/crm-web`. **Bug 5 ist
+vollstaendig verifiziert behoben:** anders als im vorherigen Lauf (2026-09-30) war **keinerlei
+manuelles `dotnet ef database update` mehr noetig** - `customer_db`/`appointment_db`/`employee_db`
+wurden beim allerersten Request bereits automatisch migriert (`DatabaseMigrationHostedService`,
+siehe Bug 5 unten). Real verifiziert per `curl` direkt nach dem AppHost-Start (vor jedem
+Playwright-Lauf): `GET /api/customers`, `GET /api/appointments`, `GET /api/employees` liefern alle
+sofort `200`/`401` (nie `500`). Aspire ordnet den vier Services beim Start ueber `--no-launch-profile`
+zwar dynamische Ports zu, DCP (Aspire's Prozess-Orchestrator) richtet aber zusaetzlich lokale
+TCP-Proxies exakt auf den in `launchSettings.json` hinterlegten festen Ports ein (5149/5159/5169/5179),
+sodass das Frontend (`environment.ts`, feste Ports, kein Gateway-Routing in Dev) unveraendert
+funktioniert - keine Konfigurationsaenderung noetig.
+
+**Ergebnis (zwei vollstaendige Laeufe):**
+
+- **Lauf 1 (vor Testcode-Fixes): 14 von 30 gruen, 16 rot.** Bug 6 und Bug 7 sind damit
+  **vollstaendig verifiziert behoben** (`"Wochenarbeitszeit ... hinterlegen"` jetzt gruen,
+  `PUT /employees/{id}/schedule` liefert real `200` statt `500`). Von den 16 roten Tests waren
+  jedoch nur 13 auf einen echten, neuen Backend-Bug (**Bug 8**, siehe unten) zurueckzufuehren - die
+  restlichen 3 (`customers.spec.ts` "aktualisieren"/"deaktivieren", `employees.spec.ts`
+  "deaktivieren") waren neue, bislang nicht aufgefallene **Testcode-Race-Conditions** (kein
+  Produktbug): `page.goto()` (= echter Browser-Reload) unmittelbar nach einem Submit/Deaktivieren-
+  Klick kann den noch laufenden PUT/POST-Request serverseitig mit `OperationCanceledException`
+  abbrechen, bevor er die Datenbank erreicht (Backend-Log zeigte dafuer in allen drei Faellen
+  keinerlei UPDATE-Statement). Zusaetzlich fehlten in mehreren `createCustomer(...)`-Aufrufen in
+  `appointments.spec.ts`/`rbac.spec.ts` sowohl `email` als auch `phone` (von `CreateCustomerRequest`
+  serverseitig als "Either Email or Phone is required" abgelehnt, `400`) - vorher nie aufgefallen,
+  weil diese Tests durch Bug 6/7 schon vorher blockiert waren, also nie bis zu diesem API-Call kamen.
+  Alle vier Testcode-Probleme wurden in dieser Session behoben (`Tests/E2E/tests/customers.spec.ts`,
+  `employees.spec.ts`, `appointments.spec.ts`, `rbac.spec.ts` - explizites Warten auf
+  URL-Wechsel/Modal-Schliessung vor `page.goto()`, kein redundantes Re-Filtern der Mitarbeiterliste
+  direkt nach dem Deaktivieren-Klick, fehlende Pflichtfelder in Test-Fixtures ergaenzt).
+- **Lauf 2 (nach Testcode-Fixes, finales Ergebnis): 17 von 30 gruen, 13 rot** - stabil
+  reproduzierbar, dieselben 13 Tests wie in Lauf 1 (minus der 3 jetzt behobenen
+  Testcode-Races/fehlenden Pflichtfelder). **Alle 13 roten Tests sind ausschliesslich auf einen
+  einzigen, neuen, echten Backend-Bug zurueckzufuehren: Bug 8** (siehe unten) - keiner der 13 roten
+  Tests hat einen Fehler im Testcode.
+  - **Gruen (17):** `auth.spec.ts` alle 6/6; `customers.spec.ts` alle 6/6; `employees.spec.ts`
+    5/7 (Anlegen gueltig, E-Mail-Konflikt, Leistung zuordnen, Wochenarbeitszeit hinterlegen
+    [Bug 6 behoben], Deaktivieren).
+  - **Rot (13), alle auf Bug 8 zurueckfuehrbar:** `employees.spec.ts` beide Abwesenheits-Tests
+    (Urlaub terminfrei / Urlaub-Konflikt - `AddAbsenceHandler` ruft `IAppointmentAvailabilityClient`
+    ohne Authorization-Header auf); `appointments.spec.ts` alle 6 Tests (jede Testdaten-Vorbereitung
+    bzw. die eigentliche Terminanlage ruft `CreateAppointmentHandler` auf, der wiederum
+    `ICustomerVerificationClient`/`IEmployeeAvailabilityClient` ohne Authorization-Header aufruft);
+    `rbac.spec.ts` alle 5 Tests (gleiche Ursache, da jede Testdaten-Vorbereitung einen Termin
+    anlegt).
+- **Fazit:** Bug 6 und Bug 7 sind vollstaendig geschlossen. Ein einziger neuer Bug (Bug 8) blockiert
+  weiterhin exakt 13 von 30 Tests. Erwartung nach dessen Fix: 30/30 gruen (kein weiterer bekannter
+  Blocker) - siehe Empfehlung unten.
+
+**Hinweis zu Laufzeit/Polly:** Der Gesamtlauf dauerte in Lauf 2 ca. 11-12 Minuten (deutlich laenger
+als die ca. 2 Minuten eines vollstaendig gruenen Laufs) - Ursache ist NICHT Flakiness, sondern das
+erwartete Verhalten des konfigurierten Resilience-Pipelines (Retry + Circuit Breaker,
+`Microsoft.Extensions.Http.Resilience`) bei den 13 durch Bug 8 tatsaechlich fehlschlagenden
+Service-zu-Service-Aufrufen: jeder einzelne Request durchlaeuft erst mehrere Retries mit
+exponentiellem Backoff, bevor der Circuit Breaker oeffnet; ist der Breaker offen, schlagen
+nachfolgende Aufrufe kurzzeitig sehr schnell fehl, bis die Break-Duration abgelaufen ist und sich
+der Zyklus wiederholt - real beobachtet an Einzeltest-Laufzeiten zwischen 200ms (Breaker offen) und
+3.3 Minuten (Breaker schliesst gerade testweise wieder, volle Retry-Kaskade laeuft erneut durch).
+Kein Testcode-Problem, aber ein Hinweis fuer kuenftige CI-Laufzeiten, solange Bug 8 offen ist.
+
+## Tatsaechliche Verifikation - vorheriger Stand (qa-agent, 2026-09-30, nach Bug-1/2/3/4-Fixes)
 
 **Setup:** Kompletter Stack real hochgefahren - AppHost fuer identity-/customer-/employee-/
 appointment-service + 3x Postgres + RabbitMQ (`dotnet run --project AppHost/Crm.AppHost`,
@@ -602,6 +667,81 @@ auftritt.
 ergaenzen: `opts.CodeGeneration.AlwaysUseServiceLocationFor<EmployeeService.Application.Abstractions.IAppointmentAvailabilityClient>();`
 Danach bitte pruefen, ob nach diesem Fix Bug 6 fuer den Absence-Pfad (`absencesBuilder.HasKey(a => a.Id)`,
 identisches Owned-Type-Muster wie `WorkingHours`) ebenfalls sichtbar wird.
+
+### Bug 8 (P0, backend-agent): Service-zu-Service-HTTP-Clients senden KEINEN Authorization-Header -> jeder synchrone Cross-Service-Call scheitert mit 401, sobald die Downstream-Services (korrekt) `[Authorize]` durchsetzen
+
+**Status:** offen, nicht gefixt (qa-agent, 2026-10-01, im finalen Verifikationslauf nach den
+Bug-5/6/7-Fixes entdeckt und real reproduziert). Dieser Bug war durch Bug 7
+(`InvalidServiceLocationException`) bisher VERDECKT: `AddAbsenceHandler` erreichte den eigentlichen
+HTTP-Call nie, weil Wolverine schon beim Codegen scheiterte. Nach dem Bug-7-Fix wird der Call jetzt
+tatsaechlich ausgefuehrt - und schlaegt seinerseits fehl.
+
+**Reproduktion (real gegen den laufenden AppHost, Admin-Token):**
+```
+POST /api/employees/{id}/absences  {"type":"Vacation","from":"2027-01-04","to":"2027-01-08"}
+-> 500 {"title":"An unexpected error occurred."...}
+```
+Server-Log (`employee-service`):
+```
+info: System.Net.Http.HttpClient.IAppointmentAvailabilityClient.ClientHandler[100]
+      Sending HTTP request GET http://localhost:5169/api/appointments?...
+info: System.Net.Http.HttpClient.IAppointmentAvailabilityClient.ClientHandler[101]
+      Received HTTP response headers after 10.98ms - 401
+fail: EmployeeService.Application.Employees.AddAbsence.AddAbsenceCommand[0]
+      System.Net.Http.HttpRequestException: Response status code does not indicate success: 401 (Unauthorized).
+         at EmployeeService.Infrastructure.Clients.AppointmentAvailabilityHttpClient.GetAppointmentsAsync(...)
+```
+Analog fuer `appointment-service` beim Anlegen eines Termins (`POST /api/appointments`):
+```
+info: System.Net.Http.HttpClient.ICustomerVerificationClient.ClientHandler[101]
+      Received HTTP response headers after 10.53ms - 401
+-> 503 {"errors":["customer-service is currently unavailable. Please try again later."]}
+```
+(503 statt 500, weil hier zusaetzlich ein Resilience-Handler/Circuit-Breaker die wiederholt
+fehlschlagenden 401-Antworten in eine "Service nicht verfuegbar"-Fehlermeldung uebersetzt, siehe
+`AppointmentsController`/`CreateAppointmentHandler`.)
+
+**Root Cause:** Keiner der drei synchronen Service-zu-Service-HTTP-Clients setzt einen
+`Authorization`-Header auf den ausgehenden Request:
+- `Services/employee-service/src/EmployeeService.Infrastructure/Clients/AppointmentAvailabilityHttpClient.cs`
+  (`GetAppointmentsAsync` -> `GET /api/appointments` auf appointment-service)
+- `Services/appointment-service/src/AppointmentService.Infrastructure/Clients/CustomerVerificationHttpClient.cs`
+  (`GetCustomerAsync` -> `GET /api/customers/{id}` auf customer-service)
+- `Services/appointment-service/src/AppointmentService.Infrastructure/Clients/EmployeeAvailabilityHttpClient.cs`
+  (`GetAvailabilityAsync` -> `GET /api/employees/{id}/availability` auf employee-service)
+
+Alle drei Ziel-Endpunkte sind (korrekt, siehe CLAUDE.md "Endpoint-Security: Backend-Routen
+standardmaessig absichern") mit `[Authorize]` abgesichert und lehnen daher jeden Request ohne
+gueltiges JWT mit `401` ab - unabhaengig davon, ob der urspruengliche (menschliche) Aufrufer bereits
+erfolgreich authentifiziert war. Die drei Clients wurden offenbar nie gegen echte,
+`[Authorize]`-geschuetzte Downstream-Endpunkte verifiziert (siehe Bug 4: in der Vergangenheit
+scheiterte der Call schon vorher an Wolverine-Codegen bzw. an fehlenden Migrationen/Seed-Daten),
+weshalb das fehlende Auth-Forwarding bislang nie sichtbar wurde.
+
+**Auswirkung:** Blockiert **jeden** echten End-to-End-Fluss, der einen synchronen
+Cross-Service-Call ausloest - de facto die Kernfunktionalitaet von `terminverwaltung.openspec.md`
+(Termin anlegen prueft Kunde+Mitarbeiterverfuegbarkeit) und einen Teil von
+`mitarbeiterverwaltung.openspec.md` (Abwesenheits-Konfliktpruefung gegen bestehende Termine). In
+diesem Verifikationslauf betroffen: `employees.spec.ts` beide Abwesenheits-Tests (2),
+`appointments.spec.ts` alle 6 Tests, `rbac.spec.ts` alle 5 Tests - zusammen 13 von 30 E2E-Tests.
+
+**Fix-Vorschlag:** Da es sich um reine Machine-to-Machine-Calls im Auftrag eines bereits
+authentifizierten Requests handelt (kein eigener User-Kontext der Services untereinander), bieten
+sich zwei gaengige Muster an:
+1. **Request-Forwarding (einfachste Loesung):** den eingehenden `Authorization`-Header des
+   urspruenglichen Requests (aus `IHttpContextAccessor`) an den ausgehenden Client-Request
+   durchreichen (`DelegatingHandler`, der `HttpContext.Request.Headers.Authorization` liest und auf
+   den ausgehenden `HttpRequestMessage` setzt) - deckt sich mit dem bestehenden
+   "Defense in Depth"-Muster aus ADR 0001 (jeder Service validiert das JWT ohnehin erneut selbst).
+2. **Dedizierter Service-Client-Credential-Flow** (z.B. Client-Credentials-Grant gegen
+   identity-service, separates Service-zu-Service-Token) - sauberer entkoppelt vom User-Kontext,
+   aber deutlich mehr Aufwand (neuer Grant-Type in identity-service, Token-Caching) - fuer den
+   aktuellen Funktionsumfang vermutlich Overkill (kein Gold-Plating).
+Empfehlung: Option 1, da sie minimal-invasiv ist und exakt dem bestehenden
+Security-Architekturmuster entspricht. Betroffen sind die `AddHttpClient<...>()`-Registrierungen in
+`EmployeeService.Infrastructure.DependencyInjection` und
+`AppointmentService.Infrastructure.DependencyInjection` (jeweils `.AddHttpMessageHandler<...>()` mit
+einem neuen `AuthorizationForwardingHandler` ergaenzen, `IHttpContextAccessor` registrieren).
 
 ## Rate-Limiting-Hinweis (kein Bug, aber relevant fuer Testlaeufe)
 

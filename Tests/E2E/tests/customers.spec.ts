@@ -97,6 +97,13 @@ test('Kundendaten aktualisieren setzt ModifiedAt/ModifiedBy', async ({ page }) =
 
   await page.locator('#firstName').fill('Nachher');
   await page.locator('button[type=submit]').click();
+  // Warten, bis die Aktualisierung serverseitig abgeschlossen ist (Navigation zur Detailsicht
+  // erfolgt erst im onSuccess-Callback von `CustomerStateService.updateCustomer`), BEVOR per
+  // `page.goto()` (= echter Browser-Reload, kein SPA-Routing) navigiert wird - sonst bricht der
+  // Reload den noch laufenden PUT-Request serverseitig mit `OperationCanceledException` ab
+  // (Testcode-Fix, kein Produktbug, real verifiziert: Backend-Log zeigte keinerlei UPDATE-Statement
+  // fuer den Kunden, der Request wurde nie serverseitig abgeschlossen).
+  await expect(page).toHaveURL(new RegExp(`${urls.customerWeb}/customers/[0-9a-f-]+$`));
 
   await page.goto(`${urls.customerWeb}/customers`);
   await page.locator('#customer-search').fill(lastName);
@@ -121,6 +128,14 @@ test('Kunde deaktivieren markiert ihn als inaktiv, bleibt aber ueber Inaktiv-Fil
   // "Bestaetigen"/"Confirm") - ueber `role="dialog"` auf den Modal-Button scopen
   // (Testcode-Fix, kein Produktbug).
   await page.getByRole('dialog').getByRole('button', { name: /deaktivieren|deactivate/i }).click();
+  // Warten, bis das Modal sich schliesst (passiert erst im onSuccess-Callback von
+  // `CustomerStateService.deactivateCustomer`, also erst NACH erfolgreichem Server-Request),
+  // BEVOR per `page.goto()` (= echter Browser-Reload) navigiert wird - sonst bricht der Reload den
+  // noch laufenden Deactivate-Request serverseitig mit `OperationCanceledException` ab
+  // (Testcode-Fix, kein Produktbug, real verifiziert ueber Backend-Log:
+  // `System.OperationCanceledException` in `DeactivateCustomerHandler.GetByIdAsync`, ausgeloest durch
+  // den clientseitigen Request-Abbruch beim Seitenwechsel).
+  await expect(page.getByRole('dialog')).not.toBeVisible();
 
   await page.goto(`${urls.customerWeb}/customers`);
   await page.locator('#customer-search').fill(lastName);
