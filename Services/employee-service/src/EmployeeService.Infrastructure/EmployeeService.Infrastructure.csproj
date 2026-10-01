@@ -12,6 +12,13 @@
     <PackageReference Include="WolverineFx.RabbitMQ" Version="6.41.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Tests/E2E/README.md, Bug 8: AuthHeaderForwardingHandler benoetigt IHttpContextAccessor
+         (Microsoft.AspNetCore.Http). Dieses Infrastructure-Projekt ist kein Web-SDK-Projekt, daher
+         explizite FrameworkReference statt impliziter Verfuegbarkeit. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

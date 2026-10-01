@@ -2,6 +2,7 @@ using EmployeeService.Application.Abstractions;
 using EmployeeService.Infrastructure.Clients;
 using EmployeeService.Infrastructure.Persistence;
 using EmployeeService.Infrastructure.Seed;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,12 @@ public static class DependencyInjection
 
         services.AddScoped<IEmployeeRepository, EfEmployeeRepository>();
         services.AddSingleton(TimeProvider.System);
+
+        // Tests/E2E/README.md, Bug 8: AuthHeaderForwardingHandler liest den eingehenden
+        // Authorization-Header ueber IHttpContextAccessor und reicht ihn an ausgehende
+        // Service-zu-Service-Calls weiter.
+        services.AddHttpContextAccessor();
+        services.AddTransient<AuthHeaderForwardingHandler>();
 
         // Tests/E2E/README.md, Bug 5: wendet beim Start automatisch alle ausstehenden Migrationen
         // an (jede Umgebung, nicht nur Development - kein separater Migrations-Deployment-Schritt
@@ -65,6 +72,9 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(appointmentServiceBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(3);
         })
+        // Tests/E2E/README.md, Bug 8: ohne Auth-Header-Forwarding lehnt das (korrekt)
+        // [Authorize]-geschuetzte appointment-service jeden Call mit 401 ab.
+        .AddHttpMessageHandler<AuthHeaderForwardingHandler>()
         .AddResilienceHandler("appointment-service-availability", builder =>
         {
             // ADR 0001, Abschnitt 5: kurzer Timeout, max. 2 Retries mit Backoff+Jitter

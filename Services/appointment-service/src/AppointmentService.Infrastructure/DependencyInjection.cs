@@ -3,6 +3,7 @@ using AppointmentService.Infrastructure.BackgroundJobs;
 using AppointmentService.Infrastructure.Clients;
 using AppointmentService.Infrastructure.Notifications;
 using AppointmentService.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +34,14 @@ public static class DependencyInjection
         services.AddSingleton<IReminderNotifier, LogReminderNotifier>();
         services.AddHostedService<AppointmentReminderHostedService>();
 
+        // Tests/E2E/README.md, Bug 8: AuthHeaderForwardingHandler liest den eingehenden
+        // Authorization-Header ueber IHttpContextAccessor und reicht ihn an ausgehende
+        // Service-zu-Service-Calls weiter. AppointmentReminderHostedService (oben registriert)
+        // nutzt weder ICustomerVerificationClient noch IEmployeeAvailabilityClient, ist also nicht
+        // vom "kein HttpContext in Hosted Services"-Grenzfall des Handlers betroffen.
+        services.AddHttpContextAccessor();
+        services.AddTransient<AuthHeaderForwardingHandler>();
+
         AddCustomerVerificationClient(services, configuration);
         AddEmployeeAvailabilityClient(services, configuration);
 
@@ -58,6 +67,9 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(customerServiceBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(3);
         })
+        // Tests/E2E/README.md, Bug 8: ohne Auth-Header-Forwarding lehnt das (korrekt)
+        // [Authorize]-geschuetzte customer-service jeden Call mit 401 ab.
+        .AddHttpMessageHandler<AuthHeaderForwardingHandler>()
         .AddResilienceHandler("customer-service-verification", builder =>
         {
             builder.AddTimeout(TimeSpan.FromSeconds(2));
@@ -101,6 +113,9 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(employeeServiceBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(3);
         })
+        // Tests/E2E/README.md, Bug 8: ohne Auth-Header-Forwarding lehnt das (korrekt)
+        // [Authorize]-geschuetzte employee-service jeden Call mit 401 ab.
+        .AddHttpMessageHandler<AuthHeaderForwardingHandler>()
         .AddResilienceHandler("employee-service-availability", builder =>
         {
             builder.AddTimeout(TimeSpan.FromSeconds(2));

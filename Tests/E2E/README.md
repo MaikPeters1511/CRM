@@ -668,11 +668,33 @@ ergaenzen: `opts.CodeGeneration.AlwaysUseServiceLocationFor<EmployeeService.Appl
 Danach bitte pruefen, ob nach diesem Fix Bug 6 fuer den Absence-Pfad (`absencesBuilder.HasKey(a => a.Id)`,
 identisches Owned-Type-Muster wie `WorkingHours`) ebenfalls sichtbar wird.
 
-### Bug 8 (P0, backend-agent): Service-zu-Service-HTTP-Clients senden KEINEN Authorization-Header -> jeder synchrone Cross-Service-Call scheitert mit 401, sobald die Downstream-Services (korrekt) `[Authorize]` durchsetzen
+### Bug 8 (P0, backend-agent): Service-zu-Service-HTTP-Clients senden KEINEN Authorization-Header -> jeder synchrone Cross-Service-Call scheitert mit 401, sobald die Downstream-Services (korrekt) `[Authorize]` durchsetzen -- BEHOBEN
 
-**Status:** offen, nicht gefixt (qa-agent, 2026-10-01, im finalen Verifikationslauf nach den
-Bug-5/6/7-Fixes entdeckt und real reproduziert). Dieser Bug war durch Bug 7
-(`InvalidServiceLocationException`) bisher VERDECKT: `AddAbsenceHandler` erreichte den eigentlichen
+**Status:** Behoben (backend-agent, 2026-10-01). Fix-Option 1 aus dem Fix-Vorschlag umgesetzt
+("Request-Forwarding"): ein neuer `AuthHeaderForwardingHandler : DelegatingHandler` liest den
+`Authorization`-Header des eingehenden Requests ueber `IHttpContextAccessor` und setzt ihn
+(`TryAddWithoutValidation`) auf jeden ausgehenden `HttpRequestMessage`, bevor der Call rausgeht.
+Pro Service eine eigene Kopie (bewusste, geringfuegige Duplikation statt Cross-Service-Shared-
+Package - Microservices-Isolation, kein Gold-Plating):
+`Services/employee-service/src/EmployeeService.Infrastructure/Clients/AuthHeaderForwardingHandler.cs`
+und `Services/appointment-service/src/AppointmentService.Infrastructure/Clients/AuthHeaderForwardingHandler.cs`.
+Registrierung via `.AddHttpMessageHandler<AuthHeaderForwardingHandler>()` an allen drei betroffenen
+`AddHttpClient<...>()`-Aufrufen in den jeweiligen `DependencyInjection.cs` (`services.AddHttpContextAccessor()`
++ `services.AddTransient<AuthHeaderForwardingHandler>()` ergaenzt). Edge-Case gepruft:
+`AppointmentReminderHostedService` nutzt weder `ICustomerVerificationClient` noch
+`IEmployeeAvailabilityClient`, ist also nicht vom "kein `HttpContext` in Hosted Services"-Fall des
+Handlers betroffen (bei `HttpContext == null` wird einfach kein Header gesetzt, kein Crash - per
+Unit-Test abgedeckt). Neue Regressionstests (`Tests/EmployeeService.Tests/Infrastructure/AuthHeaderForwardingHandlerTests.cs`,
+`Tests/AppointmentService.Tests/Infrastructure/AuthHeaderForwardingHandlerTests.cs`) verifizieren das
+Forwarding sowie den Null-`HttpContext`-Fall gegen einen Fake-`HttpMessageHandler`, ohne echte
+Downstream-Services zu benoetigen. Real gegen den kompletten AppHost-Stack verifiziert: `POST
+/api/employees/{id}/absences` (mit Terminkonflikt-Pruefung gegen appointment-service) liefert jetzt
+`201` statt `500`, `POST /api/appointments` (Kunde-/Mitarbeiterverfuegbarkeits-Pruefung gegen
+customer-/employee-service) liefert jetzt `201` statt `503` - beide mit echtem Admin-Bearer-Token.
+`dotnet build Crm.slnx` fehlerfrei, `dotnet test Crm.slnx` 138/138 gruen (inkl. der 4 neuen Tests).
+
+**Historie (vor dem Fix):** Dieser Bug war durch Bug 7
+(`InvalidServiceLocationException`) zuvor VERDECKT: `AddAbsenceHandler` erreichte den eigentlichen
 HTTP-Call nie, weil Wolverine schon beim Codegen scheiterte. Nach dem Bug-7-Fix wird der Call jetzt
 tatsaechlich ausgefuehrt - und schlaegt seinerseits fehl.
 
