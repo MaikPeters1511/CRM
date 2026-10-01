@@ -1,6 +1,6 @@
 # Change: Kundenverwaltung
 
-> **Status:** in-progress
+> **Status:** archived (2026-10-01)
 > Ablage: `UserStories/kundenverwaltung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-kundenverwaltung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -108,4 +108,4 @@ Das System SHALL in der Kundendetailsicht alle zugeordneten Termine (vergangen/z
 - [x] Angular 22 Komponente ist implementiert und gestylt (DaisyUI 5).
 - [x] E2E Tests (QA Agent) sind grün.
 - [x] Swagger/OpenAPI Compliance ist gegeben (siehe Task 5, doc-agent 2026-10-01).
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/customer-management.openspec.md` übernommen) — Entscheidung/Durchführung liegt beim po-agent; alle Tasks 1–8 sind nun abgeschlossen, Archivierung wird empfohlen.
+- [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/customer-management.openspec.md`, Change verschoben nach `UserStories/archive/2026-10-01-kundenverwaltung.openspec.md`).

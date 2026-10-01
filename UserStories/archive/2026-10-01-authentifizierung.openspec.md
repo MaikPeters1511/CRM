@@ -1,6 +1,6 @@
 # Change: Authentifizierung & Identity
 
-> **Status:** in-progress
+> **Status:** archived (2026-10-01)
 > Ablage: `UserStories/authentifizierung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-authentifizierung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -180,6 +180,5 @@ Der Login-Endpoint SHALL die Anzahl der Versuche pro Client-IP und Zeitfenster b
 - [x] Angular 22 Komponente ist implementiert und gestylt (DaisyUI 5) in beiden Clients.
 - [x] E2E Tests (QA Agent) sind gruen (siehe Task 4, 6/6 gruen).
 - [x] Swagger/OpenAPI fuer `identity-service` ist vorhanden (analog zu den anderen Services).
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/identity.openspec.md`
-      übernommen) — Entscheidung/Durchführung liegt beim po-agent; Tasks 4 (QA) und 5 (Doku) sind nun
-      abgeschlossen, Archivierung wird empfohlen.
+- [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/identity.openspec.md`,
+      Change verschoben nach `UserStories/archive/2026-10-01-authentifizierung.openspec.md`).

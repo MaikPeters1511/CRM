@@ -1,6 +1,6 @@
 # Change: Frontend-Konsolidierung (ein gemeinsames Frontend)
 
-> **Status:** proposed
+> **Status:** archived (2026-10-01)
 > Ablage: `UserStories/frontend-konsolidierung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-frontend-konsolidierung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -76,7 +76,7 @@ Neue eigenständige Angular-Anwendung `Clients/crm-web`, die die drei bisherigen
 ## 9. Acceptance Criteria (DoD)
 - [x] Jedes Scenario aus Abschnitt 3 dieser Spec sowie alle bisherigen Scenarios aus `kundenverwaltung.openspec.md`, `mitarbeiterverwaltung.openspec.md`, `terminverwaltung.openspec.md` (Abschnitt 3) sind gegen `crm-web` durch automatisierte Tests abgedeckt und grün (`Tests/CrmWeb.Tests`, 122 Unit-/Komponententests; strukturelle E2E-Abdeckung unverändert in `Tests/E2E/`).
 - [x] `ng build` für `crm-web` läuft fehlerfrei.
-- [ ] E2E-Tests (`Tests/E2E/`) laufen gegen die konsolidierte App grün. **Teilweise:** Basis-URL-Konsolidierung ist umgesetzt und `npx playwright test --list` funktioniert (30 Tests); ein echter grüner Lauf gegen laufende Services ist weiterhin durch den vorbestehenden, dokumentierten CORS-Bug in `customer-service`/`employee-service`/`appointment-service` blockiert (`Tests/E2E/README.md` Bug 1, Zuständigkeit `backend-agent`) – kein durch diese Änderung neu eingeführtes Problem.
+- [x] E2E-Tests (`Tests/E2E/`) laufen gegen die konsolidierte App grün. Bug 1 (CORS) sowie alle weiteren zwischenzeitlich gefundenen Bugs (2–10) sind behoben; finaler Gesamt-Verifikationslauf 2026-10-01 bestätigt 30/30 E2E-Tests grün gegen die konsolidierte `crm-web`-App.
 - [x] Die drei alten Angular-Projekte sind entfernt, keine toten Referenzen (Gateway-CORS, AppHost, Doku) verbleiben.
 - [x] `architect-agent` hat die ADR-Ergänzung zu ADR 0001 dokumentiert.
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/frontend-shell.openspec.md` übernommen). Ausstehend: Abnahme durch `po-agent`/`architect-agent` vor Archivierung.
+- [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/frontend-shell.openspec.md`, Change verschoben nach `UserStories/archive/2026-10-01-frontend-konsolidierung.openspec.md`).

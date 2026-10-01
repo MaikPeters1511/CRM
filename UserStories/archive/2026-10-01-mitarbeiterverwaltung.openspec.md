@@ -1,6 +1,6 @@
 # Change: Mitarbeiterverwaltung
 
-> **Status:** in-progress
+> **Status:** archived (2026-10-01)
 > Ablage: `UserStories/mitarbeiterverwaltung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-mitarbeiterverwaltung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -123,4 +123,4 @@ Das System SHALL das Deaktivieren eines Mitarbeiters ermöglichen, ohne bestehen
 - [x] Angular 22 Komponente ist implementiert und gestylt (DaisyUI 5).
 - [x] E2E Tests (QA Agent) sind grün (siehe Task 4).
 - [x] Swagger/OpenAPI Compliance ist gegeben (siehe Task 5, doc-agent 2026-10-01).
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/employee-management.openspec.md` übernommen) — Entscheidung/Durchführung liegt beim po-agent; alle Tasks sind nun abgeschlossen. Die in Abschnitt "Bekannte Lücke" dokumentierte Annahme wurde vom doc-agent (2026-10-01) gegen den inzwischen implementierten `appointment-service` verifiziert: `AppointmentListItemDto` (echter Response-Contract von `GET /api/appointments`) enthält weiterhin `Date`/`StartTime`/`EndTime` neben den zusätzlichen Feldern, der angenommene Mindestvertrag ist also tatsächlich kompatibel — kein offener Blocker. Archivierung wird empfohlen.
+- [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/employee-management.openspec.md`, Change verschoben nach `UserStories/archive/2026-10-01-mitarbeiterverwaltung.openspec.md`). Die in Abschnitt "Bekannte Lücke" dokumentierte Annahme wurde vom doc-agent (2026-10-01) gegen den inzwischen implementierten `appointment-service` verifiziert und ist kompatibel.

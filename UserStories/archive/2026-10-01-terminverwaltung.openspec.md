@@ -1,6 +1,6 @@
 # Change: Terminvergabe mit Kalender
 
-> **Status:** in-progress
+> **Status:** archived (2026-10-01)
 > Ablage: `UserStories/terminverwaltung.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-terminverwaltung.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -141,4 +141,4 @@ Das System SHALL eine automatische Erinnerung (E-Mail) an Kunde und Mitarbeiter 
 - [x] Angular 22 Komponente ist implementiert und gestylt (DaisyUI 5).
 - [x] E2E Tests (QA Agent) sind grün (siehe Task 4).
 - [x] Swagger/OpenAPI Compliance ist gegeben (siehe Task 5, doc-agent 2026-10-01).
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/appointment-scheduling.openspec.md` übernommen) — Entscheidung/Durchführung liegt beim po-agent; alle Tasks sind nun abgeschlossen, Archivierung wird empfohlen.
+- [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/appointment-scheduling.openspec.md`, Change verschoben nach `UserStories/archive/2026-10-01-terminverwaltung.openspec.md`).
