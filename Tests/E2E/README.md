@@ -845,8 +845,36 @@ einem neuen `AuthorizationForwardingHandler` ergaenzen, `IHttpContextAccessor` r
 
 ### Bug 9 (P0, backend-agent): `POST /api/appointments` (und vermutlich `PUT /appointments/{id}/reschedule`) stuerzt mit 500 ab, wenn `start`/`end` KEIN explizites UTC-Offset enthalten - exakt das Format, das das echte Angular-Formular sendet
 
-**Status:** Offen, nicht gefixt (qa-agent, 2026-10-01, im finalen Verifikationslauf nach dem
-Bug-8-Fix real entdeckt und unabhaengig von der Testsuite per direktem `curl` reproduziert).
+**Status:** Gefixt (backend-agent, 2026-10-01). Server-seitiger Fix statt Frontend-Workaround
+(siehe Fix-Vorschlag unten, primaer Backend-Fix empfohlen): neuer
+`LenientDateTimeOffsetJsonConverter`
+(`Services/appointment-service/src/AppointmentService.Web/Serialization/LenientDateTimeOffsetJsonConverter.cs`),
+global in `Program.cs` (`AddJsonOptions`) registriert, ersetzt den Standard-`DateTimeOffset`-Parser
+fuer ALLE `DateTimeOffset`-Felder im Web-Layer (`CreateAppointmentRequest.Start/End`,
+`RescheduleAppointmentRequest.NewStart/NewEnd`). Nutzt `DateTimeOffset.TryParse(...,
+DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal)`: fehlt im String ein Offset,
+wird er als UTC interpretiert (`AssumeUniversal`); ist ein Offset vorhanden, wird er korrekt auf
+UTC normalisiert (`AdjustToUniversal`, Offset immer `0`) - genau das verlangt Npgsql fuer
+`timestamp with time zone`. Keine Aenderung der JSON-API-Shape, keine Vertragsaenderung
+gegenueber `terminverwaltung.openspec.md`; pragmatische, dokumentierte Annahme "kein Offset =
+UTC" (dieses CRM hat kein Mandanten-/Nutzer-Zeitzonenkonzept), kein vollstaendiges
+Zeitzonen-Handling (kein Gold-Plating). Zwei neue Regressionstests in
+`Tests/AppointmentService.Tests/Web/AppointmentsApiTests.cs`
+(`PostAppointments_WithOffsetLessStartAndEnd_IsInterpretedAsUtcAndReturnsCreated`,
+`PutReschedule_WithOffsetLessNewStartAndEnd_IsInterpretedAsUtcAndReturnsOk`) senden rohes JSON
+ohne Offset (exakt das vom echten Angular-Formular gesendete Format) und pruefen `201`/`200` sowie
+`Offset == TimeSpan.Zero` auf dem persistierten Termin. Alle 140 Tests (`dotnet test Crm.slnx`)
+gruen, `dotnet build Crm.slnx` fehlerfrei. Real gegen den laufenden AppHost (frische
+Postgres-/RabbitMQ-Container, Server-Zeitzone Europe/Berlin/CEST, identisch zur urspruenglichen
+Reproduktion) verifiziert: `POST /api/appointments` mit
+`{"start":"2026-10-05T10:00:00","end":"2026-10-05T11:00:00"}` (kein Offset) liefert jetzt `201
+Created` mit `"start":"2026-10-05T10:00:00+00:00"` (statt `500`); `PUT
+/api/appointments/{id}/reschedule` mit `{"newStart":"2026-10-05T13:00:00","newEnd":"2026-10-05T14:00:00"}`
+liefert `200 OK` mit korrekt auf UTC normalisierten Zeiten.
+
+Vorheriger Status (als Kontext erhalten): Offen, nicht gefixt (qa-agent, 2026-10-01, im finalen
+Verifikationslauf nach dem Bug-8-Fix real entdeckt und unabhaengig von der Testsuite per direktem
+`curl` reproduziert).
 
 **Reproduktion (real gegen den laufenden AppHost, frische Datenbanken, Admin-Token, gueltiger
 Kunde/Mitarbeiter mit passender Arbeitszeit/Leistung):**

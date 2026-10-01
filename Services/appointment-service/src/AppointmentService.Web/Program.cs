@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using AppointmentService.Infrastructure;
 using AppointmentService.Web.ErrorHandling;
+using AppointmentService.Web.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Wolverine;
@@ -13,7 +14,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddControllers()
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
+        // Tests/E2E/README.md, Bug 9: offset-less DateTimeOffset request fields (Create/Reschedule)
+        // must be interpreted as UTC, not the server's local time zone.
+        options.JsonSerializerOptions.Converters.Add(new LenientDateTimeOffsetJsonConverter());
+    });
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

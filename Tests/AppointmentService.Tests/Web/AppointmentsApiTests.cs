@@ -50,6 +50,73 @@ public class AppointmentsApiTests
     }
 
     [Test]
+    public async Task PostAppointments_WithOffsetLessStartAndEnd_IsInterpretedAsUtcAndReturnsCreated()
+    {
+        // Tests/E2E/README.md, Bug 9: das reale Angular-Formular sendet start/end OHNE
+        // UTC-Offset (z.B. "2026-10-19T10:00:00"). Der Server (System.Text.Json-Default) hat das
+        // bisher als lokale Server-Zeitzone statt UTC interpretiert, wodurch das Schreiben nach
+        // PostgreSQL ('timestamp with time zone', nur Offset 0 erlaubt) mit 500 abstuerzte.
+        using var factory = new AppointmentServiceWebFactory();
+        var customerId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        factory.CustomerVerificationClient.SeedActive(customerId);
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeId, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Role", "Employee");
+
+        var serviceId = Guid.NewGuid();
+        var payload = $$"""
+            {"customerId":"{{customerId}}","employeeId":"{{employeeId}}","serviceId":"{{serviceId}}",
+             "start":"2026-10-19T10:00:00","end":"2026-10-19T11:00:00"}
+            """;
+
+        var response = await client.PostAsync(
+            "/api/appointments", new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
+        await Assert.That(factory.Repository.Appointments).Count().IsEqualTo(1);
+        var persisted = factory.Repository.Appointments.Single();
+        await Assert.That(persisted.Start).IsEqualTo(Day.AddHours(10));
+        await Assert.That(persisted.Start.Offset).IsEqualTo(TimeSpan.Zero);
+        await Assert.That(persisted.End).IsEqualTo(Day.AddHours(11));
+        await Assert.That(persisted.End.Offset).IsEqualTo(TimeSpan.Zero);
+    }
+
+    [Test]
+    public async Task PutReschedule_WithOffsetLessNewStartAndEnd_IsInterpretedAsUtcAndReturnsOk()
+    {
+        // Tests/E2E/README.md, Bug 9: identisches Risiko fuer den Reschedule-Endpunkt (selbe
+        // Codepfad-Familie, selbe Angular-Komponente baut den Request-Body ohne Offset).
+        using var factory = new AppointmentServiceWebFactory();
+        var customerId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        factory.CustomerVerificationClient.SeedActive(customerId);
+        factory.EmployeeAvailabilityClient.SeedSlot(employeeId, new AvailableSlotDto(DateOnly.FromDateTime(Day.DateTime), new TimeOnly(9, 0), new TimeOnly(17, 0)));
+
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Role", "Employee");
+        client.DefaultRequestHeaders.Add("X-Test-UserId", employeeId.ToString());
+
+        var createResponse = await client.PostAsJsonAsync("/api/appointments",
+            new CreateAppointmentRequest(customerId, employeeId, Guid.NewGuid(), Day.AddHours(10), Day.AddHours(11)));
+        var created = await createResponse.Content.ReadFromJsonAsync<AppointmentService.Application.Appointments.AppointmentDto>(JsonOptions);
+
+        var payload = """
+            {"newStart":"2026-10-19T13:00:00","newEnd":"2026-10-19T14:00:00"}
+            """;
+
+        var response = await client.PutAsync(
+            $"/api/appointments/{created!.Id}/reschedule",
+            new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var persisted = factory.Repository.Appointments.Single();
+        await Assert.That(persisted.Start).IsEqualTo(Day.AddHours(13));
+        await Assert.That(persisted.Start.Offset).IsEqualTo(TimeSpan.Zero);
+    }
+
+    [Test]
     public async Task PostAppointments_OutsideWorkingHours_ReturnsBadRequestAndPersistsNothing()
     {
         using var factory = new AppointmentServiceWebFactory();
