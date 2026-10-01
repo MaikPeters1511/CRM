@@ -11,6 +11,11 @@ using Wolverine;
 
 namespace AppointmentService.Web.Controllers;
 
+/// <summary>
+/// Terminverwaltung (terminverwaltung.openspec.md) inkl. RBAC: Rolle <c>Employee</c> sieht/bearbeitet
+/// ausschliesslich eigene Termine (Ownership-Check gegen <c>EmployeeId</c>, <c>403</c> bei Fremdzugriff);
+/// Rolle <c>Admin</c> hat uneingeschraenkten Zugriff auf alle Termine.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/appointments")]
@@ -37,6 +42,7 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         return Ok(result.Appointments);
     }
 
+    /// <summary>Termindetails. Liefert nur Termine, auf die der Aufrufer laut Ownership-Regel zugreifen darf.</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -47,6 +53,11 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         return result.Found ? Ok(result.Appointment) : NotFound();
     }
 
+    /// <summary>
+    /// Legt einen Termin an (inkl. Kollisionsprüfung, Validierung von Kunde/Mitarbeiter via
+    /// Inter-Service-Calls). Liefert <c>409</c> bei Doppelbuchung, <c>404</c> bei unbekanntem
+    /// Kunden/Mitarbeiter, <c>503</c> bei nicht erreichbaren Abhaengigkeiten.
+    /// </summary>
     [HttpPost]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateAppointmentRequest request, CancellationToken cancellationToken)
@@ -68,6 +79,7 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         };
     }
 
+    /// <summary>Verschiebt einen Termin auf ein neues, kollisionsfreies Zeitfenster. <c>403</c> bei Fremdzugriff ohne Admin-Rolle.</summary>
     [HttpPut("{id:guid}/reschedule")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> Reschedule(
@@ -90,6 +102,7 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         };
     }
 
+    /// <summary>Storniert einen Termin (Soft-Delete, Status <c>Cancelled</c>). <c>403</c> bei Fremdzugriff ohne Admin-Rolle.</summary>
     [HttpPost("{id:guid}/cancel")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> Cancel(

@@ -11,11 +11,16 @@ using Wolverine;
 
 namespace CustomerService.Web.Controllers;
 
+/// <summary>
+/// Kundenverwaltung (kundenverwaltung.openspec.md). Alle Endpoints erfordern ein gueltiges JWT
+/// (Rolle <c>Employee</c> oder <c>Admin</c>); Deaktivieren ist auf <c>Admin</c> beschraenkt.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/customers")]
 public sealed class CustomersController(IMessageBus messageBus) : ControllerBase
 {
+    /// <summary>Paginierte, nach Name/E-Mail/Telefonnummer durchsuchbare und nach Status filterbare Kundenliste.</summary>
     [HttpGet]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<ActionResult<SearchCustomersResult>> Search(
@@ -30,6 +35,7 @@ public sealed class CustomersController(IMessageBus messageBus) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Kundendetails inklusive Adresse. Liefert <c>404</c>, wenn der Kunde nicht existiert.</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -40,6 +46,7 @@ public sealed class CustomersController(IMessageBus messageBus) : ControllerBase
         return result.Found ? Ok(result.Customer) : NotFound();
     }
 
+    /// <summary>Legt einen neuen Kunden an (Pflichtfelder: Vor-/Nachname, E-Mail oder Telefonnummer).</summary>
     [HttpPost]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> Create(
@@ -64,6 +71,7 @@ public sealed class CustomersController(IMessageBus messageBus) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Customer!.Id }, result.Customer);
     }
 
+    /// <summary>Aktualisiert Stammdaten eines bestehenden Kunden (setzt <c>ModifiedAt</c>/<c>ModifiedBy</c>).</summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> Update(
@@ -90,6 +98,10 @@ public sealed class CustomersController(IMessageBus messageBus) : ControllerBase
         };
     }
 
+    /// <summary>
+    /// Deaktiviert einen Kunden (Soft-Delete, nur Rolle <c>Admin</c>) und publiziert das Integration
+    /// Event <c>CustomerDeactivated</c> fuer konsumierende Services (siehe ADR 0001, Abschnitt 2/3).
+    /// </summary>
     [HttpPost("{id:guid}/deactivate")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)

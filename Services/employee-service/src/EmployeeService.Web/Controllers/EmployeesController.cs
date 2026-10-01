@@ -16,11 +16,17 @@ using Wolverine;
 
 namespace EmployeeService.Web.Controllers;
 
+/// <summary>
+/// Mitarbeiterverwaltung (mitarbeiterverwaltung.openspec.md). Anlegen/Bearbeiten/Deaktivieren/
+/// Arbeitszeiten sind auf Rolle <c>Admin</c> beschraenkt; Abwesenheiten duerfen Mitarbeiter
+/// (Rolle <c>Employee</c>) nur fuer den eigenen Datensatz anlegen (Ownership-Check, 403 sonst).
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/employees")]
 public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
 {
+    /// <summary>Paginierte, nach Name durchsuchbare und nach Rolle/Leistung filterbare Mitarbeiterliste.</summary>
     [HttpGet]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<ActionResult<SearchEmployeesResult>> Search(
@@ -36,6 +42,7 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Mitarbeiterdetails inklusive Leistungen, Arbeitszeiten und Abwesenheiten.</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -46,6 +53,7 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         return result.Found ? Ok(result.Employee) : NotFound();
     }
 
+    /// <summary>Legt einen neuen Mitarbeiter an (Rolle <c>Admin</c>). Liefert <c>409</c> bei bereits vergebener E-Mail.</summary>
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(
@@ -69,6 +77,7 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         };
     }
 
+    /// <summary>Aktualisiert Stammdaten/Rolle/Leistungszuordnung eines Mitarbeiters (Rolle <c>Admin</c>).</summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(
@@ -95,6 +104,10 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         };
     }
 
+    /// <summary>
+    /// Deaktiviert einen Mitarbeiter (Soft-Delete, Rolle <c>Admin</c>) und publiziert das Integration
+    /// Event <c>EmployeeDeactivated</c> (siehe ADR 0001, Abschnitt 2/3).
+    /// </summary>
     [HttpPost("{id:guid}/deactivate")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
@@ -110,6 +123,7 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         };
     }
 
+    /// <summary>Setzt die wiederkehrenden Wochenarbeitszeiten eines Mitarbeiters (Rolle <c>Admin</c>).</summary>
     [HttpPut("{id:guid}/schedule")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SetSchedule(
@@ -129,6 +143,11 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         };
     }
 
+    /// <summary>
+    /// Legt eine Abwesenheit (Urlaub/Krankheit/Sonstige) an. Rolle <c>Employee</c> nur fuer den
+    /// eigenen Mitarbeiter-Datensatz (sonst <c>403</c>); Rolle <c>Admin</c> fuer beliebige Mitarbeiter.
+    /// Liefert <c>409</c> bei Konflikt mit bestehenden Terminen, ausser <c>confirmOverride</c> ist gesetzt.
+    /// </summary>
     [HttpPost("{id:guid}/absences")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> AddAbsence(
@@ -158,6 +177,10 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         };
     }
 
+    /// <summary>
+    /// Verfuegbare Zeitfenster im angegebenen Zeitraum (Arbeitszeit minus Abwesenheiten minus
+    /// bestehende Termine, Call an appointment-service - siehe ADR 0001, Abschnitt 2).
+    /// </summary>
     [HttpGet("{id:guid}/availability")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> GetAvailability(

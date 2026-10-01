@@ -24,7 +24,42 @@ builder.Services.AddControllers()
     });
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// doc-agent: Swagger/OpenAPI-Metadaten (Titel, XML-Doc-Kommentare, JWT-Bearer-Scheme fuer die
+// [Authorize]-geschuetzten Endpoints, siehe terminverwaltung.openspec.md Abschnitt 5) - reine
+// Doku-Konfiguration, keine Aenderung an Controller-Logik.
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    {
+        Title = "AppointmentService API",
+        Version = "v1",
+        Description = "Terminverwaltung (Appointment Scheduling) inkl. RBAC - siehe UserStories/terminverwaltung.openspec.md.",
+    });
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+
+    const string bearerScheme = "Bearer";
+    options.AddSecurityDefinition(bearerScheme, new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.ParameterLocation.Header,
+        Description = "JWT Bearer-Token von identity-service (POST /api/auth/login). Rolle Employee: nur eigene Termine (403 bei Fremdzugriff); Rolle Admin: alle Termine.",
+    });
+    var bearerRequirement = new Microsoft.OpenApi.OpenApiSecurityRequirement();
+    bearerRequirement.Add(
+        new Microsoft.OpenApi.OpenApiSecuritySchemeReference(bearerScheme, null),
+        new List<string>());
+    options.AddSecurityRequirement(_ => bearerRequirement);
+});
 
 builder.Services.AddAppointmentServiceInfrastructure(builder.Configuration);
 

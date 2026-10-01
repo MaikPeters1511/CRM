@@ -14,7 +14,42 @@ builder.AddServiceDefaults();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// doc-agent: Swagger/OpenAPI-Metadaten (Titel, XML-Doc-Kommentare, JWT-Bearer-Scheme fuer die
+// [Authorize]-geschuetzten Endpoints, siehe kundenverwaltung.openspec.md Abschnitt 5) - reine
+// Doku-Konfiguration, keine Aenderung an Controller-Logik.
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    {
+        Title = "CustomerService API",
+        Version = "v1",
+        Description = "Kundenverwaltung (Customer Management) - siehe UserStories/kundenverwaltung.openspec.md.",
+    });
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+
+    const string bearerScheme = "Bearer";
+    options.AddSecurityDefinition(bearerScheme, new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.ParameterLocation.Header,
+        Description = "JWT Bearer-Token von identity-service (POST /api/auth/login). Rollen: Employee, Admin.",
+    });
+    var bearerRequirement = new Microsoft.OpenApi.OpenApiSecurityRequirement();
+    bearerRequirement.Add(
+        new Microsoft.OpenApi.OpenApiSecuritySchemeReference(bearerScheme, null),
+        new List<string>());
+    options.AddSecurityRequirement(_ => bearerRequirement);
+});
 
 builder.Services.AddCustomerServiceInfrastructure(builder.Configuration);
 

@@ -12,7 +12,26 @@ builder.AddServiceDefaults();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// doc-agent: Swagger/OpenAPI-Metadaten (Titel, XML-Doc-Kommentare) - siehe
+// authentifizierung.openspec.md Abschnitt 5. AuthController ist [AllowAnonymous] (Login-Endpoint
+// selbst stellt das JWT erst aus), daher kein Bearer-Security-Scheme in diesem Service.
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    {
+        Title = "IdentityService API",
+        Version = "v1",
+        Description = "Authentifizierung & Identity (schlanker, selbst gehosteter JWT-Issuer) - siehe UserStories/authentifizierung.openspec.md.",
+    });
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 
 builder.Services.AddIdentityServiceApplication();
 builder.Services.AddIdentityServiceInfrastructure(builder.Configuration);

@@ -17,14 +17,20 @@ Dieses Verzeichnis enthält die .NET Aspire Orchestrierung für das CRM gemäß
 |---|---|---|
 | `customer-postgres` → DB `customer-db` (Connection-String-Name `customer_db`) | PostgreSQL-Container | Eigene Datenbank für `customer-service` |
 | `employee-postgres` → DB `employee-db` (Connection-String-Name `employee_db`) | PostgreSQL-Container | Eigene Datenbank für `employee-service` |
-| `rabbitmq` | RabbitMQ-Container | Wolverine Messaging (Integration Events `CustomerDeactivated`, `EmployeeDeactivated`) |
+| `appointment-postgres` → DB `appointment-db` (Connection-String-Name `appointment_db`) | PostgreSQL-Container | Eigene Datenbank für `appointment-service` |
+| `rabbitmq` | RabbitMQ-Container | Wolverine Messaging (Integration Events `CustomerDeactivated`, `EmployeeDeactivated`, `AppointmentCreated`/`Cancelled`/`Rescheduled`) |
+| `identity-service` | Aspire-Projektressource | `Services/identity-service/src/IdentityService.Web` (JWT-Ausstellung, `POST /api/auth/login`) |
 | `customer-service` | Aspire-Projektressource | `Services/customer-service/src/CustomerService.Web` |
 | `employee-service` | Aspire-Projektressource | `Services/employee-service/src/EmployeeService.Web` |
+| `appointment-service` | Aspire-Projektressource | `Services/appointment-service/src/AppointmentService.Web` (referenziert `customer-service`/`employee-service` per Service Discovery) |
 | `gateway` | Aspire-Projektressource | YARP-Reverse-Proxy (`Gateway/Crm.Gateway`), einziger extern erreichbarer HTTP-Endpunkt |
 
-Der `appointment-service` ist noch nicht implementiert und daher (noch) nicht im AppHost verdrahtet;
-er ist gemäß ADR 0001 als drittes Bounded Context vorgesehen und wird nachgezogen, sobald der
-Service existiert.
+Alle vier fachlichen Services sowie der Gateway sind seit der Umsetzung von
+`terminverwaltung.openspec.md`/`authentifizierung.openspec.md` vollständig im AppHost verdrahtet
+(siehe `AppHost/Crm.AppHost/AppHost.cs`). Ein gemeinsames JWT-Schema (Issuer/Audience/
+Signing-Key, siehe Aspire-Parameter `jwt-issuer`/`jwt-audience`/`jwt-signing-key`) wird an
+`identity-service` (Aussteller) und Gateway/`customer-service`/`employee-service`/
+`appointment-service` (Validierer, Defense in Depth) verteilt.
 
 ## Starten
 

@@ -162,8 +162,14 @@ Der Login-Endpoint SHALL die Anzahl der Versuche pro Client-IP und Zeitfenster b
       customer-service/employee-service Auth-Konfiguration aktualisiert)
 - [x] 3. Frontend implementieren (Login, Interceptor, Guard, i18n `auth.*`) in `customer-web` und `employee-web`
 - [x] 4. E2E-Tests (QA Agent) geschrieben UND vollstaendig gruen verifiziert (qa-agent, 2026-09-30, erneut bestaetigt 2026-10-01 nach Bug-5/6/7-Fixes, erneut bestaetigt 2026-10-01 nach dem Bug-8-Fix, final erneut bestaetigt 2026-10-01 im finalen Gesamt-Verifikationslauf nach den Bug-9/10-Fixes — Gesamtsuite 30/30 gruen) — `Tests/E2E/tests/auth.spec.ts` (6 Tests: Login Admin/Employee erfolgreich, falsches Passwort, unbekannte E-Mail, Navigation-ohne-Session-Redirect, automatischer Logout bei 401). **6 von 6 Tests gruen** (zuletzt erneut real verifiziert 2026-10-01 gegen eine frisch gestartete, leere Datenbank), real gegen den laufenden AppHost + `Clients/crm-web` verifiziert (mehrfach wiederholt, stabil) — der zuvor durch Bug 1 (fehlende CORS-Middleware) blockierte 401-Logout-Test laeuft jetzt vollstaendig durch, da Bug 1 behoben ist. Zusaetzlich verifiziert: Brute-Force-Rate-Limiting (429) funktioniert korrekt (in dieser Session mehrfach reproduziert; die E2E-Suite kompensiert dies inzwischen per Retry-mit-Wartezeit in `fixtures/auth.ts`/`fixtures/api.ts`, siehe `Tests/E2E/README.md`). Bug 8 (Service-zu-Service-Auth-Forwarding) betrifft diese Spec nicht direkt (identity-service ruft keine anderen Services synchron auf).
-- [ ] 5. Doku/OpenAPI aktualisiert (Swagger fuer `identity-service` ist vorhanden, README/Systemuebersicht
-      noch durch `doc-agent` zu ergaenzen)
+- [x] 5. Doku/OpenAPI aktualisiert (doc-agent, 2026-10-01) — Swagger fuer `identity-service` war bereits
+      aktiv (`/swagger`, nur `Development`), ergaenzt um SwaggerDoc-Titel/Beschreibung und XML-Doc-
+      Kommentare auf Controller-/Endpoint-Ebene (`IdentityService.Web.csproj`: `GenerateDocumentationFile`,
+      `Program.cs`: `IncludeXmlComments`); bewusst KEIN JWT-Bearer-Security-Scheme in diesem Service, da
+      `AuthController` vollstaendig `[AllowAnonymous]` ist. Root-`README.md` (Systemuebersicht inkl.
+      identity-service, Gateway, AppHost, Setup, ADR-Verweise) und neues `Services/identity-service/README.md`
+      (Zweck, Endpoint, Seed-Nutzer-Verweis, Abhaengigkeiten) erstellt. Abschnitt 5 (Login-Endpoint,
+      Claims, Response-Contract) wurde gegen `AuthController.cs` geprueft — keine Abweichung gefunden.
 
 ## 9. Acceptance Criteria (DoD)
 - [x] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und gruen
@@ -174,4 +180,6 @@ Der Login-Endpoint SHALL die Anzahl der Versuche pro Client-IP und Zeitfenster b
 - [x] Angular 22 Komponente ist implementiert und gestylt (DaisyUI 5) in beiden Clients.
 - [x] E2E Tests (QA Agent) sind gruen (siehe Task 4, 6/6 gruen).
 - [x] Swagger/OpenAPI fuer `identity-service` ist vorhanden (analog zu den anderen Services).
-- [ ] Spec ist archiviert - verbleibt `in-progress`, bis QA/Doc-Agent Tasks 4/5 abgeschlossen haben.
+- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/identity.openspec.md`
+      übernommen) — Entscheidung/Durchführung liegt beim po-agent; Tasks 4 (QA) und 5 (Doku) sind nun
+      abgeschlossen, Archivierung wird empfohlen.
