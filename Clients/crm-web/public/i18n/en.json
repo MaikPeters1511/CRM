@@ -49,10 +49,13 @@
     "form": {
       "createHeading": "Create new customer",
       "editHeading": "Edit customer",
+      "personalHeading": "Personal details",
       "firstName": "First name",
       "lastName": "Last name",
+      "contactHeading": "Contact",
       "email": "Email",
       "phone": "Phone",
+      "addressHeading": "Address",
       "street": "Street",
       "city": "City",
       "zipCode": "Zip code",

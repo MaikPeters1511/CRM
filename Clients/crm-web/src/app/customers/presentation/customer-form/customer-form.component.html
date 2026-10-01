@@ -1,104 +1,119 @@
-<section aria-labelledby="customer-form-heading">
-  <h1 id="customer-form-heading" class="text-2xl font-bold mb-4">
-    {{ (isEditMode() ? 'customer.form.editHeading' : 'customer.form.createHeading') | translate }}
-  </h1>
+<section aria-labelledby="customer-form-heading" class="max-w-2xl mx-auto">
+  <div class="card bg-base-100 card-border shadow-sm">
+    <div class="card-body">
+      <h1 id="customer-form-heading" class="card-title">
+        {{ (isEditMode() ? 'customer.form.editHeading' : 'customer.form.createHeading') | translate }}
+      </h1>
 
-  @if (state.hasErrors()) {
-    <div class="alert alert-error mb-4" role="alert">
-      @for (error of state.errors(); track error) {
-        <p>{{ error | translate }}</p>
+      @if (state.hasErrors()) {
+        <div class="alert alert-error" role="alert">
+          @for (error of state.errors(); track error) {
+            <p>{{ error | translate }}</p>
+          }
+        </div>
       }
+
+      <form [formGroup]="form" (ngSubmit)="save()" (keydown.escape)="cancel()" class="flex flex-col gap-6">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">{{ 'customer.form.personalHeading' | translate }}</legend>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="label" for="firstName">{{ 'customer.form.firstName' | translate }}</label>
+              <input
+                id="firstName"
+                type="text"
+                class="input w-full"
+                formControlName="firstName"
+                [attr.aria-invalid]="form.controls.firstName.invalid && form.controls.firstName.touched"
+                [attr.aria-describedby]="form.controls.firstName.invalid && form.controls.firstName.touched ? 'firstName-error' : null"
+              />
+              @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
+                <p id="firstName-error" class="text-error text-sm" role="alert">
+                  {{ 'customer.form.errors.firstNameRequired' | translate }}
+                </p>
+              }
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="label" for="lastName">{{ 'customer.form.lastName' | translate }}</label>
+              <input
+                id="lastName"
+                type="text"
+                class="input w-full"
+                formControlName="lastName"
+                [attr.aria-invalid]="form.controls.lastName.invalid && form.controls.lastName.touched"
+                [attr.aria-describedby]="form.controls.lastName.invalid && form.controls.lastName.touched ? 'lastName-error' : null"
+              />
+              @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
+                <p id="lastName-error" class="text-error text-sm" role="alert">
+                  {{ 'customer.form.errors.lastNameRequired' | translate }}
+                </p>
+              }
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">{{ 'customer.form.contactHeading' | translate }}</legend>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="label" for="email">{{ 'customer.form.email' | translate }}</label>
+              <input
+                id="email"
+                type="email"
+                class="input w-full"
+                formControlName="email"
+                [attr.aria-describedby]="form.errors?.['contactRequired'] && form.touched ? 'contact-error' : null"
+              />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="label" for="phone">{{ 'customer.form.phone' | translate }}</label>
+              <input
+                id="phone"
+                type="tel"
+                class="input w-full"
+                formControlName="phone"
+                [attr.aria-describedby]="form.errors?.['contactRequired'] && form.touched ? 'contact-error' : null"
+              />
+            </div>
+          </div>
+          @if (form.errors?.['contactRequired'] && form.touched) {
+            <p id="contact-error" class="text-error text-sm" role="alert">
+              {{ 'customer.form.errors.contactRequired' | translate }}
+            </p>
+          }
+        </fieldset>
+
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">{{ 'customer.form.addressHeading' | translate }}</legend>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label class="label" for="street">{{ 'customer.form.street' | translate }}</label>
+              <input id="street" type="text" class="input w-full" formControlName="street" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="label" for="city">{{ 'customer.form.city' | translate }}</label>
+              <input id="city" type="text" class="input w-full" formControlName="city" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="label" for="zipCode">{{ 'customer.form.zipCode' | translate }}</label>
+              <input id="zipCode" type="text" class="input w-full" formControlName="zipCode" />
+            </div>
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label class="label" for="country">{{ 'customer.form.country' | translate }}</label>
+              <input id="country" type="text" class="input w-full" formControlName="country" />
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="card-actions justify-end">
+          <button type="button" class="btn btn-ghost" (click)="cancel()">
+            {{ 'customer.form.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn btn-primary">{{ 'customer.form.save' | translate }}</button>
+        </div>
+      </form>
     </div>
-  }
-
-  <form [formGroup]="form" (ngSubmit)="save()" (keydown.escape)="cancel()" class="flex flex-col gap-4 max-w-lg">
-    <div class="flex flex-col gap-1">
-      <label class="label" for="firstName">{{ 'customer.form.firstName' | translate }}</label>
-      <input
-        id="firstName"
-        type="text"
-        class="input w-full"
-        formControlName="firstName"
-        [attr.aria-invalid]="form.controls.firstName.invalid && form.controls.firstName.touched"
-        [attr.aria-describedby]="form.controls.firstName.invalid && form.controls.firstName.touched ? 'firstName-error' : null"
-      />
-      @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
-        <p id="firstName-error" class="text-error" role="alert">
-          {{ 'customer.form.errors.firstNameRequired' | translate }}
-        </p>
-      }
-    </div>
-
-    <div class="flex flex-col gap-1">
-      <label class="label" for="lastName">{{ 'customer.form.lastName' | translate }}</label>
-      <input
-        id="lastName"
-        type="text"
-        class="input w-full"
-        formControlName="lastName"
-        [attr.aria-invalid]="form.controls.lastName.invalid && form.controls.lastName.touched"
-        [attr.aria-describedby]="form.controls.lastName.invalid && form.controls.lastName.touched ? 'lastName-error' : null"
-      />
-      @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
-        <p id="lastName-error" class="text-error" role="alert">
-          {{ 'customer.form.errors.lastNameRequired' | translate }}
-        </p>
-      }
-    </div>
-
-    <div class="flex flex-col gap-1">
-      <label class="label" for="email">{{ 'customer.form.email' | translate }}</label>
-      <input
-        id="email"
-        type="email"
-        class="input w-full"
-        formControlName="email"
-        [attr.aria-describedby]="form.errors?.['contactRequired'] && form.touched ? 'contact-error' : null"
-      />
-    </div>
-
-    <div class="flex flex-col gap-1">
-      <label class="label" for="phone">{{ 'customer.form.phone' | translate }}</label>
-      <input
-        id="phone"
-        type="tel"
-        class="input w-full"
-        formControlName="phone"
-        [attr.aria-describedby]="form.errors?.['contactRequired'] && form.touched ? 'contact-error' : null"
-      />
-    </div>
-
-    @if (form.errors?.['contactRequired'] && form.touched) {
-      <p id="contact-error" class="text-error" role="alert">
-        {{ 'customer.form.errors.contactRequired' | translate }}
-      </p>
-    }
-
-    <fieldset class="fieldset">
-      <legend class="fieldset-legend">{{ 'customer.form.street' | translate }}</legend>
-      <div class="flex flex-col gap-1">
-        <label class="label" for="street">{{ 'customer.form.street' | translate }}</label>
-        <input id="street" type="text" class="input w-full" formControlName="street" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="label" for="city">{{ 'customer.form.city' | translate }}</label>
-        <input id="city" type="text" class="input w-full" formControlName="city" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="label" for="zipCode">{{ 'customer.form.zipCode' | translate }}</label>
-        <input id="zipCode" type="text" class="input w-full" formControlName="zipCode" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="label" for="country">{{ 'customer.form.country' | translate }}</label>
-        <input id="country" type="text" class="input w-full" formControlName="country" />
-      </div>
-    </fieldset>
-
-    <div class="flex gap-2">
-      <button type="submit" class="btn btn-primary">{{ 'customer.form.save' | translate }}</button>
-      <button type="button" class="btn btn-ghost" (click)="cancel()">
-        {{ 'customer.form.cancel' | translate }}
-      </button>
-    </div>
-  </form>
+  </div>
 </section>

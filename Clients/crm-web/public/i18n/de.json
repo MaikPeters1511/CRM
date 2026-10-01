@@ -49,10 +49,13 @@
     "form": {
       "createHeading": "Neuen Kunden anlegen",
       "editHeading": "Kunden bearbeiten",
+      "personalHeading": "Stammdaten",
       "firstName": "Vorname",
       "lastName": "Nachname",
+      "contactHeading": "Kontakt",
       "email": "E-Mail",
       "phone": "Telefon",
+      "addressHeading": "Adresse",
       "street": "Straße",
       "city": "Stadt",
       "zipCode": "Postleitzahl",
