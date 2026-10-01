@@ -5,7 +5,7 @@ import { AuthStateService } from '../../../auth/application/auth-state.service';
 import { CalendarStateService } from '../../application/calendar-state.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
 import { AppointmentListItem, AppointmentStatus, CalendarViewMode } from '../../domain/appointment.model';
-import { EmployeeLookupItem } from '../../domain/employee.model';
+import { EMPLOYEE_LOOKUP_PAGE_SIZE, EmployeeLookupItem } from '../../domain/employee.model';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 08:00 - 19:00
 
@@ -100,7 +100,7 @@ export class CalendarViewComponent implements OnInit {
     this.state.loadAppointments();
     // Die Mitarbeiterliste wird nur fuer den (Admin-only) Mitarbeiterfilter benoetigt.
     if (this.isAdmin()) {
-      this.employeeApi.search({ search: null, page: 1 }).subscribe({
+      this.employeeApi.search({ search: null, page: 1, pageSize: EMPLOYEE_LOOKUP_PAGE_SIZE }).subscribe({
         next: (result) => this._employees.set(result.items.filter((e) => e.isActive)),
         error: () => this._employees.set([]),
       });

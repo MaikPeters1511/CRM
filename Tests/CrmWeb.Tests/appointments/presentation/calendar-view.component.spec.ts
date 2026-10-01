@@ -106,6 +106,51 @@ describe('CalendarViewComponent', () => {
     expect(employeeApiMock.search).toHaveBeenCalled();
   });
 
+  it('requests a page size large enough to cover all active employees, not just the default page-1/20 window (Bug 10 fix)', () => {
+    const { employeeApiMock } = setup('Admin');
+    const callArgs = employeeApiMock.search.mock.calls[0][0];
+    expect(callArgs).toEqual(expect.objectContaining({ search: null, page: 1 }));
+    expect(callArgs.pageSize).toBeGreaterThan(20);
+  });
+
+  it('makes an employee beyond position 20 (e.g. totalCount 37) available in the employee filter (Bug 10 regression)', () => {
+    const employeeOnPage2 = { id: 'e21', firstName: 'Neuer', lastName: 'Mitarbeiter', isActive: true, services: [] };
+    const stateMock = {
+      viewMode: () => 'week' as const,
+      anchorDate: () => '2024-05-15',
+      employeeFilter: () => null,
+      appointments: () => [appointment],
+      loading: () => false,
+      errors: () => [],
+      hasErrors: () => false,
+      conflict: () => false,
+      range: () => ({ from: '2024-05-13', to: '2024-05-19' }),
+      setViewMode: vi.fn(),
+      setEmployeeFilter: vi.fn(),
+      shift: vi.fn(),
+      goToToday: vi.fn(),
+      loadAppointments: vi.fn(),
+    };
+    const employeeApiMock = {
+      search: vi.fn().mockReturnValue(of({ items: [employeeOnPage2], totalCount: 37, page: 1, pageSize: 200 })),
+    };
+    const authMock = { isAdmin: () => true };
+    TestBed.configureTestingModule({
+      imports: [CalendarViewComponent],
+      providers: [
+        provideRouter([]),
+        provideTranslateService(),
+        { provide: CalendarStateService, useValue: stateMock },
+        { provide: EmployeeApiService, useValue: employeeApiMock },
+        { provide: AuthStateService, useValue: authMock },
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.employees()).toContainEqual(employeeOnPage2);
+  });
+
   it('hides the employee filter dropdown for Employee (RBAC: server liefert ohnehin nur eigene Termine)', () => {
     const { fixture, employeeApiMock } = setup('Employee');
     expect(fixture.nativeElement.querySelector('#employee-filter')).toBeFalsy();

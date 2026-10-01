@@ -8,7 +8,12 @@ import { CalendarStateService } from '../../application/calendar-state.service';
 import { CustomerApiService } from '../../infrastructure/customer-api.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
 import { CustomerLookupItem } from '../../domain/customer.model';
-import { AvailableSlot, EmployeeLookupItem, EmployeeServiceAssignment } from '../../domain/employee.model';
+import {
+  AvailableSlot,
+  EMPLOYEE_LOOKUP_PAGE_SIZE,
+  EmployeeLookupItem,
+  EmployeeServiceAssignment,
+} from '../../domain/employee.model';
 
 /**
  * Smart/Container-Component: Terminformular (terminverwaltung.openspec.md Abschnitt 4).
@@ -70,7 +75,7 @@ export class AppointmentFormComponent {
       )
       .subscribe((result) => this._customerResults.set(result.items));
 
-    this.employeeApi.search({ search: null, page: 1 }).subscribe({
+    this.employeeApi.search({ search: null, page: 1, pageSize: EMPLOYEE_LOOKUP_PAGE_SIZE }).subscribe({
       next: (result) => this._employees.set(result.items.filter((e) => e.isActive)),
       error: () => this._employees.set([]),
     });

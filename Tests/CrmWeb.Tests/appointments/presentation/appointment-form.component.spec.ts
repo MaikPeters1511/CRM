@@ -52,6 +52,51 @@ describe('AppointmentFormComponent', () => {
     expect(component.employees()).toEqual([employee]);
   });
 
+  it('requests a page size large enough to cover all active employees, not just the default page-1/20 window (Bug 10 fix)', () => {
+    const { employeeApiMock } = setup();
+    expect(employeeApiMock.search).toHaveBeenCalledWith(
+      expect.objectContaining({ search: null, page: 1, pageSize: expect.any(Number) }),
+    );
+    const callArgs = employeeApiMock.search.mock.calls[0][0];
+    expect(callArgs.pageSize).toBeGreaterThan(20);
+  });
+
+  it('makes an employee beyond position 20 (e.g. totalCount 37) selectable in the dropdown (Bug 10 regression)', () => {
+    const employeeOnPage2 = {
+      id: 'e21',
+      firstName: 'Neuer',
+      lastName: 'Mitarbeiter',
+      isActive: true,
+      services: [],
+    };
+    const customerApiMock = { search: vi.fn().mockReturnValue(of({ items: [], totalCount: 0, page: 1, pageSize: 20 })) };
+    const employeeApiMock = {
+      search: vi.fn().mockReturnValue(of({ items: [employee, employeeOnPage2], totalCount: 37, page: 1, pageSize: 200 })),
+      getAvailability: vi.fn().mockReturnValue(of([])),
+    };
+    const stateMock = {
+      hasErrors: () => false,
+      errors: () => [],
+      conflict: () => false,
+      clearErrors: vi.fn(),
+      createAppointment: vi.fn(),
+    };
+    TestBed.configureTestingModule({
+      imports: [AppointmentFormComponent],
+      providers: [
+        provideRouter([]),
+        provideTranslateService(),
+        { provide: CalendarStateService, useValue: stateMock },
+        { provide: CustomerApiService, useValue: customerApiMock },
+        { provide: EmployeeApiService, useValue: employeeApiMock },
+      ],
+    });
+    const fixture = TestBed.createComponent(AppointmentFormComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.employees()).toContainEqual(employeeOnPage2);
+  });
+
   it('offers the selected employee services for the service dropdown', () => {
     const { component } = setup();
     component.form.controls.employeeId.setValue('e1');

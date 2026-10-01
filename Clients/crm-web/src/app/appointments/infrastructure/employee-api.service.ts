@@ -21,6 +21,9 @@ export class EmployeeApiService {
     if (params.search) {
       httpParams = httpParams.set('search', params.search);
     }
+    if (params.pageSize) {
+      httpParams = httpParams.set('pageSize', params.pageSize);
+    }
     return this.http.get<EmployeeSearchResult>(this.baseUrl, { params: httpParams });
   }
 

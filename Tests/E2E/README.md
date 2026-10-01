@@ -907,8 +907,22 @@ weiterhin 500 statt einer sauberen 400-Validierung erhalten - daher primaer ein 
 
 ### Bug 10 (P1, frontend-agent): Mitarbeiter-Auswahl im Terminformular/Kalenderfilter laedt serverseitig fest nur Seite 1 (20 Mitarbeiter) - keine Suche, keine Pagination
 
-**Status:** Offen, nicht gefixt (qa-agent, 2026-10-01, im finalen Verifikationslauf entdeckt und
-unabhaengig von der Testsuite per direktem `GET /api/employees` belegt).
+**Status:** Gefixt (frontend-agent, 2026-10-01). `EmployeeSearchParams` (`appointments/domain/employee.model.ts`)
+hat ein neues optionales Feld `pageSize`; `EmployeeApiService.search()` haengt es als
+`pageSize`-Query-Param an. Beide betroffenen Komponenten (`appointment-form.component.ts`,
+`calendar-view.component.ts`) rufen `employeeApi.search({ search: null, page: 1, pageSize:
+EMPLOYEE_LOOKUP_PAGE_SIZE })` auf (`EMPLOYEE_LOOKUP_PAGE_SIZE = 200`, exportierte Konstante im
+Domain-Modell). Gewaehlter Ansatz: Variante "deutlich erhoehtes `pageSize`" statt Freitext-Suche
+analog zur Kundenauswahl - bewusst, weil die Mitarbeiterauswahl ein einfaches `<select>`-Dropdown
+ist (keine Autocomplete-UI wie `#customer-search`) und die realistische Mitarbeiterzahl pro
+Unternehmen in diesem CRM deutlich unter 200 liegt; eine echte Suche/Pagination fuer dieses
+Dropdown waere Over-Engineering. Der Backend-Handler (`SearchEmployeesHandler.cs`) unterstuetzte
+`pageSize` bereits unveraendert, keine Backend-Aenderung notwendig. Neue Regressionstests in
+`Tests/CrmWeb.Tests/appointments/infrastructure/employee-api.service.spec.ts`,
+`.../presentation/appointment-form.component.spec.ts` und `.../presentation/calendar-view.component.spec.ts`
+decken explizit den Bug-10-Fall ab (Mitarbeiter mit `totalCount: 37`, jenseits Position 20,
+erscheint in `employees()`). Alle 127 Tests in `Tests/CrmWeb.Tests` gruen, `ng build` fehlerfrei.
+Status vorher (unveraendert als Kontext erhalten):
 
 **Reproduktion:** Sobald mehr als 20 aktive Mitarbeiter existieren (real belegt:
 `GET /api/employees?page=1` liefert `{"totalCount":37,"pageSize":20,"items":[...20 Elemente...]}`),
