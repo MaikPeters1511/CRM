@@ -22,6 +22,11 @@ public static class DependencyInjection
         services.AddScoped<ICustomerRepository, EfCustomerRepository>();
         services.AddSingleton(TimeProvider.System);
 
+        // Tests/E2E/README.md, Bug 5: wendet beim Start automatisch alle ausstehenden Migrationen
+        // an (jede Umgebung, nicht nur Development - kein separater Migrations-Deployment-Schritt
+        // in dieser Landschaft vorhanden).
+        services.AddHostedService<DatabaseMigrationHostedService<CustomerDbContext>>();
+
         return services;
     }
 }

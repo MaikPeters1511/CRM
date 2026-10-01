@@ -23,6 +23,11 @@ public static class DependencyInjection
 
         services.AddDbContext<AppointmentDbContext>(options => options.UseNpgsql(connectionString));
 
+        // Tests/E2E/README.md, Bug 5: wendet beim Start automatisch alle ausstehenden Migrationen
+        // an (jede Umgebung, nicht nur Development - kein separater Migrations-Deployment-Schritt
+        // in dieser Landschaft vorhanden).
+        services.AddHostedService<DatabaseMigrationHostedService<AppointmentDbContext>>();
+
         services.AddScoped<IAppointmentRepository, EfAppointmentRepository>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IReminderNotifier, LogReminderNotifier>();

@@ -1,7 +1,5 @@
 using EmployeeService.Application.Abstractions;
 using EmployeeService.Domain.Employees;
-using EmployeeService.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -34,26 +32,12 @@ public sealed class DevEmployeeSeedHostedService(
 
         using var scope = scopeFactory.CreateScope();
 
-        // Wendet die bereits vorhandene InitialCreate-Migration an, falls noch nicht geschehen.
-        // Nur relevant fuer lokale Aspire-Dev-Umgebungen mit frischem (nicht-persistentem)
-        // Postgres-Container; KEIN neuer Migrations-Mechanismus, nur ein Development-only
-        // Bequemlichkeits-Schritt, damit dieser dev-only Seeder (und der Service selbst)
-        // nicht an einem fehlenden Schema scheitern. Fehler hier duerfen den Service-Start
-        // NIEMALS verhindern (z.B. in Tests mit Fake-Repository/keiner echten Datenbank).
-        try
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<EmployeeDbContext>();
-            await dbContext.Database.MigrateAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(
-                ex,
-                "Dev-Employee-Seed: EmployeeDbContext konnte nicht migriert werden (z.B. keine echte Datenbank " +
-                "in Tests) - Service startet trotzdem weiter.");
-        }
+        // Migration des Schemas ist kein Teil dieses dev-/test-only Seeders mehr, sondern laeuft
+        // umgebungsunabhaengig ueber EmployeeService.Infrastructure.Persistence.
+        // DatabaseMigrationHostedService (siehe DependencyInjection.AddEmployeeServiceInfrastructure,
+        // Tests/E2E/README.md Bug 5) - bewusst getrennt vom reinen Development-only Daten-Seeding hier.
 
-        // Das eigentliche Seeding darf ebenfalls niemals den Service-Start verhindern - dies ist
+        // Das eigentliche Seeding darf niemals den Service-Start verhindern - dies ist
         // ausschliesslich eine dev-/test-only Komfortfunktion (siehe Klassen-Doku).
         try
         {

@@ -27,6 +27,12 @@ public static class DependencyInjection
         services.AddScoped<IEmployeeRepository, EfEmployeeRepository>();
         services.AddSingleton(TimeProvider.System);
 
+        // Tests/E2E/README.md, Bug 5: wendet beim Start automatisch alle ausstehenden Migrationen
+        // an (jede Umgebung, nicht nur Development - kein separater Migrations-Deployment-Schritt
+        // in dieser Landschaft vorhanden). Bewusst getrennt vom reinen Development-only
+        // Daten-Seeding weiter unten (Bug 2).
+        services.AddHostedService<DatabaseMigrationHostedService<EmployeeDbContext>>();
+
         AddAppointmentAvailabilityClient(services, configuration);
 
         // Dev-/Test-only: verknuepft den geseedeten identity-service-Testnutzer mit einem echten
