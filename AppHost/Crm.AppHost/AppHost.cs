@@ -87,7 +87,7 @@ employeeService.WithReference(appointmentService);
 // erreicht identity-service/customer-service/employee-service/appointment-service ausschliesslich
 // ueber Aspire Service Discovery. Gateway validiert das JWT (Auth-Termination), die Services
 // validieren es serverseitig erneut (Defense in Depth) - daher denselben Signing-Key/Issuer/Audience.
-builder.AddProject<Projects.Crm_Gateway>("gateway")
+var gateway = builder.AddProject<Projects.Crm_Gateway>("gateway")
     .WithReference(identityService)
     .WithReference(customerService)
     .WithReference(employeeService)
@@ -100,5 +100,17 @@ builder.AddProject<Projects.Crm_Gateway>("gateway")
     .WaitFor(employeeService)
     .WaitFor(appointmentService)
     .WithExternalHttpEndpoints();
+
+// crm-web (ADR 0002, Frontend-Konsolidierung): einzige Angular-Anwendung, spricht ausschliesslich
+// ueber das Gateway mit allen Services. Fester Dev-Port 4200 (Clients/crm-web/angular.json,
+// serve.options.port), konsistent mit der Gateway-CORS-Allowlist (Gateway/Crm.Gateway/appsettings.json).
+// isProxied: false, da der Angular Dev-Server selbst direkt an Port 4200 bindet (angular.json) -
+// mit aktiviertem DCP-Proxy wuerde Aspire denselben Port 4200 doppelt belegen wollen.
+builder.AddJavaScriptApp("crm-web", "../../Clients/crm-web")
+    .WithNpm()
+    .WithRunScript("start")
+    .WithHttpEndpoint(port: 4200, isProxied: false)
+    .WithExternalHttpEndpoints()
+    .WaitFor(gateway);
 
 builder.Build().Run();

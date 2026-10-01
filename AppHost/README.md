@@ -23,7 +23,8 @@ Dieses Verzeichnis enthält die .NET Aspire Orchestrierung für das CRM gemäß
 | `customer-service` | Aspire-Projektressource | `Services/customer-service/src/CustomerService.Web` |
 | `employee-service` | Aspire-Projektressource | `Services/employee-service/src/EmployeeService.Web` |
 | `appointment-service` | Aspire-Projektressource | `Services/appointment-service/src/AppointmentService.Web` (referenziert `customer-service`/`employee-service` per Service Discovery) |
-| `gateway` | Aspire-Projektressource | YARP-Reverse-Proxy (`Gateway/Crm.Gateway`), einziger extern erreichbarer HTTP-Endpunkt |
+| `gateway` | Aspire-Projektressource | YARP-Reverse-Proxy (`Gateway/Crm.Gateway`), einziger extern erreichbarer HTTP-Endpunkt für API-Traffic |
+| `crm-web` | Aspire-JavaScript-App (`Aspire.Hosting.JavaScript`, `AddJavaScriptApp`) | Konsolidiertes Angular-Frontend (`Clients/crm-web`, ADR 0002), startet automatisch per `npm start` (`ng serve`), fester Port `4200` (`isProxied: false`, da der Angular-Dev-Server selbst an diesen Port bindet), wartet auf `gateway` |
 
 Alle vier fachlichen Services sowie der Gateway sind seit der Umsetzung von
 `terminverwaltung.openspec.md`/`authentifizierung.openspec.md` vollständig im AppHost verdrahtet
@@ -42,30 +43,36 @@ dotnet run
 Der Aspire-Dashboard-Link wird in der Konsole ausgegeben (Standard: `https://localhost:17172`).
 Dort sind alle Ressourcen, Logs, Traces und die dynamisch vergebenen Endpunkte einsehbar.
 
-**Hinweis (lokale Entwicklung, Frontend):** Seit der Frontend-Konsolidierung
-(`docs/adr/0002-frontend-konsolidierung.md`) existiert nur noch ein einziges Angular-Frontend
-`Clients/crm-web` (Dev-Port `4200`) statt vormals drei getrennter Apps (`customer-web` 4200,
-`employee-web` 4201, `appointment-web` 4202). `crm-web` spricht im Dev-Modus aktuell noch direkt
-gegen die jeweiligen Services (`environment.ts`), im Produktions-Build bereits gegen den relativen
-Pfad `/api` (für das Gateway). Sobald das Gateway lokal über Aspire läuft, ist es unter der vom
-AppHost zugewiesenen externen HTTP-Endpoint-URL erreichbar (sichtbar im Aspire-Dashboard als
-Endpunkt der Ressource `gateway`, z.B. `http://localhost:<zufälliger-port>`), mit Routen
-`/api/customers/**` → `customer-service`, `/api/employees/**` → `employee-service` und
-`/api/appointments/**` → `appointment-service`. Eine Umstellung der Angular-Dev-Configs auf das
-Gateway ist eine separate Frontend-Aufgabe und nicht Teil dieser Änderung.
+**Frontend (`crm-web`):** Startet automatisch mit `dotnet run` im AppHost (keine separate
+`ng serve` nötig). Benötigt `npm`/`node` im `PATH` (Aspire löst beide Kommandos beim Start auf
+und bricht sonst ab). Dev-Modus spricht aktuell noch direkt gegen die jeweiligen Services
+(`environment.ts`, feste Ports 5149/5159/5169/5179 je Service), im Produktions-Build gegen den
+relativen Pfad `/api` (Gateway). Eine Umstellung der Dev-Config auf das Gateway ist eine separate
+Frontend-Aufgabe. Die Gateway-CORS-Allowlist (`Gateway/Crm.Gateway/appsettings.json`) erlaubt
+ausschließlich `http://localhost:4200`, passend zum festen `crm-web`-Dev-Port.
 
 ## Verifikation
 
-- `dotnet build Crm.slnx` (Repo-Root) – kompiliert AppHost, ServiceDefaults, Gateway und beide
-  Services fehlerfrei.
-- `dotnet test` für `Tests/CustomerService.Tests` (35) und `Tests/EmployeeService.Tests` (40) –
-  weiterhin grün nach Integration von `ServiceDefaults`.
-- `dotnet run` des AppHosts wurde in dieser Umgebung tatsächlich ausgeführt (Docker Desktop war
-  verfügbar): `customer-postgres`, `employee-postgres` und `rabbitmq` starten als Container,
-  `customer-service`, `employee-service` und `gateway` erreichen den Zustand `Running` ohne Fehler
-  in den Service-Logs. Ein Request über das Gateway wurde manuell verifiziert:
-  - `GET /api/customers/{id}` und `GET /api/employees/{id}` über das Gateway liefern `401`
-    (JWT-Auth-Termination greift, kein `502/503` – d.h. Service Discovery/Routing zu den
-    Downstream-Services funktioniert).
-  - `GET /health` über das Gateway liefert `200`, unbekannte Pfade liefern `404`.
+- `dotnet build Crm.slnx` (Repo-Root) – kompiliert AppHost, ServiceDefaults, Gateway, alle vier
+  Services und (separat, siehe Hinweis zu `.esproj` unten) `crm-web` fehlerfrei.
+- `dotnet test Crm.slnx` – 140/140 Tests grün.
+- `dotnet run` des AppHosts wurde real ausgeführt (Docker Desktop verfügbar): alle drei
+  Postgres-Container und RabbitMQ starten, alle vier Services, `gateway` und `crm-web` erreichen
+  den Zustand `Running` (nicht `Finished`) ohne Fehler in den Logs.
+  - `crm-web` antwortet unter `http://localhost:4200` mit `200`.
+  - `gateway` antwortet unter `/health` mit `200`; `GET /api/customers` ohne Token liefert `401`
+    (Routing/Auth-Termination funktioniert, kein `502/503`).
   - Nach dem Test wurden alle Container/Prozesse wieder gestoppt.
+- **Stolperstein (gelöst):** `AddJavaScriptApp(...).WithHttpEndpoint(port: 4200)` ohne
+  `isProxied: false` lässt Aspires DCP-Proxy denselben Port belegen, den der Angular-Dev-Server
+  selbst (laut `angular.json`, `serve.options.port`) binden will – der `npm start`-Prozess stirbt
+  dann sofort mit `Port 4200 is already in use`. Fix: `isProxied: false`, damit DCP den Port nicht
+  selbst reserviert.
+
+## Hinweis: `crm-web.esproj`
+
+`Clients/crm-web/crm-web.esproj` bindet die Angular-App zusätzlich als Projekt in `Crm.slnx` ein
+(für IDE-Tooling, z.B. Visual Studio). `.esproj`-Projekte sind in der offiziellen Projekttyp-Tabelle
+mit `NoBuildRules` registriert und daher standardmäßig von einem normalen Solution-Build
+ausgenommen – das ist kein Fehler. Die Aspire-Orchestrierung oben (`AddJavaScriptApp`) ist davon
+unabhängig und läuft unabhängig vom `.esproj`.
