@@ -47,6 +47,12 @@ public sealed class EmployeeDbContext(DbContextOptions<EmployeeDbContext> option
                 workingHoursBuilder.WithOwner().HasForeignKey("EmployeeId");
                 workingHoursBuilder.Property<Guid>("EmployeeId");
                 workingHoursBuilder.HasKey(w => w.Id);
+                // Tests/E2E/README.md, Bug 6: Id wird client-seitig per Guid.NewGuid() gesetzt
+                // (siehe Employee.SetWorkingHours), nicht von der Datenbank generiert. Ohne
+                // ValueGeneratedNever() interpretiert EF Core den bereits gesetzten Guid-Wert als
+                // "Entity existiert schon" (IsKeySet-Heuristik) und generiert faelschlich ein
+                // UPDATE statt eines INSERT -> DbUpdateConcurrencyException beim ersten Speichern.
+                workingHoursBuilder.Property(w => w.Id).ValueGeneratedNever();
                 workingHoursBuilder.Property(w => w.Weekday).IsRequired().HasConversion<string>().HasMaxLength(20);
                 workingHoursBuilder.Property(w => w.StartTime).IsRequired();
                 workingHoursBuilder.Property(w => w.EndTime).IsRequired();
@@ -60,6 +66,10 @@ public sealed class EmployeeDbContext(DbContextOptions<EmployeeDbContext> option
                 absencesBuilder.WithOwner().HasForeignKey("EmployeeId");
                 absencesBuilder.Property<Guid>("EmployeeId");
                 absencesBuilder.HasKey(a => a.Id);
+                // Identisches Muster/Ursache wie bei WorkingHours.Id oben (Tests/E2E/README.md, Bug 6) -
+                // client-seitig per Guid.NewGuid() gesetzter Surrogatschluessel ohne ValueGeneratedNever()
+                // fuehrt zum selben faelschlichen UPDATE-statt-INSERT-Verhalten.
+                absencesBuilder.Property(a => a.Id).ValueGeneratedNever();
                 absencesBuilder.Property(a => a.Type).IsRequired().HasConversion<string>().HasMaxLength(20);
                 absencesBuilder.Property(a => a.From).IsRequired();
                 absencesBuilder.Property(a => a.To).IsRequired();
