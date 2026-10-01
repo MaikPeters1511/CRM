@@ -25,7 +25,7 @@
               [attr.data-row]="rowIndex"
               [attr.data-col]="colIndex"
               class="btn btn-xs w-10"
-              [class.btn-primary]="isSelected(weekday, hour)"
+              [class.btn-active]="isSelected(weekday, hour)"
               [attr.aria-pressed]="isSelected(weekday, hour)"
               [attr.aria-label]="('employee.weekday.' + weekday) | translate: {} "
               (click)="toggle(weekday, hour)"

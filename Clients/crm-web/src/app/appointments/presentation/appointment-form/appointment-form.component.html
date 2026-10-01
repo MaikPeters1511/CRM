@@ -15,12 +15,12 @@
   }
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
-    <div class="form-control relative">
+    <div class="flex flex-col gap-1 relative">
       <label class="label" for="customer-search">{{ 'appointment.form.customer' | translate }}</label>
       <input
         id="customer-search"
         type="text"
-        class="input input-bordered"
+        class="input w-full"
         role="combobox"
         aria-autocomplete="list"
         aria-controls="customer-results"
@@ -44,11 +44,11 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="employee-select">{{ 'appointment.form.employee' | translate }}</label>
       <select
         id="employee-select"
-        class="select select-bordered"
+        class="select w-full"
         formControlName="employeeId"
         (change)="onEmployeeChange($any($event.target).value)"
       >
@@ -62,9 +62,9 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="service-select">{{ 'appointment.form.service' | translate }}</label>
-      <select id="service-select" class="select select-bordered" formControlName="serviceId">
+      <select id="service-select" class="select w-full" formControlName="serviceId">
         <option value="" disabled>{{ 'appointment.form.servicePlaceholder' | translate }}</option>
         @for (service of selectedEmployeeServices(); track service.serviceId) {
           <option [value]="service.serviceId">{{ service.serviceName }}</option>
@@ -75,12 +75,12 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="date-input">{{ 'appointment.form.date' | translate }}</label>
       <input
         id="date-input"
         type="date"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="date"
         (change)="onDateChange($any($event.target).value)"
       />
@@ -100,13 +100,13 @@
     }
 
     <div class="flex gap-4">
-      <div class="form-control flex-1">
+      <div class="flex flex-col gap-1 flex-1">
         <label class="label" for="start-time">{{ 'appointment.form.startTime' | translate }}</label>
-        <input id="start-time" type="time" class="input input-bordered" formControlName="startTime" />
+        <input id="start-time" type="time" class="input w-full" formControlName="startTime" />
       </div>
-      <div class="form-control flex-1">
+      <div class="flex flex-col gap-1 flex-1">
         <label class="label" for="end-time">{{ 'appointment.form.endTime' | translate }}</label>
-        <input id="end-time" type="time" class="input input-bordered" formControlName="endTime" />
+        <input id="end-time" type="time" class="input w-full" formControlName="endTime" />
       </div>
     </div>
 

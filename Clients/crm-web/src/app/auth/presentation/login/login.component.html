@@ -10,13 +10,13 @@
       }
 
       <form [formGroup]="form" (ngSubmit)="login()" class="flex flex-col gap-4">
-        <div class="form-control">
+        <div class="flex flex-col gap-1">
           <label class="label" for="email">{{ 'auth.login.email' | translate }}</label>
           <input
             id="email"
             type="email"
             autocomplete="username"
-            class="input input-bordered"
+            class="input w-full"
             formControlName="email"
             [attr.aria-invalid]="form.controls.email.invalid && form.controls.email.touched"
             [attr.aria-describedby]="form.controls.email.invalid && form.controls.email.touched ? 'email-error' : null"
@@ -28,13 +28,13 @@
           }
         </div>
 
-        <div class="form-control">
+        <div class="flex flex-col gap-1">
           <label class="label" for="password">{{ 'auth.login.password' | translate }}</label>
           <input
             id="password"
             type="password"
             autocomplete="current-password"
-            class="input input-bordered"
+            class="input w-full"
             formControlName="password"
             [attr.aria-invalid]="form.controls.password.invalid && form.controls.password.touched"
             [attr.aria-describedby]="form.controls.password.invalid && form.controls.password.touched ? 'password-error' : null"
@@ -46,7 +46,10 @@
           }
         </div>
 
-        <button type="submit" class="btn btn-primary" [disabled]="state.loading()">
+        <button type="submit" class="btn btn-primary w-full" [disabled]="state.loading()">
+          @if (state.loading()) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
           {{ 'auth.login.submit' | translate }}
         </button>
       </form>

@@ -29,21 +29,21 @@
   }
 
   <form [formGroup]="form" (ngSubmit)="save()" (keydown.escape)="cancel()" class="flex flex-col gap-4 max-w-lg">
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="absenceType">{{ 'employee.absence.type' | translate }}</label>
-      <select id="absenceType" class="select select-bordered" formControlName="type">
+      <select id="absenceType" class="select w-full" formControlName="type">
         <option value="Vacation">{{ 'employee.absence.typeVacation' | translate }}</option>
         <option value="Sick">{{ 'employee.absence.typeSick' | translate }}</option>
         <option value="Other">{{ 'employee.absence.typeOther' | translate }}</option>
       </select>
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="absenceFrom">{{ 'employee.absence.from' | translate }}</label>
       <input
         id="absenceFrom"
         type="date"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="from"
         [attr.aria-invalid]="form.controls.from.invalid && form.controls.from.touched"
         [attr.aria-describedby]="form.controls.from.invalid && form.controls.from.touched ? 'absenceFrom-error' : null"
@@ -55,12 +55,12 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="absenceTo">{{ 'employee.absence.to' | translate }}</label>
       <input
         id="absenceTo"
         type="date"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="to"
         [attr.aria-invalid]="form.controls.to.invalid && form.controls.to.touched"
         [attr.aria-describedby]="form.controls.to.invalid && form.controls.to.touched ? 'absenceTo-error' : null"

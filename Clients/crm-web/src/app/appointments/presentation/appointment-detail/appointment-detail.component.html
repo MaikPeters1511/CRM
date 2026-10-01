@@ -1,5 +1,5 @@
 @if (state.loading()) {
-  <p role="status">{{ 'appointment.detail.loading' | translate }}</p>
+  <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'appointment.detail.loading' | translate }}</p>
 } @else if (!state.selectedAppointment()) {
   <div class="alert alert-error" role="alert">
     @for (error of state.errors(); track error) {
@@ -9,75 +9,87 @@
 } @else {
   @let appointment = state.selectedAppointment()!;
 
-  <section aria-labelledby="appointment-detail-heading" class="max-w-2xl">
-    <div class="flex items-center justify-between mb-4">
-      <h1 id="appointment-detail-heading" class="text-2xl font-bold">
-        {{ 'appointment.detail.heading' | translate }}
-      </h1>
-      <button type="button" class="btn btn-sm btn-ghost" (click)="goBackToCalendar()">
-        {{ 'appointment.detail.back' | translate }}
-      </button>
-    </div>
-
-    @if (state.hasErrors()) {
-      <div class="alert alert-error mb-4" role="alert">
-        @for (error of state.errors(); track error) {
-          <p>{{ error | translate }}</p>
-        }
-        @if (state.conflict()) {
-          <p>{{ 'appointment.form.errors.conflict' | translate }}</p>
-        }
+  <section aria-labelledby="appointment-detail-heading" class="max-w-2xl card bg-base-100 card-border">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-2">
+        <h1 id="appointment-detail-heading" class="card-title">
+          {{ 'appointment.detail.heading' | translate }}
+        </h1>
+        <button type="button" class="btn btn-sm btn-ghost" (click)="goBackToCalendar()">
+          {{ 'appointment.detail.back' | translate }}
+        </button>
       </div>
-    }
 
-    <dl class="grid grid-cols-2 gap-2 mb-6">
-      <dt class="font-semibold">{{ 'appointment.detail.status' | translate }}</dt>
-      <dd>
-        <span aria-hidden="true">
-          @switch (appointment.status) {
-            @case ('Confirmed') { ✔ }
-            @case ('Cancelled') { ✕ }
-            @case ('Completed') { ★ }
-            @default { ⚠ }
+      @if (state.hasErrors()) {
+        <div class="alert alert-error mb-4" role="alert">
+          @for (error of state.errors(); track error) {
+            <p>{{ error | translate }}</p>
           }
-        </span>
-        {{ ('appointment.status.' + appointment.status) | translate }}
-      </dd>
-      <dt class="font-semibold">{{ 'appointment.detail.start' | translate }}</dt>
-      <dd>{{ appointment.start }}</dd>
-      <dt class="font-semibold">{{ 'appointment.detail.end' | translate }}</dt>
-      <dd>{{ appointment.end }}</dd>
-      @if (appointment.cancellationReason) {
-        <dt class="font-semibold">{{ 'appointment.detail.cancellationReason' | translate }}</dt>
-        <dd>{{ appointment.cancellationReason }}</dd>
+          @if (state.conflict()) {
+            <p>{{ 'appointment.form.errors.conflict' | translate }}</p>
+          }
+        </div>
       }
-    </dl>
 
-    @if (appointment.status === 'Confirmed') {
-      <form [formGroup]="rescheduleForm" (ngSubmit)="reschedule()" class="flex flex-col gap-4 mb-6">
-        <h2 class="text-lg font-semibold">{{ 'appointment.detail.rescheduleHeading' | translate }}</h2>
-        <div class="flex gap-4">
-          <div class="form-control flex-1">
-            <label class="label" for="reschedule-date">{{ 'appointment.form.date' | translate }}</label>
-            <input id="reschedule-date" type="date" class="input input-bordered" formControlName="date" />
+      <span
+        class="badge mb-4 w-fit"
+        [class.badge-success]="appointment.status === 'Confirmed'"
+        [class.badge-error]="appointment.status === 'Cancelled'"
+        [class.badge-neutral]="appointment.status === 'Completed'"
+        [class.badge-warning]="appointment.status === 'RequiresReview'"
+      >
+        {{ ('appointment.status.' + appointment.status) | translate }}
+      </span>
+
+      <dl class="grid grid-cols-2 gap-2 mb-6">
+        <dt class="font-semibold">{{ 'appointment.detail.status' | translate }}</dt>
+        <dd>
+          <span aria-hidden="true">
+            @switch (appointment.status) {
+              @case ('Confirmed') { ✔ }
+              @case ('Cancelled') { ✕ }
+              @case ('Completed') { ★ }
+              @default { ⚠ }
+            }
+          </span>
+          {{ ('appointment.status.' + appointment.status) | translate }}
+        </dd>
+        <dt class="font-semibold">{{ 'appointment.detail.start' | translate }}</dt>
+        <dd>{{ appointment.start }}</dd>
+        <dt class="font-semibold">{{ 'appointment.detail.end' | translate }}</dt>
+        <dd>{{ appointment.end }}</dd>
+        @if (appointment.cancellationReason) {
+          <dt class="font-semibold">{{ 'appointment.detail.cancellationReason' | translate }}</dt>
+          <dd>{{ appointment.cancellationReason }}</dd>
+        }
+      </dl>
+
+      @if (appointment.status === 'Confirmed') {
+        <form [formGroup]="rescheduleForm" (ngSubmit)="reschedule()" class="flex flex-col gap-4 mb-6">
+          <h2 class="text-lg font-semibold">{{ 'appointment.detail.rescheduleHeading' | translate }}</h2>
+          <div class="flex gap-4">
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="label" for="reschedule-date">{{ 'appointment.form.date' | translate }}</label>
+              <input id="reschedule-date" type="date" class="input w-full" formControlName="date" />
+            </div>
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="label" for="reschedule-start">{{ 'appointment.form.startTime' | translate }}</label>
+              <input id="reschedule-start" type="time" class="input w-full" formControlName="startTime" />
+            </div>
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="label" for="reschedule-end">{{ 'appointment.form.endTime' | translate }}</label>
+              <input id="reschedule-end" type="time" class="input w-full" formControlName="endTime" />
+            </div>
           </div>
-          <div class="form-control flex-1">
-            <label class="label" for="reschedule-start">{{ 'appointment.form.startTime' | translate }}</label>
-            <input id="reschedule-start" type="time" class="input input-bordered" formControlName="startTime" />
+          <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary">{{ 'appointment.detail.reschedule' | translate }}</button>
+            <button type="button" class="btn btn-error" (click)="openCancelModal()">
+              {{ 'appointment.detail.cancel' | translate }}
+            </button>
           </div>
-          <div class="form-control flex-1">
-            <label class="label" for="reschedule-end">{{ 'appointment.form.endTime' | translate }}</label>
-            <input id="reschedule-end" type="time" class="input input-bordered" formControlName="endTime" />
-          </div>
-        </div>
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary">{{ 'appointment.detail.reschedule' | translate }}</button>
-          <button type="button" class="btn btn-error" (click)="openCancelModal()">
-            {{ 'appointment.detail.cancel' | translate }}
-          </button>
-        </div>
-      </form>
-    }
+        </form>
+      }
+    </div>
   </section>
 
   @if (showCancelModal()) {
@@ -93,9 +105,9 @@
           {{ 'appointment.cancelModal.title' | translate }}
         </h2>
         <form [formGroup]="cancelForm" (ngSubmit)="confirmCancel()">
-          <div class="form-control py-2">
+          <div class="flex flex-col gap-1 py-2">
             <label class="label" for="cancel-reason">{{ 'appointment.cancelModal.reasonLabel' | translate }}</label>
-            <input id="cancel-reason" type="text" class="input input-bordered" formControlName="reason" />
+            <input id="cancel-reason" type="text" class="input w-full" formControlName="reason" />
             @if (cancelForm.controls.reason.invalid && cancelForm.controls.reason.touched) {
               <p class="text-error" role="alert">{{ 'appointment.cancelModal.reasonRequired' | translate }}</p>
             }

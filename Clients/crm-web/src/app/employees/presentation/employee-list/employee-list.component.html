@@ -9,12 +9,12 @@
   </div>
 
   <div class="flex flex-wrap gap-4 mb-4">
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="employee-search">{{ 'employee.list.searchLabel' | translate }}</label>
       <input
         id="employee-search"
         type="search"
-        class="input input-bordered"
+        class="input"
         [attr.aria-label]="'employee.list.searchLabel' | translate"
         [placeholder]="'employee.list.searchPlaceholder' | translate"
         [ngModel]="state.searchTerm()"
@@ -22,11 +22,11 @@
       />
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="employee-role-filter">{{ 'employee.list.roleLabel' | translate }}</label>
       <select
         id="employee-role-filter"
-        class="select select-bordered"
+        class="select"
         [attr.aria-label]="'employee.list.roleLabel' | translate"
         [ngModel]="roleFilterValue()"
         (ngModelChange)="onRoleChange($event)"
@@ -37,12 +37,12 @@
       </select>
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="employee-service-filter">{{ 'employee.list.serviceLabel' | translate }}</label>
       <input
         id="employee-service-filter"
         type="text"
-        class="input input-bordered"
+        class="input"
         [attr.aria-label]="'employee.list.serviceLabel' | translate"
         [placeholder]="'employee.list.servicePlaceholder' | translate"
         [ngModel]="state.serviceIdFilter()"
@@ -60,7 +60,7 @@
   }
 
   @if (state.loading()) {
-    <p role="status">{{ 'employee.list.loading' | translate }}</p>
+    <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'employee.list.loading' | translate }}</p>
   } @else if (state.employees().length === 0) {
     <p>{{ 'employee.list.empty' | translate }}</p>
   } @else {
@@ -117,15 +117,27 @@
     </div>
 
     <div class="flex items-center gap-4 mt-4">
-      <button type="button" class="btn btn-sm" [disabled]="state.page() <= 1" (click)="goToPreviousPage()">
-        {{ 'employee.list.pagination.previous' | translate }}
-      </button>
-      <span>
+      <div class="join">
+        <button
+          type="button"
+          class="btn btn-sm join-item"
+          [disabled]="state.page() <= 1"
+          (click)="goToPreviousPage()"
+        >
+          {{ 'employee.list.pagination.previous' | translate }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm join-item"
+          [disabled]="state.page() >= totalPages()"
+          (click)="goToNextPage()"
+        >
+          {{ 'employee.list.pagination.next' | translate }}
+        </button>
+      </div>
+      <span class="text-sm">
         {{ 'employee.list.pagination.pageInfo' | translate: { page: state.page(), totalPages: totalPages() } }}
       </span>
-      <button type="button" class="btn btn-sm" [disabled]="state.page() >= totalPages()" (click)="goToNextPage()">
-        {{ 'employee.list.pagination.next' | translate }}
-      </button>
     </div>
   }
 </section>

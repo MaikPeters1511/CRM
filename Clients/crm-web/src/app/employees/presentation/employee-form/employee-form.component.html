@@ -12,12 +12,12 @@
   }
 
   <form [formGroup]="form" (ngSubmit)="save()" (keydown.escape)="cancel()" class="flex flex-col gap-4 max-w-lg">
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="firstName">{{ 'employee.form.firstName' | translate }}</label>
       <input
         id="firstName"
         type="text"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="firstName"
         [attr.aria-invalid]="form.controls.firstName.invalid && form.controls.firstName.touched"
         [attr.aria-describedby]="form.controls.firstName.invalid && form.controls.firstName.touched ? 'firstName-error' : null"
@@ -29,12 +29,12 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="lastName">{{ 'employee.form.lastName' | translate }}</label>
       <input
         id="lastName"
         type="text"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="lastName"
         [attr.aria-invalid]="form.controls.lastName.invalid && form.controls.lastName.touched"
         [attr.aria-describedby]="form.controls.lastName.invalid && form.controls.lastName.touched ? 'lastName-error' : null"
@@ -46,12 +46,12 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="email">{{ 'employee.form.email' | translate }}</label>
       <input
         id="email"
         type="email"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="email"
         [attr.aria-invalid]="form.controls.email.invalid && form.controls.email.touched"
         [attr.aria-describedby]="form.controls.email.invalid && form.controls.email.touched ? 'email-error' : null"
@@ -63,11 +63,11 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="role">{{ 'employee.form.role' | translate }}</label>
       <select
         id="role"
-        class="select select-bordered"
+        class="select w-full"
         formControlName="role"
         [attr.aria-invalid]="form.controls.role.invalid && form.controls.role.touched"
       >
@@ -100,13 +100,13 @@
       }
 
       <div [formGroup]="newServiceForm" class="flex flex-wrap items-end gap-2 mt-2">
-        <div class="form-control">
+        <div class="flex flex-col gap-1">
           <label class="label" for="newServiceId">{{ 'employee.form.serviceId' | translate }}</label>
-          <input id="newServiceId" type="text" class="input input-bordered" formControlName="serviceId" />
+          <input id="newServiceId" type="text" class="input w-full" formControlName="serviceId" />
         </div>
-        <div class="form-control">
+        <div class="flex flex-col gap-1">
           <label class="label" for="newServiceName">{{ 'employee.form.serviceName' | translate }}</label>
-          <input id="newServiceName" type="text" class="input input-bordered" formControlName="serviceName" />
+          <input id="newServiceName" type="text" class="input w-full" formControlName="serviceName" />
         </div>
         <button type="button" class="btn btn-secondary" (click)="addService()">
           {{ 'employee.form.addService' | translate }}

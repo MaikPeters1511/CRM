@@ -9,12 +9,12 @@
   </div>
 
   <div class="flex flex-wrap gap-4 mb-4">
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="customer-search">{{ 'customer.list.searchLabel' | translate }}</label>
       <input
         id="customer-search"
         type="search"
-        class="input input-bordered"
+        class="input"
         [attr.aria-label]="'customer.list.searchLabel' | translate"
         [placeholder]="'customer.list.searchPlaceholder' | translate"
         [ngModel]="state.searchTerm()"
@@ -22,11 +22,11 @@
       />
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="customer-status-filter">{{ 'customer.list.statusLabel' | translate }}</label>
       <select
         id="customer-status-filter"
-        class="select select-bordered"
+        class="select"
         [attr.aria-label]="'customer.list.statusLabel' | translate"
         [ngModel]="statusFilterValue()"
         (ngModelChange)="onStatusChange($event)"
@@ -47,7 +47,7 @@
   }
 
   @if (state.loading()) {
-    <p role="status">{{ 'customer.list.loading' | translate }}</p>
+    <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'customer.list.loading' | translate }}</p>
   } @else if (state.customers().length === 0) {
     <p>{{ 'customer.list.empty' | translate }}</p>
   } @else {
@@ -94,15 +94,27 @@
     </div>
 
     <div class="flex items-center gap-4 mt-4">
-      <button type="button" class="btn btn-sm" [disabled]="state.page() <= 1" (click)="goToPreviousPage()">
-        {{ 'customer.list.pagination.previous' | translate }}
-      </button>
-      <span>
+      <div class="join">
+        <button
+          type="button"
+          class="btn btn-sm join-item"
+          [disabled]="state.page() <= 1"
+          (click)="goToPreviousPage()"
+        >
+          {{ 'customer.list.pagination.previous' | translate }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm join-item"
+          [disabled]="state.page() >= totalPages()"
+          (click)="goToNextPage()"
+        >
+          {{ 'customer.list.pagination.next' | translate }}
+        </button>
+      </div>
+      <span class="text-sm">
         {{ 'customer.list.pagination.pageInfo' | translate: { page: state.page(), totalPages: totalPages() } }}
       </span>
-      <button type="button" class="btn btn-sm" [disabled]="state.page() >= totalPages()" (click)="goToNextPage()">
-        {{ 'customer.list.pagination.next' | translate }}
-      </button>
     </div>
   }
 </section>

@@ -12,12 +12,12 @@
   }
 
   <form [formGroup]="form" (ngSubmit)="save()" (keydown.escape)="cancel()" class="flex flex-col gap-4 max-w-lg">
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="firstName">{{ 'customer.form.firstName' | translate }}</label>
       <input
         id="firstName"
         type="text"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="firstName"
         [attr.aria-invalid]="form.controls.firstName.invalid && form.controls.firstName.touched"
         [attr.aria-describedby]="form.controls.firstName.invalid && form.controls.firstName.touched ? 'firstName-error' : null"
@@ -29,12 +29,12 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="lastName">{{ 'customer.form.lastName' | translate }}</label>
       <input
         id="lastName"
         type="text"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="lastName"
         [attr.aria-invalid]="form.controls.lastName.invalid && form.controls.lastName.touched"
         [attr.aria-describedby]="form.controls.lastName.invalid && form.controls.lastName.touched ? 'lastName-error' : null"
@@ -46,23 +46,23 @@
       }
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="email">{{ 'customer.form.email' | translate }}</label>
       <input
         id="email"
         type="email"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="email"
         [attr.aria-describedby]="form.errors?.['contactRequired'] && form.touched ? 'contact-error' : null"
       />
     </div>
 
-    <div class="form-control">
+    <div class="flex flex-col gap-1">
       <label class="label" for="phone">{{ 'customer.form.phone' | translate }}</label>
       <input
         id="phone"
         type="tel"
-        class="input input-bordered"
+        class="input w-full"
         formControlName="phone"
         [attr.aria-describedby]="form.errors?.['contactRequired'] && form.touched ? 'contact-error' : null"
       />
@@ -76,21 +76,21 @@
 
     <fieldset class="fieldset">
       <legend class="fieldset-legend">{{ 'customer.form.street' | translate }}</legend>
-      <div class="form-control">
+      <div class="flex flex-col gap-1">
         <label class="label" for="street">{{ 'customer.form.street' | translate }}</label>
-        <input id="street" type="text" class="input input-bordered" formControlName="street" />
+        <input id="street" type="text" class="input w-full" formControlName="street" />
       </div>
-      <div class="form-control">
+      <div class="flex flex-col gap-1">
         <label class="label" for="city">{{ 'customer.form.city' | translate }}</label>
-        <input id="city" type="text" class="input input-bordered" formControlName="city" />
+        <input id="city" type="text" class="input w-full" formControlName="city" />
       </div>
-      <div class="form-control">
+      <div class="flex flex-col gap-1">
         <label class="label" for="zipCode">{{ 'customer.form.zipCode' | translate }}</label>
-        <input id="zipCode" type="text" class="input input-bordered" formControlName="zipCode" />
+        <input id="zipCode" type="text" class="input w-full" formControlName="zipCode" />
       </div>
-      <div class="form-control">
+      <div class="flex flex-col gap-1">
         <label class="label" for="country">{{ 'customer.form.country' | translate }}</label>
-        <input id="country" type="text" class="input input-bordered" formControlName="country" />
+        <input id="country" type="text" class="input w-full" formControlName="country" />
       </div>
     </fieldset>
 
