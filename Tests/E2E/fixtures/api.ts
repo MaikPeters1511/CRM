@@ -135,14 +135,35 @@ export async function createAppointment(
   return response.json();
 }
 
-/** Naechster Montag (ISO-Datum, yyyy-MM-dd) ab heute, damit Arbeitszeiten/Termine stets in der Zukunft liegen. */
+/**
+ * Liefert den gewuenschten ISO-Wochentag (1=Montag...7=Sonntag) in der Kalenderwoche, die direkt
+ * auf die aktuelle Woche folgt - also genau die Woche, die man per Kalender-UI durch EINMALIGES
+ * Klicken auf "Weiter" von der initialen (aktuelle Woche zeigenden) Ansicht aus erreicht.
+ *
+ * Testcode-Fix (kein Produktbug, hier entdeckt): die vorherige Implementierung rechnete zuerst
+ * `now + 7 Tage` und suchte DANACH den naechsten Zieltag ab diesem bereits verschobenen Datum.
+ * Faellt `now + 7` auf einen Wochentag, der NACH dem Zieltag liegt (z.B. heute Donnerstag ->
+ * "+7" ist wieder ein Donnerstag, Ziel Montag liegt davor), rutscht die Suche eine komplette
+ * weitere Woche weiter - das Ergebnis lag dann in der Kalenderwoche NACH der per "Weiter"
+ * erreichbaren Woche. Fix: zuerst den Montag der AKTUELLEN Woche bestimmen, davon ausgehend exakt
+ * 7 Tage auf den Montag der NAECHSTEN Woche springen, und erst dann den Zieltag innerhalb dieser
+ * (eindeutig bestimmten) Woche anwenden - dadurch immer exakt eine Woche nach "heute", unabhaengig
+ * vom aktuellen Wochentag.
+ */
 export function nextWeekday(targetIsoWeekday: number): Date {
   const now = new Date();
-  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
-  const currentIsoWeekday = date.getDay() === 0 ? 7 : date.getDay();
-  const diff = (targetIsoWeekday - currentIsoWeekday + 7) % 7;
-  date.setDate(date.getDate() + diff);
-  return date;
+  const todayIsoWeekday = now.getDay() === 0 ? 7 : now.getDay();
+  const mondayThisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (todayIsoWeekday - 1));
+  const mondayNextWeek = new Date(
+    mondayThisWeek.getFullYear(),
+    mondayThisWeek.getMonth(),
+    mondayThisWeek.getDate() + 7,
+  );
+  return new Date(
+    mondayNextWeek.getFullYear(),
+    mondayNextWeek.getMonth(),
+    mondayNextWeek.getDate() + (targetIsoWeekday - 1),
+  );
 }
 
 /**

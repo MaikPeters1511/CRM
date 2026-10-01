@@ -843,7 +843,7 @@ Security-Architekturmuster entspricht. Betroffen sind die `AddHttpClient<...>()`
 `AppointmentService.Infrastructure.DependencyInjection` (jeweils `.AddHttpMessageHandler<...>()` mit
 einem neuen `AuthorizationForwardingHandler` ergaenzen, `IHttpContextAccessor` registrieren).
 
-### Bug 9 (P0, backend-agent): `POST /api/appointments` (und vermutlich `PUT /appointments/{id}/reschedule`) stuerzt mit 500 ab, wenn `start`/`end` KEIN explizites UTC-Offset enthalten - exakt das Format, das das echte Angular-Formular sendet
+### Bug 9 (P0, backend-agent): `POST /api/appointments` (und vermutlich `PUT /appointments/{id}/reschedule`) stuerzt mit 500 ab, wenn `start`/`end` KEIN explizites UTC-Offset enthalten - exakt das Format, das das echte Angular-Formular sendet — BEHOBEN, VOLLSTAENDIG VERIFIZIERT (qa-agent, 2026-10-01: 30/30 E2E gruen, siehe "Tatsaechliche Verifikation - finaler Stand")
 
 **Status:** Gefixt (backend-agent, 2026-10-01). Server-seitiger Fix statt Frontend-Workaround
 (siehe Fix-Vorschlag unten, primaer Backend-Fix empfohlen): neuer
@@ -933,7 +933,7 @@ UTC mit `Z`), was das Problem fuer die UI loesen wuerde, aber NICHT die zugrunde
 serverseitige Fragilitaet behebt (jeder andere/zukuenftige API-Konsument ohne Offset wuerde
 weiterhin 500 statt einer sauberen 400-Validierung erhalten - daher primaer ein Backend-Fix).
 
-### Bug 10 (P1, frontend-agent): Mitarbeiter-Auswahl im Terminformular/Kalenderfilter laedt serverseitig fest nur Seite 1 (20 Mitarbeiter) - keine Suche, keine Pagination
+### Bug 10 (P1, frontend-agent): Mitarbeiter-Auswahl im Terminformular/Kalenderfilter laedt serverseitig fest nur Seite 1 (20 Mitarbeiter) - keine Suche, keine Pagination — BEHOBEN, VOLLSTAENDIG VERIFIZIERT (qa-agent, 2026-10-01: 30/30 E2E gruen, siehe "Tatsaechliche Verifikation - finaler Stand")
 
 **Status:** Gefixt (frontend-agent, 2026-10-01). `EmployeeSearchParams` (`appointments/domain/employee.model.ts`)
 hat ein neues optionales Feld `pageSize`; `EmployeeApiService.search()` haengt es als
@@ -1001,7 +1001,87 @@ einen Login durchfuehren, kann dies zu Flakiness fuehren - ggf. die Rate-Limit-K
 fuer Test-/CI-Umgebungen ueber eine Umgebungsvariable grosszuegiger konfigurierbar machen
 (nicht Teil dieses QA-Auftrags, nur als Hinweis fuer den naechsten Sprint).
 
-## Empfehlung (qa-agent, 2026-10-01, Stand nach Bug-8-Fix)
+## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-01, nach Bug-9/10-Fixes)
+
+**Setup:** Kompletter Stack real hochgefahren per `dotnet run --project AppHost/Crm.AppHost`
+(identity-/customer-/employee-/appointment-service + Gateway + 3x Postgres + RabbitMQ, frische,
+nicht-persistente Postgres-/RabbitMQ-Container bei jedem Neustart), zusaetzlich manuell
+`npx ng serve --port 4200` fuer `Clients/crm-web`. Mehrere vollstaendige Laeufe durchgefuehrt,
+der Stack dabei mehrfach bewusst komplett neu gestartet (frische, leere Datenbanken), um
+Testdaten-Akkumulation ueber mehrere Laeufe als Stoerfaktor definitiv auszuschliessen (das war in
+einem Zwischenlauf dieser Session real beobachtet worden - Details siehe unten).
+
+**Ergebnis (mehrere Laeufe, letzter Lauf gegen frische Datenbank massgeblich):**
+
+- **Lauf A (direkt nach Bug-9/10-Fixes, Testcode noch mit den aus der vorherigen Session bekannten
+  `getByText`-/`getByRole('option').filter(...)`-Mustern): 23 von 30 gruen, 7 rot** - dieselben 7
+  wie zuvor, aber mit NEUEN, anderen Fehlerursachen als vorher dokumentiert (Bug 9/10 selbst sind
+  gemaess Server-/Client-Log definitiv behoben - kein 500 mehr bei fehlendem UTC-Offset, Mitarbeiter-
+  Dropdown laedt jetzt `pageSize=200`). Root-Cause-Analyse (Trace-Viewer, Screenshots, Server-Log)
+  ergab AUSSCHLIESSLICH Testcode-Probleme, kein Produktbug:
+  1. **"Termin im verfuegbaren Zeitfenster anlegen"**: Das Formular hat eine Autocomplete-Kunde-
+     Suche (`#customer-search` + Dropdown-Liste `#customer-results`) - der Test tippte den Namen,
+     klickte aber NIE das Autocomplete-Suchergebnis an, wodurch `customerId` im Formular leer blieb
+     und die Validierung ("Bitte einen Kunden auswaehlen") den Submit blockierte. Fix:
+     `page.locator('#customer-results').getByRole('button', { name: ... }).click()` nach dem
+     Tippen ergaenzt (an allen 3 betroffenen Stellen in `appointments.spec.ts`).
+  2. **"Wochenansicht"/4 `rbac.spec.ts`-Tests**: zwei unabhaengige Testcode-Bugs ueberlagerten sich:
+     (a) der Button fuer "naechste Periode" heisst im UI tatsaechlich **"Weiter"** (DE) bzw. "Next"
+     (EN) - NICHT "Naechste" wie die bisherige Regex `/n[äa]chste|next/i` annahm (siehe
+     `i18n/de.json`, Key `appointment.calendar.next`); die Regex fand daher nie einen Treffer und
+     wartete bis zum Timeout. Fix: Regex auf `/weiter|next/i` korrigiert (4 Stellen).
+     (b) `getByText('09:00')`/`getByText('11:00')`/`getByText('13:00')` ist in der Kalender-
+     Wochenansicht IMMER ambig (Strict-Mode-Violation): jede Gridzelle zeigt die Stundenbeschriftung
+     (z.B. "11:00") als eigenen `<span>` in JEDER der 7 Tagesspalten derselben Zeile, unabhaengig
+     davon, ob dort ein Termin liegt (siehe `calendar-view.component.html`). Der eigentliche Termin
+     wird zusaetzlich als eigener `<button>` mit Start-/Statustext gerendert. Fix: alle betroffenen
+     Assertions auf `page.getByRole('button', { name: /11:00/ })` (etc.) umgestellt - trifft
+     eindeutig nur den tatsaechlichen Termin-Button, nicht die Stundenbeschriftung.
+- **Lauf B (nach Fix 1+2, noch auf demselben, durch vorherige Laeufe gewachsenen Datenbestand):
+  27 von 30 gruen, 3 rot** - "Wochenansicht" sowie 2 der 5 `rbac.spec.ts`-Tests ("Admin sieht alle
+  Termine", "Employee sieht eigene Termine") weiterhin rot, jetzt mit einer DRITTEN,
+  unabhaengigen Ursache: der Kalender zeigte nach einmaligem "Weiter"-Klick korrekt die Woche
+  05.-11.10.2026, der jeweils per API vorbereitete Termin war aber fuer die Woche 12.-18.10.2026
+  angelegt worden - eine Woche zu spaet, sodass er in der angezeigten Woche nie auftauchen konnte.
+  Root Cause (dritter, letzter Testcode-Bug, `fixtures/api.ts#nextWeekday`): die Funktion rechnete
+  zuerst `heute + 7 Tage` und suchte ERST DANACH den naechsten Zieltag (z.B. Montag) ab diesem
+  bereits verschobenen Datum. Faellt `heute + 7` auf einen Wochentag NACH dem Zieltag (z.B. heute
+  Donnerstag -> "+7" ist wieder Donnerstag, Montag liegt davor in der Woche), rutscht die Suche eine
+  komplette weitere Woche weiter - das Ergebnis lag dann systematisch eine Woche nach der per
+  einmaligem "Weiter"-Klick erreichbaren Woche, exakt wie beobachtet. Fix: `nextWeekday()` bestimmt
+  jetzt zuerst den Montag der AKTUELLEN Woche, springt davon exakt 7 Tage auf den Montag der
+  NAECHSTEN Woche und wendet erst dann den Zieltag innerhalb dieser eindeutig bestimmten Woche an -
+  dadurch immer exakt eine Woche nach "heute", unabhaengig vom aktuellen Wochentag. Real mit
+  `node -e` gegen die echte Systemzeit verifiziert (heute Do 01.10.2026 -> liefert jetzt Mo
+  05.10.2026, nicht mehr Mo 12.10.2026).
+- **Zusaetzlich entdeckt (kein eigener Bug-Fix noetig, nur Testdesign-Anpassung):** die beiden
+  `rbac.spec.ts`-Tests "Employee-Versuch ... zu verschieben/stornieren (403)" navigierten per UI
+  direkt zur Termindetailsicht eines FREMDEN Termins, um dort das Verschieben-/Stornieren-Formular
+  zu bedienen. `GetAppointmentByIdHandler` behandelt einen fremden Termin fuer die Rolle `Employee`
+  aber bewusst wie "nicht gefunden" (kein Existenz-Leak, siehe Kommentar im Handler, Umsetzung von
+  Task 11a) - die Termindetailsicht kann das Formular fuer diesen Termin daher gar nicht erst
+  rendern (zeigt stattdessen eine Fehlermeldung). Das ist KEIN Bug, sondern eine noch strengere
+  Absicherung als von der Spec gefordert. Die beiden Tests pruefen das 403-Forbidden-Requirement
+  deshalb jetzt direkt per authentifiziertem `fetch` (mit dem echten Employee-Token) gegen
+  `PUT .../reschedule` bzw. `POST .../cancel`, UND verifizieren zusaetzlich per UI, dass die
+  Detailsicht fuer den fremden Termin korrekt eine Fehlermeldung statt des Formulars zeigt (kein
+  Verlust an Testabdeckung, lediglich der Ort der Pruefung angepasst).
+- **Lauf C (finaler, massgeblicher Lauf - kompletter AppHost-Neustart mit frischen, leeren
+  Datenbanken, NACH allen vier Testcode-Fixes, keine manuelle Interaktion mit dem System waehrend
+  des Laufs): 30 von 30 gruen.** Laufzeit 8,7 Minuten (`auth.spec.ts`/`employees.spec.ts` zeigen
+  vereinzelt 1-Minuten-Laufzeiten durch den korrekt funktionierenden Login-Rate-Limiter, siehe
+  `fixtures/auth.ts`/`fixtures/api.ts` - kein Testcode-/Produktproblem). Alle fuenf Spec-Dateien
+  vollstaendig gruen: `customers.spec.ts` 6/6, `employees.spec.ts` 7/7, `appointments.spec.ts` 6/6,
+  `rbac.spec.ts` 5/5, `auth.spec.ts` 6/6.
+- **Fazit:** Bug 9 und Bug 10 sind beide vollstaendig verifiziert behoben (kein einziger der 30
+  Tests scheitert mehr daran). Alle in dieser Session zusaetzlich entdeckten Abweichungen waren
+  ausschliesslich Testcode-Probleme (falscher Klick-Flow, falsche i18n-Button-Beschriftung,
+  mehrdeutiger Locator, Off-by-one-Week in einer Testdaten-Hilfsfunktion, unerreichbarer UI-Pfad
+  durch bewusst strengere RBAC-Absicherung) - **kein weiterer, neuer Produktbug gefunden.**
+  `terminverwaltung.openspec.md` ist aus QA-Sicht jetzt **vollstaendig gruen und archivierungsreif**
+  (vorbehaltlich des offenen Doku-Tasks, siehe Empfehlung unten).
+
+## Empfehlung (qa-agent, 2026-10-01, Stand nach Bug-8-Fix) — HISTORISCH, siehe finale Empfehlung unten
 
 **Archivierung von `terminverwaltung.openspec.md` NICHT empfehlen.** 23 von 30 E2E-Tests sind
 gruen, die 7 roten Tests sind ausschliesslich auf zwei neue, echte, unabhaengig von der
@@ -1025,3 +1105,29 @@ Naechste Schritte: Bug 9 und Bug 10 an `backend-agent`/`frontend-agent` zurueckg
 Fix diesen Lauf (idealerweise gegen eine frische Datenbank, siehe Hinweis zu Bug 10) wiederholen.
 Bei dann durchgehend 30/30 gruen ist `terminverwaltung.openspec.md` archivierungsreif (vorbehaltlich
 offener Doku-Tasks, analog zu den anderen drei Specs).
+
+## Finale Empfehlung (qa-agent, 2026-10-01, nach Bug-9/10-Fixes - massgeblich)
+
+**30 von 30 E2E-Tests sind gruen** (real verifiziert gegen eine frisch gestartete, leere
+Datenbank, kompletter AppHost-Neustart, keine manuelle Interaktion mit dem System waehrend des
+Laufs - siehe "Tatsaechliche Verifikation - finaler Stand" oben). Bug 9 (UTC-Offset-Handling bei
+Terminanlage/-verschiebung) und Bug 10 (Mitarbeiter-Pagination im Formular/Filter) sind beide
+vollstaendig behoben und verifiziert. Alle weiteren in dieser Session aufgefallenen Abweichungen
+waren ausschliesslich Testcode-Probleme (siehe oben: fehlender Autocomplete-Klick, falsche
+i18n-Button-Beschriftung in der Testsuite, mehrdeutiger `getByText`-Locator im Kalendergrid,
+Off-by-one-Week in `fixtures/api.ts#nextWeekday`, Testdesign-Anpassung fuer die beiden
+403-Forbidden-RBAC-Tests) - **kein neuer Produktbug**.
+
+**Alle vier Specs (`kundenverwaltung.openspec.md`, `mitarbeiterverwaltung.openspec.md`,
+`terminverwaltung.openspec.md`, `authentifizierung.openspec.md`) sind damit aus QA-Sicht
+vollstaendig gruen.** Fuer jede der vier Specs ist in Abschnitt 8 (Tasks) ausschliesslich Task 5
+(Doku/OpenAPI, Verantwortung `doc-agent`) noch offen - alle anderen Tasks sind bereits als
+erledigt markiert (siehe jeweilige `UserStories/*.openspec.md`, Task 4 wurde im Rahmen dieser
+Session fuer alle vier Specs auf den aktuellen, vollstaendig gruenen Stand aktualisiert).
+`terminverwaltung.openspec.md` ist damit insbesondere nicht mehr die einzige Spec mit offenen
+E2E-Luecken - sie hat exakt denselben Status wie die anderen drei (nur Doku offen).
+
+**Empfehlung:** `doc-agent` mit Task 5 (Swagger/OpenAPI-Doku, READMEs, Systemuebersicht) fuer alle
+vier Specs beauftragen. Danach koennen alle vier Change-Specs gemaess dem OpenSpec-Workflow
+(`UserStories/specs/` uebernehmen, `UserStories/archive/` verschieben) archiviert werden - aus
+QA-Sicht steht dem nichts mehr entgegen.

@@ -68,6 +68,11 @@ test('Termin im verfuegbaren Zeitfenster anlegen', async ({ page }) => {
   await settleAfterNavigation(page);
 
   await page.locator('#customer-search').fill(customer.lastName ?? 'Anna');
+  await page
+    .locator('#customer-results')
+    .getByRole('button', { name: customer.lastName ?? 'Anna' })
+    .click();
+  await expect(page.locator('#customer-search')).toHaveValue(new RegExp(customer.lastName ?? 'Anna'));
   await page.locator('#employee-select').selectOption(employee.id);
   await page.locator('#date-input').fill(dateIso);
   await page.locator('#service-select').selectOption(SERVICE.serviceId);
@@ -94,6 +99,8 @@ test('Termin ausserhalb der Arbeitszeit zeigt Validierungsfehler und persistiert
   await settleAfterNavigation(page);
 
   await page.locator('#customer-search').fill(customer.lastName);
+  await page.locator('#customer-results').getByRole('button', { name: customer.lastName }).click();
+  await expect(page.locator('#customer-search')).toHaveValue(new RegExp(customer.lastName));
   await page.locator('#employee-select').selectOption(employee.id);
   await page.locator('#date-input').fill(dateIso);
   await page.locator('#service-select').selectOption(SERVICE.serviceId);
@@ -140,6 +147,8 @@ test('Doppelbuchung fuer denselben Mitarbeiter wird verhindert', async ({ page }
   await settleAfterNavigation(page);
 
   await page.locator('#customer-search').fill(customerB.lastName);
+  await page.locator('#customer-results').getByRole('button', { name: customerB.lastName }).click();
+  await expect(page.locator('#customer-search')).toHaveValue(new RegExp(customerB.lastName));
   await page.locator('#employee-select').selectOption(employee.id);
   await page.locator('#date-input').fill(dateIso);
   await page.locator('#service-select').selectOption(SERVICE.serviceId);
@@ -248,8 +257,12 @@ test('Wochenansicht zeigt Termine eines Mitarbeiters zeitlich korrekt', async ({
   await page.getByRole('tab', { name: /woche|week/i }).click();
   await page.locator('#employee-filter').selectOption(employee.id);
   // nextWeekday(1) liegt in der kommenden Kalenderwoche -> einmal "naechste Periode".
-  await page.getByRole('button', { name: /n[äa]chste|next/i }).click();
+  await page.getByRole('button', { name: /weiter|next/i }).click();
 
   await expect(page.getByRole('grid')).toBeVisible();
-  await expect(page.getByText('11:00')).toBeVisible();
+  // Jede Kalenderzelle zeigt die Stundenbeschriftung (z.B. "11:00") unabhaengig davon, ob ein
+  // Termin existiert - getByText('11:00') matcht daher ALLE 7 Tagesspalten dieser Zeile
+  // (Strict-Mode-Verstoss). Der eigentliche Termin wird als eigener <button> mit Start-/Status-Text
+  // gerendert (calendar-view.component.html) - darueber eindeutig identifizierbar.
+  await expect(page.getByRole('button', { name: /11:00/ })).toBeVisible();
 });

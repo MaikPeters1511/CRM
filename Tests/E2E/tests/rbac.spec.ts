@@ -3,6 +3,7 @@ import { urls, seedUsers } from '../fixtures/env';
 import { loginViaUi } from '../fixtures/auth';
 import {
   loginAsAdmin,
+  loginViaApi,
   createEmployee,
   assignService,
   setWorkingHours,
@@ -85,14 +86,17 @@ test('Admin sieht alle Termine (Gesamtuebersicht ueber mehrere Mitarbeiter)', as
   await page.goto(`${urls.appointmentWeb}/appointments`);
   await settleAfterNavigation(page);
   await page.getByRole('tab', { name: /woche|week/i }).click();
-  await page.getByRole('button', { name: /n[äa]chste|next/i }).click();
+  await page.getByRole('button', { name: /weiter|next/i }).click();
 
   // Ohne Mitarbeiterfilter ("Alle Mitarbeiter") sieht der Admin Termine beider Mitarbeiter.
-  await expect(page.getByText('09:00')).toBeVisible();
+  // Hinweis: getByText('09:00') wuerde die Stundenbeschriftung treffen, die JEDE Kalenderzelle
+  // dieser Zeile unabhaengig von einem Termin zeigt (Strict-Mode-Verstoss ueber alle 7
+  // Tagesspalten) - der eigentliche Termin ist ein eigener <button> (calendar-view.component.html).
+  await expect(page.getByRole('button', { name: /09:00/ })).toBeVisible();
   await page.locator('#employee-filter').selectOption(employeeB.id);
-  await expect(page.getByText('11:00')).toBeVisible();
+  await expect(page.getByRole('button', { name: /11:00/ })).toBeVisible();
   await page.locator('#employee-filter').selectOption(employeeA.id);
-  await expect(page.getByText('09:00')).toBeVisible();
+  await expect(page.getByRole('button', { name: /09:00/ })).toBeVisible();
 });
 
 test('Employee sieht ueber die Kalenderansicht keine fremden Termine (Negativfall)', async ({ page }) => {
@@ -112,8 +116,8 @@ test('Employee sieht ueber die Kalenderansicht keine fremden Termine (Negativfal
   // (RBAC Frontend-Teil, siehe terminverwaltung.openspec.md Task 11b).
   await expect(page.locator('#employee-filter')).not.toBeVisible();
   await page.getByRole('tab', { name: /woche|week/i }).click();
-  await page.getByRole('button', { name: /n[äa]chste|next/i }).click();
-  await expect(page.getByText('09:00')).not.toBeVisible();
+  await page.getByRole('button', { name: /weiter|next/i }).click();
+  await expect(page.getByRole('button', { name: /09:00/ })).not.toBeVisible();
 });
 
 test('Employee sieht eigene Termine in der Kalenderansicht (Ownership-Positivfall, Bug 2 behoben)', async ({ page }) => {
@@ -159,8 +163,8 @@ test('Employee sieht eigene Termine in der Kalenderansicht (Ownership-Positivfal
   await settleAfterNavigation(page);
   await expect(page.locator('#employee-filter')).not.toBeVisible();
   await page.getByRole('tab', { name: /woche|week/i }).click();
-  await page.getByRole('button', { name: /n[äa]chste|next/i }).click();
-  await expect(page.getByText('13:00')).toBeVisible();
+  await page.getByRole('button', { name: /weiter|next/i }).click();
+  await expect(page.getByRole('button', { name: /13:00/ })).toBeVisible();
 });
 
 test('Employee-Versuch, Termin eines anderen Mitarbeiters zu verschieben, wird mit Fehlermeldung im UI abgelehnt (403)', async ({
@@ -169,18 +173,29 @@ test('Employee-Versuch, Termin eines anderen Mitarbeiters zu verschieben, wird m
   const admin = await loginAsAdmin();
   const { appointment, dateIso } = await setupEmployeeWithAppointment(admin.accessToken, 'FremdVerschieben', '14:00', '15:00');
 
+  // GetAppointmentByIdHandler behandelt einen fremden Termin fuer die Rolle Employee bewusst wie
+  // "nicht gefunden" (keine Existenzbestaetigung, siehe GetAppointmentByIdHandler.cs) - die
+  // Termindetailsicht kann das Verschieben-Formular fuer diesen Termin daher gar nicht erst
+  // rendern (appointment-detail.component.html zeigt stattdessen die Fehlermeldung). Das ist
+  // KEIN Testfehler, sondern die erwartete, noch strengere Absicherung (der Employee sieht nicht
+  // einmal, dass der Termin existiert) - das eigentliche 403-Forbidden-Requirement aus
+  // terminverwaltung.openspec.md wird direkt gegen die API verifiziert (RescheduleAppointmentHandler
+  // prueft die Ownership unabhaengig vom GetById-Pfad).
   await loginViaUi(page, urls.appointmentWeb, seedUsers.employee.email, seedUsers.employee.password);
   await page.goto(`${urls.appointmentWeb}/appointments/${appointment.id}`);
   await settleAfterNavigation(page);
+  await expect(page.getByRole('alert').first()).toBeVisible();
+  await expect(page.locator('#reschedule-date')).not.toBeVisible();
 
-  await page.locator('#reschedule-date').fill(dateIso);
-  await page.locator('#reschedule-start').fill('16:00');
-  await page.locator('#reschedule-end').fill('17:00');
-  await page.getByRole('button', { name: /verschieben|reschedule/i }).click();
+  const employee = await loginViaApi(seedUsers.employee.email, seedUsers.employee.password);
+  const reschedule = await fetch(`${urls.appointmentApi}/appointments/${appointment.id}/reschedule`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${employee.accessToken}` },
+    body: JSON.stringify({ newStart: `${dateIso}T16:00:00Z`, newEnd: `${dateIso}T17:00:00Z` }),
+  });
+  expect(reschedule.status).toBe(403);
 
-  await expect(page.getByRole('alert').filter({ hasText: /berechtigung|allowed|forbidden/i }).first()).toBeVisible();
-
-  // Serverseitig verifizieren, dass der Termin trotz UI-Versuch unveraendert blieb (403, kein Update).
+  // Serverseitig verifizieren, dass der Termin trotz des Versuchs unveraendert blieb (403, kein Update).
   const check = await fetch(`${urls.appointmentApi}/appointments/${appointment.id}`, {
     headers: { Authorization: `Bearer ${admin.accessToken}` },
   });
@@ -194,15 +209,22 @@ test('Employee-Versuch, Termin eines anderen Mitarbeiters zu stornieren, wird mi
   const admin = await loginAsAdmin();
   const { appointment } = await setupEmployeeWithAppointment(admin.accessToken, 'FremdStornieren', '09:30', '10:30');
 
+  // Siehe Kommentar im vorherigen Test: GetAppointmentByIdHandler liefert fuer einen fremden
+  // Termin "nicht gefunden" - die Stornieren-Aktion ist im UI fuer diesen Termin daher gar nicht
+  // erst erreichbar. Das 403-Forbidden-Requirement wird direkt gegen die API verifiziert.
   await loginViaUi(page, urls.appointmentWeb, seedUsers.employee.email, seedUsers.employee.password);
   await page.goto(`${urls.appointmentWeb}/appointments/${appointment.id}`);
   await settleAfterNavigation(page);
+  await expect(page.getByRole('alert').first()).toBeVisible();
+  await expect(page.locator('#cancel-reason')).not.toBeVisible();
 
-  await page.getByRole('button', { name: /stornieren|cancel/i }).first().click();
-  await page.locator('#cancel-reason').fill('Fremder Storno-Versuch');
-  await page.getByRole('dialog').getByRole('button', { name: /stornieren|cancel/i }).click();
-
-  await expect(page.getByRole('alert').filter({ hasText: /berechtigung|allowed|forbidden/i }).first()).toBeVisible();
+  const employee = await loginViaApi(seedUsers.employee.email, seedUsers.employee.password);
+  const cancel = await fetch(`${urls.appointmentApi}/appointments/${appointment.id}/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${employee.accessToken}` },
+    body: JSON.stringify({ reason: 'Fremder Storno-Versuch' }),
+  });
+  expect(cancel.status).toBe(403);
 
   const check = await fetch(`${urls.appointmentApi}/appointments/${appointment.id}`, {
     headers: { Authorization: `Bearer ${admin.accessToken}` },
