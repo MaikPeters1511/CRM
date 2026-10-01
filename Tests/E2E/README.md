@@ -406,9 +406,31 @@ vorhandenen EF-Core-Migrationen in `Development` fehlt in allen vier Services (n
 ergaenzt, siehe oben) - sollte als eigenstaendiges Thema (devops-agent/backend-agent) behandelt
 werden.
 
-### Bug 5 (P0, devops-agent/backend-agent): customer-service und appointment-service wenden EF-Core-Migrationen beim Start NICHT automatisch an -> jeder Request gegen eine frische Postgres-Instanz schlaegt mit 500 fehl
+### Bug 5 (P0, devops-agent/backend-agent): customer-service und appointment-service wenden EF-Core-Migrationen beim Start NICHT automatisch an -> jeder Request gegen eine frische Postgres-Instanz schlaegt mit 500 fehl — BEHOBEN
 
-**Status:** offen, nicht gefixt (qa-agent, 2026-09-30, im finalen Verifikationslauf entdeckt).
+**Status:** Behoben (backend-agent, 2026-10-01). Neue, pro Service identische
+`DatabaseMigrationHostedService<TDbContext>`-Klasse (`Services/customer-service/src/CustomerService.Infrastructure/Persistence/`,
+`Services/appointment-service/src/AppointmentService.Infrastructure/Persistence/`,
+`Services/employee-service/src/EmployeeService.Infrastructure/Persistence/`), registriert
+UNCONDITIONAL (jede Umgebung, nicht nur Development - kein separater Migrations-Deployment-Schritt
+in dieser Landschaft) in den jeweiligen `AddXServiceInfrastructure`-Methoden; wendet beim Start
+`dbContext.Database.MigrateAsync()` an, Fehler werden geloggt, verhindern den Service-Start aber
+nicht (z.B. Integrationstests mit Fake-Repository/ungueltigem Connection-String). Bewusst getrennt
+vom reinen Development-only Daten-Seeding (Bug 2, `DevEmployeeSeedHostedService`), aus dem die
+bisher dort "nebenbei" laufende Migration entfernt wurde. Real verifiziert: frischer,
+nicht-migrierter Postgres-Container (`docker run postgres:16-alpine`, leere `customer_db`),
+`customer-service` dagegen gestartet (`ASPNETCORE_ENVIRONMENT=Development`,
+`ConnectionStrings__customer_db` auf die leere DB zeigend) - Log zeigt automatisches
+`Applying migration '20260929103501_InitialCreate'`, danach `\dt` bestaetigt die angelegten
+Tabellen (`customers`, `__EFMigrationsHistory`); `GET /api/customers` liefert danach `401`
+(Auth-Pruefung erreicht, kein `500` mehr). `appointment-service`/`employee-service` nutzen
+identischen Code (gleiche Klasse, gleiches Registrierungsmuster) und werden zusaetzlich indirekt
+durch die Testcontainers-basierten `*RealInfrastructureApiTests` (frischer Postgres-Container pro
+Testlauf, keine manuelle Migration) abgedeckt. `dotnet build Crm.slnx`/`dotnet test Crm.slnx`
+(134 Tests) bleiben gruen. Die urspruengliche Bug-Beschreibung unten bleibt zur
+Nachvollziehbarkeit unveraendert erhalten.
+
+**Status (alt):** offen, nicht gefixt (qa-agent, 2026-09-30, im finalen Verifikationslauf entdeckt).
 Bereits in Bug 4 als bekannte Luecke vermerkt ("automatisches Anwenden der vorhandenen
 EF-Core-Migrationen in Development fehlt in allen vier Services... nur fuer employee-service
 jetzt als Nebeneffekt des Bug-2-Fixes ergaenzt"), hier real reproduziert und als eigener
@@ -450,9 +472,21 @@ wiederverwendbares Muster (nicht dreifach copy-paste), z.B. eine kleine gemeinsa
 Alternativ/ergaenzend (devops-agent): Migrationen als expliziten Schritt im AppHost/CI-Pipeline
 vor dem eigentlichen Testlauf ausfuehren.
 
-### Bug 6 (P0, backend-agent): `PUT /employees/{id}/schedule` schlaegt beim ERSTEN Setzen der Arbeitszeit mit `DbUpdateConcurrencyException` fehl (EF Core generiert UPDATE statt INSERT)
+### Bug 6 (P0, backend-agent): `PUT /employees/{id}/schedule` schlaegt beim ERSTEN Setzen der Arbeitszeit mit `DbUpdateConcurrencyException` fehl (EF Core generiert UPDATE statt INSERT) — BEHOBEN
 
-**Status:** offen, nicht gefixt (qa-agent, 2026-09-30, im finalen Verifikationslauf entdeckt und
+**Status:** Behoben (backend-agent, 2026-10-01). `EmployeeDbContext.OnModelCreating`:
+`workingHoursBuilder.Property(w => w.Id).ValueGeneratedNever();` ergaenzt - exakt wie im
+Fix-Vorschlag. Beim Review wurde zusaetzlich `absencesBuilder` auf dasselbe Muster geprueft (dort
+bereits als wahrscheinlich betroffen vermerkt) und ebenfalls mit `ValueGeneratedNever()` fuer
+`Absence.Id` korrigiert, um denselben Fehler fuer Abwesenheiten vorsorglich zu vermeiden. Real
+verifiziert: `Tests/EmployeeService.Tests/Web/DebugScheduleTests.cs`,
+`SetWorkingHours_FirstTimeForEmployee_ReturnsOkInsteadOfConcurrencyException` laeuft gegen eine
+echte, frische Testcontainers-PostgreSQL und liefert jetzt `200 OK` (vorher `500` mit
+`DbUpdateConcurrencyException`). `dotnet build Crm.slnx`/`dotnet test Crm.slnx` (134 Tests)
+bleiben gruen. Die urspruengliche Bug-Beschreibung unten bleibt zur Nachvollziehbarkeit
+unveraendert erhalten.
+
+**Status (alt):** offen, nicht gefixt (qa-agent, 2026-09-30, im finalen Verifikationslauf entdeckt und
 per Testcontainers-Regressionstest verifiziert).
 
 **Reproduktion:** Neuen Mitarbeiter anlegen (leere `WorkingHours`-Collection), danach
@@ -502,9 +536,33 @@ ebenso betroffen - siehe Bug 7, wo die Absence-Erstellung aus einem anderen Grun
 scheitert, sodass dieser Effekt dort noch nicht sichtbar wurde; nach Beheben von Bug 7 bitte
 erneut pruefen).
 
-### Bug 7 (P0, backend-agent): `POST /employees/{id}/absences` scheitert IMMER mit `InvalidServiceLocationException` fuer `IAppointmentAvailabilityClient` - Bug-4-Fix war unvollstaendig
+### Bug 7 (P0, backend-agent): `POST /employees/{id}/absences` scheitert IMMER mit `InvalidServiceLocationException` fuer `IAppointmentAvailabilityClient` - Bug-4-Fix war unvollstaendig — BEHOBEN
 
-**Status:** offen, nicht gefixt (qa-agent, 2026-09-30, im finalen Verifikationslauf entdeckt und
+**Status:** Behoben (backend-agent, 2026-10-01). `opts.CodeGeneration.AlwaysUseServiceLocationFor<IAppointmentAvailabilityClient>()`
+in `Services/employee-service/src/EmployeeService.Web/Program.cs` ergaenzt (identisches Muster
+wie der Bug-4-Fix fuer `IEmployeeRepository`). Beim Review (Grep nach injizierten
+Interfaces in allen Application-Handlern aller drei Services) wurde derselbe
+"opaque lambda factory"-Registrierungsmechanismus (`AddHttpClient<TClient, TImplementation>`)
+auch bei `ICustomerVerificationClient`/`IEmployeeAvailabilityClient` in `appointment-service`
+(`CreateAppointmentHandler`/`RescheduleAppointmentHandler`) gefunden - vorsorglich im selben Zug
+behoben (`Services/appointment-service/src/AppointmentService.Web/Program.cs`), da identischer
+Mechanismus, identisches Risiko. Zusaetzlich beim Verifizieren des Fixes eine direkt anschliessende
+Folgeursache entdeckt und behoben: `Services:AppointmentService:BaseUrl`/`Services:CustomerService:BaseUrl`/
+`Services:EmployeeService:BaseUrl` sind in den jeweiligen `appsettings.json` bewusst als leerer
+String vorbelegt (Platzhalter fuer Environment-Variable/Aspire) - ein simples `??` greift fuer
+einen bereits vorhandenen, aber leeren String NICHT, was zu einer `UriFormatException` statt dem
+beabsichtigten Fallback fuehrte, sobald die Service-Location-Aufloesung ueberhaupt erst bis zu
+dieser Stelle kommt (vorher durch die `InvalidServiceLocationException` verdeckt). Fix:
+`IsNullOrWhiteSpace`-Pruefung statt `??` in allen drei betroffenen `AddXClient`-Methoden
+(`EmployeeService.Infrastructure.DependencyInjection`, `AppointmentService.Infrastructure.DependencyInjection`).
+Real verifiziert: `Tests/EmployeeService.Tests/Web/DebugScheduleTests.cs`,
+`AddAbsence_ReturnsOkOrConflictInsteadOfInvalidServiceLocationException` (ergaenzt um einen
+minimalen lokalen HTTP-Stub fuer `appointment-service`, da in der Testumgebung kein echter
+appointment-service laeuft) liefert jetzt `200 OK` statt `500`. `dotnet build Crm.slnx`/
+`dotnet test Crm.slnx` (134 Tests) bleiben gruen. Die urspruengliche Bug-Beschreibung unten
+bleibt zur Nachvollziehbarkeit unveraendert erhalten.
+
+**Status (alt):** offen, nicht gefixt (qa-agent, 2026-09-30, im finalen Verifikationslauf entdeckt und
 per Testcontainers-Regressionstest verifiziert).
 
 **Reproduktion:** Neuen Mitarbeiter anlegen, danach `POST /api/employees/{id}/absences`:
