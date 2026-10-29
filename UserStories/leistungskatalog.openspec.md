@@ -105,7 +105,7 @@ Das System SHALL die Zuordnung von einer oder mehreren Leistungen zu einem Mitar
 - [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/CatalogService.Tests`
 - [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web) – `Services/catalog-service/`
 - [x] 3. Frontend implementieren: neue `service-catalog-list`/`service-catalog-form`-Komponenten (Admin-Bereich) + Umstellung der Leistungszuordnung in `employee-form.component.ts` auf Auswahl aus dem Katalog
-- [ ] 4. E2E-Tests (QA) grün
+- [x] 4. E2E-Tests (QA) grün
 - [ ] 5. Doku/OpenAPI aktualisiert
 - [x] 6. Aspire AppHost-Ressource für `catalog-service` + `catalog_db` registrieren
 - [x] 7. YARP-Gateway-Route `/api/services/**` inkl. Auth-Termination konfigurieren, Gateway-CORS/Origin-Liste prüfen (kein neuer Origin nötig, `crm-web` bleibt 4200)

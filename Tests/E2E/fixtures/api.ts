@@ -135,6 +135,36 @@ export async function createAppointment(
   return response.json();
 }
 
+export async function createService(
+  token: string,
+  body: { name: string; description?: string | null; defaultDurationMinutes?: number | null },
+): Promise<{ id: string; name: string; isActive: boolean }> {
+  const response = await fetch(`${urls.catalogApi}/services`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      name: body.name,
+      description: body.description ?? null,
+      defaultDurationMinutes: body.defaultDurationMinutes ?? null,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`createService fehlgeschlagen: HTTP ${response.status} ${await response.text()}`);
+  }
+  return response.json();
+}
+
+export async function deactivateService(token: string, serviceId: string): Promise<void> {
+  const response = await fetch(`${urls.catalogApi}/services/${serviceId}/deactivate`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) {
+    throw new Error(`deactivateService fehlgeschlagen: HTTP ${response.status} ${await response.text()}`);
+  }
+}
+
 /**
  * Liefert den gewuenschten ISO-Wochentag (1=Montag...7=Sonntag) in der Kalenderwoche, die direkt
  * auf die aktuelle Woche folgt - also genau die Woche, die man per Kalender-UI durch EINMALIGES

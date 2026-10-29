@@ -1,13 +1,14 @@
 # CRM E2E-Tests (Playwright)
 
-End-to-End-Tests fuer die drei Kern-Capabilities des CRM (Kundenverwaltung, Mitarbeiterverwaltung,
-Terminverwaltung inkl. RBAC) sowie den Authentifizierungs-Flow, abgeleitet direkt aus den
-Scenarios (GIVEN/WHEN/THEN) in:
+End-to-End-Tests fuer die vier Kern-Capabilities des CRM (Kundenverwaltung, Mitarbeiterverwaltung,
+Terminverwaltung inkl. RBAC, Leistungskatalog) sowie den Authentifizierungs-Flow, abgeleitet
+direkt aus den Scenarios (GIVEN/WHEN/THEN) in:
 
 - `UserStories/kundenverwaltung.openspec.md`
 - `UserStories/mitarbeiterverwaltung.openspec.md`
 - `UserStories/terminverwaltung.openspec.md`
 - `UserStories/authentifizierung.openspec.md`
+- `UserStories/leistungskatalog.openspec.md`
 
 ## Warum Playwright (statt Cypress)
 
@@ -125,7 +126,10 @@ Tests/E2E/
   tests/
     auth.spec.ts          Login/Session-Handling (authentifizierung.openspec.md)
     customers.spec.ts     Kundenverwaltung (kundenverwaltung.openspec.md)
-    employees.spec.ts     Mitarbeiterverwaltung (mitarbeiterverwaltung.openspec.md)
+    employees.spec.ts     Mitarbeiterverwaltung (mitarbeiterverwaltung.openspec.md),
+                           inkl. Leistungszuordnung aus dem Katalog (leistungskatalog.openspec.md,
+                           MODIFIED Requirement)
+    catalog.spec.ts        Leistungskatalog CRUD/Suche/Deaktivieren (leistungskatalog.openspec.md)
     appointments.spec.ts  Terminverwaltung ohne RBAC (terminverwaltung.openspec.md)
     rbac.spec.ts          RBAC-Requirement "Sichtbarkeit von Terminen nach Rolle"
 ```
@@ -147,6 +151,78 @@ Jedes SHALL-Requirement aus den vier Change-Specs hat mindestens einen Test:
 - **terminverwaltung.openspec.md**: Anlegen im Zeitfenster, ausserhalb der Arbeitszeit,
   Doppelbuchung, Verschieben, Stornieren, Wochenansicht, RBAC (Admin sieht alle, Employee
   sieht keine fremden, 403 bei Fremdzugriff auf Verschieben/Stornieren mit UI-Fehlermeldung).
+- **leistungskatalog.openspec.md**: Leistung anlegen (gueltig/ohne Namen), Suche nach Namen,
+  Bearbeiten, Deaktivieren (inkl. Sichtbarkeit ueber den Inaktiv-Status-Filter) -
+  `tests/catalog.spec.ts`. MODIFIED Requirement "Leistungen/Qualifikationen zuordnen"
+  (Auswahl aus dem Katalog statt Freitext, Snapshot bleibt bei Deaktivierung sichtbar) -
+  `tests/employees.spec.ts`.
+
+## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-29, Leistungskatalog)
+
+**Hintergrund:** Neue Capability "Leistungskatalog" (`catalog-service` Backend-Commit `e92abed`,
+`crm-web`-Frontend-Commit `8de99df`, siehe `UserStories/leistungskatalog.openspec.md`). Aufgabe:
+neue E2E-Abdeckung fuer alle Scenarios aus Abschnitt 3 schreiben (`tests/catalog.spec.ts`, neu) und
+den bestehenden "Leistung zuordnen"-Test in `tests/employees.spec.ts` von den beiden alten
+Freitextfeldern (`#newServiceId`/`#newServiceName`) auf das neue, katalogbefuellte `<select>`
+(`#newServiceSelect`) umstellen, inkl. Test fuer das MODIFIED-Requirement-Snapshot-Scenario
+("bereits zugeordnete, inzwischen deaktivierte Leistung bleibt sichtbar").
+
+**Setup:** Kompletter Stack real hochgefahren per `dotnet run --project AppHost/Crm.AppHost`
+(identity-/customer-/employee-/appointment-/catalog-service + Gateway + 4x Postgres + RabbitMQ +
+`crm-web` via `AddJavaScriptApp`, echte, nicht-persistente Docker-Container). `playwright.config.ts`
+hatte fuer `catalog.spec.ts` noch KEIN `testMatch`-Projekt (Testcode-Luecke, selbst behoben: neues
+Projekt `catalog` ergaenzt - ohne diesen Fix wurden die 5 neuen Tests von `npx playwright test`
+komplett ignoriert, kein Fehler, einfach 0 ausgefuehrte Tests aus dieser Datei).
+
+**Ergebnis (mehrere Laeufe wegen zwei selbst identifizierten und behobenen Testcode-Fehlern,
+finaler Lauf auf frisch neu gestartetem Stack massgeblich):**
+
+- **Erster Lauf (`employees.spec.ts` "Leistung aus dem Katalog einem Mitarbeiter zuordnen"
+  schlug fehl):** Testcode-Race (kein Produktbug, real per Backend-`curl`-Vergleich verifiziert -
+  `PUT /employees/{id}` persistiert Services korrekt, siehe Beleg unten). Ursache: das Formular
+  befindet sich nach dem initialen Anlegen bereits auf `/employees/:id/edit`; der anschliessende
+  Submit-Klick (Leistungszuordnung speichern) navigiert laut `EmployeeFormComponent.save()` zur
+  IDENTISCHEN Route - Angular's Router loest dafuer standardmaessig KEINE Navigation aus (keine
+  erneute `NavigationEnd`). `expect(page).toHaveURL(...)` war dadurch bereits VOR Abschluss des
+  zugrundeliegenden PUT-Requests trivial erfuellt (URL war ja nie anders), wodurch der
+  nachfolgende `page.reload()` den noch laufenden Request serverseitig abbrechen konnte, bevor er
+  die Datenbank erreichte (identisches Race-Muster wie in fruiheren Sessions dieses Dokuments,
+  siehe z.B. Bug-8-Verifikationslauf). Verifiziert, dass die Persistenz selbst korrekt ist: direkter
+  `curl`-Vergleich `POST /services` -> `POST /employees` -> `PUT /employees/{id}` (mit
+  `services: [...]`) -> `GET /employees/{id}` zeigt die Zuordnung sofort korrekt gespeichert.
+  Fix (Testcode, `tests/employees.spec.ts`, beide neuen Service-Zuordnungs-Tests): explizit auf die
+  Netzwerkantwort des `PUT /employees/{id}`-Requests warten (`page.waitForResponse(...)`), statt auf
+  eine hier nicht aussagekraeftige URL-Aenderung zu verlassen, BEVOR per `page.reload()` ein echter
+  Browser-Reload erfolgt.
+- **Zweiter Lauf (`catalog.spec.ts` "Leistung deaktivieren..." schlug fehl):** Testcode-Fehler (kein
+  Produktbug) - `page.getByText(/inaktiv|inactive/i)` matchte NICHT den erwarteten Status-Badge in
+  der Tabellenzeile, sondern (als verstecktes DOM-Element) die `<option value="inactive">Inaktiv</option>`
+  im Status-Filter-`<select>` daneben - `toBeVisible()` schlug dadurch fehl ("unexpected value
+  hidden"). Fix: Locator auf die konkrete Tabellenzeile gescoped
+  (`inactiveRow.getByText(/inaktiv|inactive/i)` statt `page.getByText(...)`).
+- **Finaler Lauf (massgeblich, kompletter AppHost-Neustart inkl. frischer, leerer Postgres-/
+  RabbitMQ-Container, nach beiden Testcode-Fixes): 36 von 36 gruen.** Laufzeit 10,9 Minuten
+  (laengere Laufzeit ausschliesslich durch den dokumentierten, korrekt funktionierenden
+  Login-Rate-Limiter, siehe "Rate-Limiting-Hinweis" unten - kein neuer Blocker). Alle sechs
+  Spec-Dateien vollstaendig gruen: `customers.spec.ts` 6/6, `employees.spec.ts` 8/8 (6 bestehende +
+  2 neue/umgestellte Leistungszuordnungs-Tests), `catalog.spec.ts` 5/5 (neu), `appointments.spec.ts`
+  6/6, `rbac.spec.ts` 5/5, `auth.spec.ts` 6/6.
+
+**Fazit:** Alle Scenarios aus `UserStories/leistungskatalog.openspec.md` Abschnitt 3 sind durch
+mindestens einen automatisierten, gruenen Test abgedeckt - sowohl die vier ADDED Requirements
+(Leistung anlegen gueltig/ungueltig, Suche, Bearbeiten, Deaktivieren) als auch das MODIFIED
+Requirement "Leistungen/Qualifikationen zuordnen" (beide Scenarios: Zuordnung aus dem Katalog,
+Snapshot bleibt nach Deaktivierung im Katalog sichtbar). **Kein neuer Produktbug gefunden** - beide
+Fehlschlaege in dieser Session waren ausschliesslich eigene Testcode-Probleme (ein Navigations-/
+Timing-Race analog bereits dokumentierter Muster, ein zu unspezifischer Text-Locator), beide
+real identifiziert, selbst behoben und durch einen abschliessenden, kompletten Stack-Neustart
+verifiziert. Die bereits laenger gruenen vier Specs (`kundenverwaltung`, `mitarbeiterverwaltung`,
+`terminverwaltung`, `authentifizierung`) bleiben unveraendert vollstaendig gruen (keine Regression
+durch die Umstellung der Leistungszuordnung auf das `<select>`).
+
+**Empfehlung:** `UserStories/leistungskatalog.openspec.md` Task 4 (E2E-Tests) kann als erledigt
+markiert werden. Task 5 (Doku/OpenAPI, `doc-agent`) bleibt offen - danach ist die Change-Spec aus
+QA-Sicht archivierungsreif.
 
 ## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-01, nach Bug-8-Fix)
 

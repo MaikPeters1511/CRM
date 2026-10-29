@@ -8,6 +8,8 @@ import {
   setWorkingHours,
   createCustomer,
   createAppointment,
+  createService,
+  deactivateService,
   nextWeekday,
   toDateInputValue,
 } from '../fixtures/api';
@@ -88,7 +90,17 @@ test('Mitarbeiter mit bereits vergebener E-Mail anlegen zeigt Konfliktfehler', a
   await expect(page.getByRole('alert').first()).toBeVisible();
 });
 
-test('Leistung einem Mitarbeiter zuordnen', async ({ page }) => {
+test('Leistung aus dem Katalog einem Mitarbeiter zuordnen', async ({ page }) => {
+  // Vorbedingung laut Scenario "Leistung aus Katalog zuordnen"
+  // (`UserStories/leistungskatalog.openspec.md`, Abschnitt 3): eine AKTIVE Leistung existiert
+  // im zentralen Leistungskatalog - ueber die API angelegt (API-first, UI-second), die
+  // eigentliche Zuordnung erfolgt unten ausschliesslich ueber die echte Browser-Interaktion
+  // (Auswahl aus dem `<select>` im Mitarbeiterformular, kein Freitext mehr - siehe
+  // `employee-form.component.html`).
+  const admin = await loginAsAdmin();
+  const serviceName = unique('Beratung');
+  const service = await createService(admin.accessToken, { name: serviceName });
+
   const lastName = unique('Beratend');
   await page.getByRole('link', { name: /neu|new/i }).click();
   await settleAfterNavigation(page);
@@ -99,14 +111,81 @@ test('Leistung einem Mitarbeiter zuordnen', async ({ page }) => {
   await page.locator('button[type=submit]').click();
   await expect(page).toHaveURL(new RegExp(`${urls.employeeWeb}/employees/.+/edit`));
 
-  await page.locator('#newServiceId').fill('beratung');
-  await page.locator('#newServiceName').fill('Beratung');
+  await page.locator('#newServiceSelect').selectOption(service.id);
   await page.getByRole('button', { name: /hinzuf[üu]gen|add/i }).click();
-  await expect(page.getByText('Beratung', { exact: true })).toBeVisible();
-  await page.locator('button[type=submit]').click();
+  await expect(page.getByText(serviceName, { exact: true })).toBeVisible();
 
+  // Testcode-Hinweis: die Seite befindet sich bereits auf `/employees/:id/edit` (Redirect nach
+  // dem Anlegen oben) - der Submit-Klick navigiert laut `EmployeeFormComponent.save()` zur
+  // IDENTISCHEN Route, Angular's Router loest dafuer standardmaessig KEINE Navigation aus
+  // (keine NavigationEnd, keine Komponenten-Neuerstellung). `expect(page).toHaveURL(...)` waere
+  // hier also trivial bereits erfuellt, OHNE auf den Abschluss des zugrundeliegenden PUT-Requests
+  // zu warten - ein nachfolgender `page.reload()` koennte den noch laufenden Request serverseitig
+  // abbrechen, bevor er die Datenbank erreicht (identisches Race-Muster wie in
+  // `Tests/E2E/README.md` dokumentiert). Daher hier explizit auf die Netzwerkantwort des PUT
+  // warten, statt auf eine (hier nicht aussagekraeftige) URL-Aenderung zu verlassen.
+  const updateResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/employees/') && response.request().method() === 'PUT',
+  );
+  await page.locator('button[type=submit]').click();
+  await updateResponsePromise;
+
+  await expect(page.getByText(serviceName, { exact: true })).toBeVisible();
+
+  // Der Mitarbeiter erscheint bei der Terminvergabe als moeglicher Ansprechpartner fuer diese
+  // Leistung - verifiziert ueber die bereits gespeicherte Zuordnung (ServiceId+ServiceName aus
+  // dem Katalog uebernommen, kein Freitext): erneutes Laden der Detailseite zeigt denselben
+  // Namen weiterhin an (Snapshot korrekt persistiert, nicht nur clientseitiger State).
+  await page.reload();
+  await settleAfterNavigation(page);
+  await expect(page.getByText(serviceName, { exact: true })).toBeVisible();
+});
+
+test('Bereits zugeordnete, inzwischen im Katalog deaktivierte Leistung bleibt im Mitarbeiterformular sichtbar', async ({
+  page,
+}) => {
+  // Scenario "Bereits zugeordnete, inzwischen deaktivierte Leistung bleibt sichtbar"
+  // (`UserStories/leistungskatalog.openspec.md`, Abschnitt 3, MODIFIED Requirement).
+  const admin = await loginAsAdmin();
+  const serviceName = unique('Pediküre');
+  const service = await createService(admin.accessToken, { name: serviceName });
+
+  const lastName = unique('Snapshothalter');
+  await page.getByRole('link', { name: /neu|new/i }).click();
+  await settleAfterNavigation(page);
+  await page.locator('#firstName').fill('Sina');
+  await page.locator('#lastName').fill(lastName);
+  await page.locator('#email').fill(`${lastName}@crm.local`);
+  await page.locator('#role').selectOption('Employee');
+  await page.locator('button[type=submit]').click();
   await expect(page).toHaveURL(new RegExp(`${urls.employeeWeb}/employees/.+/edit`));
-  await expect(page.getByText('Beratung', { exact: true })).toBeVisible();
+
+  await page.locator('#newServiceSelect').selectOption(service.id);
+  await page.getByRole('button', { name: /hinzuf[üu]gen|add/i }).click();
+  // Explizit auf die PUT-Antwort warten statt auf eine URL-Aenderung (die Seite ist bereits auf
+  // `/employees/:id/edit` - siehe ausfuehrlicher Kommentar im vorherigen Test), bevor unten per
+  // `page.reload()` ein echter Browser-Reload erfolgt.
+  const updateResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/employees/') && response.request().method() === 'PUT',
+  );
+  await page.locator('button[type=submit]').click();
+  await updateResponsePromise;
+  await expect(page.getByText(serviceName, { exact: true })).toBeVisible();
+
+  // Leistung NACH der Zuordnung im Katalog deaktivieren.
+  await deactivateService(admin.accessToken, service.id);
+
+  // Mitarbeiterformular erneut oeffnen (frischer Ladevorgang, kein zwischenzeitlicher
+  // Client-State): die bestehende Zuordnung (Snapshot-Name) bleibt unveraendert sichtbar.
+  await page.reload();
+  await settleAfterNavigation(page);
+  await expect(page.getByText(serviceName, { exact: true })).toBeVisible();
+
+  // Die deaktivierte Leistung ist nicht erneut aus der Auswahlliste neu zuordenbar - das
+  // `<select>` fuer neue Zuordnungen enthaelt sie nicht (gefiltert ueber `GET
+  // /api/services?status=true`, siehe `ServiceLookupApiService`/`EmployeeFormComponent`).
+  const options = page.locator('#newServiceSelect option');
+  await expect(options.filter({ hasText: serviceName })).toHaveCount(0);
 });
 
 test('Wochenarbeitszeit Mo-Fr 09:00-17:00 hinterlegen', async ({ page }) => {

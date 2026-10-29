@@ -47,6 +47,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'catalog',
+      testMatch: /catalog\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'appointment-web',
       testMatch: /(appointments|rbac)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
