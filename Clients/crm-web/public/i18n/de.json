@@ -156,8 +156,6 @@
       "role": "Rolle",
       "services": "Leistungen",
       "noServices": "Noch keine Leistungen zugeordnet.",
-      "serviceId": "Service-Id",
-      "serviceName": "Bezeichnung",
       "addService": "Leistung hinzufügen",
       "removeService": "{{name}} entfernen",
       "save": "Speichern",
@@ -166,7 +164,10 @@
         "firstNameRequired": "Vorname ist ein Pflichtfeld.",
         "lastNameRequired": "Nachname ist ein Pflichtfeld.",
         "emailRequired": "Eine gültige E-Mail-Adresse ist erforderlich."
-      }
+      },
+      "serviceSelectLabel": "Leistung auswählen",
+      "serviceSelectPlaceholder": "Bitte wählen…",
+      "serviceAlreadyAssigned": "Bereits zugeordnet"
     },
     "schedule": {
       "heading": "Arbeitszeiten (Wochenplan)",
@@ -289,7 +290,61 @@
       "main": "Hauptnavigation",
       "customers": "Kunden",
       "employees": "Mitarbeiter",
-      "appointments": "Termine"
+      "appointments": "Termine",
+      "catalog": "Leistungen"
+    }
+  },
+  "catalog": {
+    "list": {
+      "heading": "Leistungen",
+      "searchLabel": "Suche nach Namen",
+      "searchPlaceholder": "z. B. Beratung",
+      "statusLabel": "Status",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "statusAll": "Alle",
+      "newService": "Neue Leistung",
+      "empty": "Keine Leistungen gefunden.",
+      "loading": "Leistungen werden geladen…",
+      "columns": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "defaultDuration": "Standarddauer (Min.)",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "edit": "Bearbeiten",
+      "deactivate": "Deaktivieren",
+      "pagination": {
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageInfo": "Seite {{page}} von {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Neue Leistung anlegen",
+      "editHeading": "Leistung bearbeiten",
+      "detailsHeading": "Leistungsdaten",
+      "name": "Name",
+      "description": "Beschreibung",
+      "defaultDurationMinutes": "Standarddauer (Minuten)",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "errors": {
+        "nameRequired": "Name ist ein Pflichtfeld."
+      }
+    },
+    "deactivateModal": {
+      "title": "Leistung deaktivieren",
+      "message": "Möchten Sie {{name}} wirklich deaktivieren? Die Leistung erscheint danach nicht mehr in der Auswahl für neue Zuordnungen, bestehende Mitarbeiter-Zuordnungen bleiben unverändert.",
+      "confirm": "Deaktivieren",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "generic": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Die Leistungsdaten konnten nicht geladen werden.",
+      "saveFailed": "Die Änderungen konnten nicht gespeichert werden.",
+      "deactivateFailed": "Die Leistung konnte nicht deaktiviert werden."
     }
   }
 }

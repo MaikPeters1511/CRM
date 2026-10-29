@@ -1,0 +1,64 @@
+<section aria-labelledby="service-form-heading" class="max-w-2xl mx-auto">
+  <div class="card bg-base-100 card-border shadow-sm">
+    <div class="card-body">
+      <h1 id="service-form-heading" class="card-title">
+        {{ (isEditMode() ? 'catalog.form.editHeading' : 'catalog.form.createHeading') | translate }}
+      </h1>
+
+      @if (state.hasErrors()) {
+        <div class="alert alert-error" role="alert">
+          @for (error of state.errors(); track error) {
+            <p>{{ error | translate }}</p>
+          }
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="save()" (keydown.escape)="cancel()" class="flex flex-col gap-6">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">{{ 'catalog.form.detailsHeading' | translate }}</legend>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label class="label" for="name">{{ 'catalog.form.name' | translate }}</label>
+              <input
+                id="name"
+                type="text"
+                class="input w-full"
+                formControlName="name"
+                [attr.aria-invalid]="form.controls.name.invalid && form.controls.name.touched"
+                [attr.aria-describedby]="form.controls.name.invalid && form.controls.name.touched ? 'name-error' : null"
+              />
+              @if (form.controls.name.invalid && form.controls.name.touched) {
+                <p id="name-error" class="text-error text-sm" role="alert">
+                  {{ 'catalog.form.errors.nameRequired' | translate }}
+                </p>
+              }
+            </div>
+
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label class="label" for="description">{{ 'catalog.form.description' | translate }}</label>
+              <textarea id="description" class="textarea w-full" formControlName="description"></textarea>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="label" for="defaultDurationMinutes">{{ 'catalog.form.defaultDurationMinutes' | translate }}</label>
+              <input
+                id="defaultDurationMinutes"
+                type="number"
+                min="0"
+                class="input w-full"
+                formControlName="defaultDurationMinutes"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="card-actions justify-end">
+          <button type="button" class="btn btn-ghost" (click)="cancel()">
+            {{ 'catalog.form.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn btn-primary">{{ 'catalog.form.save' | translate }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

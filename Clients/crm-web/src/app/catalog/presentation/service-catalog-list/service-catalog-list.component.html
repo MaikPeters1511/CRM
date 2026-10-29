@@ -1,0 +1,142 @@
+<section aria-labelledby="service-list-heading">
+  <div class="flex items-center justify-between mb-4">
+    <h1 id="service-list-heading" class="text-2xl font-bold">
+      {{ 'catalog.list.heading' | translate }}
+    </h1>
+    <a class="btn btn-primary" routerLink="/catalog/new">
+      {{ 'catalog.list.newService' | translate }}
+    </a>
+  </div>
+
+  <div class="flex flex-wrap gap-4 mb-4">
+    <div class="flex flex-col gap-1">
+      <label class="label" for="service-search">{{ 'catalog.list.searchLabel' | translate }}</label>
+      <input
+        id="service-search"
+        type="search"
+        class="input"
+        [attr.aria-label]="'catalog.list.searchLabel' | translate"
+        [placeholder]="'catalog.list.searchPlaceholder' | translate"
+        [ngModel]="state.searchTerm()"
+        (ngModelChange)="onSearchChange($event)"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="label" for="service-status-filter">{{ 'catalog.list.statusLabel' | translate }}</label>
+      <select
+        id="service-status-filter"
+        class="select"
+        [attr.aria-label]="'catalog.list.statusLabel' | translate"
+        [ngModel]="statusFilterValue()"
+        (ngModelChange)="onStatusChange($event)"
+      >
+        <option value="active">{{ 'catalog.list.statusActive' | translate }}</option>
+        <option value="inactive">{{ 'catalog.list.statusInactive' | translate }}</option>
+        <option value="all">{{ 'catalog.list.statusAll' | translate }}</option>
+      </select>
+    </div>
+  </div>
+
+  @if (state.hasErrors()) {
+    <div class="alert alert-error mb-4" role="alert">
+      @for (error of state.errors(); track error) {
+        <p>{{ error | translate }}</p>
+      }
+    </div>
+  }
+
+  @if (state.loading()) {
+    <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'catalog.list.loading' | translate }}</p>
+  } @else if (state.services().length === 0) {
+    <p>{{ 'catalog.list.empty' | translate }}</p>
+  } @else {
+    <div class="overflow-x-auto">
+      <table class="table" aria-describedby="service-list-heading">
+        <thead>
+          <tr>
+            <th scope="col" [attr.aria-sort]="nameSort()">
+              <button type="button" class="btn btn-xs btn-ghost" (click)="toggleNameSort()">
+                {{ 'catalog.list.columns.name' | translate }}
+              </button>
+            </th>
+            <th scope="col">{{ 'catalog.list.columns.description' | translate }}</th>
+            <th scope="col">{{ 'catalog.list.columns.defaultDuration' | translate }}</th>
+            <th scope="col">{{ 'catalog.list.columns.status' | translate }}</th>
+            <th scope="col">{{ 'catalog.list.columns.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (service of sortedServices(); track service.id) {
+            <tr>
+              <td>{{ service.name }}</td>
+              <td>{{ service.description }}</td>
+              <td>{{ service.defaultDurationMinutes }}</td>
+              <td>
+                <span class="badge" [class.badge-success]="service.isActive" [class.badge-neutral]="!service.isActive">
+                  {{ (service.isActive ? 'catalog.list.statusActive' : 'catalog.list.statusInactive') | translate }}
+                </span>
+              </td>
+              <td class="flex gap-2">
+                <a class="btn btn-sm btn-ghost" [routerLink]="['/catalog', service.id, 'edit']">
+                  {{ 'catalog.list.edit' | translate }}
+                </a>
+                @if (service.isActive) {
+                  <button type="button" class="btn btn-sm btn-error" (click)="openDeactivateModal(service)">
+                    {{ 'catalog.list.deactivate' | translate }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex items-center gap-4 mt-4">
+      <div class="join">
+        <button
+          type="button"
+          class="btn btn-sm join-item"
+          [disabled]="state.page() <= 1"
+          (click)="goToPreviousPage()"
+        >
+          {{ 'catalog.list.pagination.previous' | translate }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm join-item"
+          [disabled]="state.page() >= totalPages()"
+          (click)="goToNextPage()"
+        >
+          {{ 'catalog.list.pagination.next' | translate }}
+        </button>
+      </div>
+      <span class="text-sm">
+        {{ 'catalog.list.pagination.pageInfo' | translate: { page: state.page(), totalPages: totalPages() } }}
+      </span>
+    </div>
+  }
+
+  @if (deactivateCandidate()) {
+    @let candidate = deactivateCandidate()!;
+    <div class="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="deactivate-modal-title" (keydown.escape)="closeDeactivateModal()">
+      <div class="modal-box" role="document" tabindex="0">
+        <h2 id="deactivate-modal-title" class="text-lg font-bold">
+          {{ 'catalog.deactivateModal.title' | translate }}
+        </h2>
+        <p class="py-4">
+          {{ 'catalog.deactivateModal.message' | translate: { name: candidate.name } }}
+        </p>
+        <div class="modal-action">
+          <button type="button" class="btn btn-error" (click)="confirmDeactivate()">
+            {{ 'catalog.deactivateModal.confirm' | translate }}
+          </button>
+          <button type="button" class="btn" (click)="closeDeactivateModal()">
+            {{ 'catalog.deactivateModal.cancel' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

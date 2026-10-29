@@ -35,7 +35,7 @@ describe('App (Shell/Navigation)', () => {
     return { fixture };
   }
 
-  it('shows navigation entries for customers, employees and appointments for an authenticated Admin', () => {
+  it('shows navigation entries for customers, employees, appointments and catalog for an authenticated Admin', () => {
     const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
 
     const links = fixture.nativeElement.querySelectorAll('nav[aria-label="crm.nav.main"] a');
@@ -43,7 +43,7 @@ describe('App (Shell/Navigation)', () => {
       a.getAttribute('routerLink'),
     );
 
-    expect(hrefs).toEqual(['/customers', '/employees', '/appointments']);
+    expect(hrefs).toEqual(['/customers', '/employees', '/appointments', '/catalog']);
   });
 
   it('shows navigation entries for customers, employees and appointments for an authenticated Employee', () => {

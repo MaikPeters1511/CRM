@@ -156,8 +156,6 @@
       "role": "Role",
       "services": "Services",
       "noServices": "No services assigned yet.",
-      "serviceId": "Service id",
-      "serviceName": "Name",
       "addService": "Add service",
       "removeService": "Remove {{name}}",
       "save": "Save",
@@ -166,7 +164,10 @@
         "firstNameRequired": "First name is required.",
         "lastNameRequired": "Last name is required.",
         "emailRequired": "A valid email address is required."
-      }
+      },
+      "serviceSelectLabel": "Select service",
+      "serviceSelectPlaceholder": "Please select…",
+      "serviceAlreadyAssigned": "Already assigned"
     },
     "schedule": {
       "heading": "Working hours (weekly schedule)",
@@ -289,7 +290,61 @@
       "main": "Main navigation",
       "customers": "Customers",
       "employees": "Employees",
-      "appointments": "Appointments"
+      "appointments": "Appointments",
+      "catalog": "Services"
+    }
+  },
+  "catalog": {
+    "list": {
+      "heading": "Services",
+      "searchLabel": "Search by name",
+      "searchPlaceholder": "e.g. Consultation",
+      "statusLabel": "Status",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "statusAll": "All",
+      "newService": "New service",
+      "empty": "No services found.",
+      "loading": "Loading services…",
+      "columns": {
+        "name": "Name",
+        "description": "Description",
+        "defaultDuration": "Default duration (min.)",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {{page}} of {{totalPages}}"
+      }
+    },
+    "form": {
+      "createHeading": "Create new service",
+      "editHeading": "Edit service",
+      "detailsHeading": "Service details",
+      "name": "Name",
+      "description": "Description",
+      "defaultDurationMinutes": "Default duration (minutes)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "nameRequired": "Name is required."
+      }
+    },
+    "deactivateModal": {
+      "title": "Deactivate service",
+      "message": "Do you really want to deactivate {{name}}? The service will no longer appear in the selection for new assignments, existing employee assignments remain unchanged.",
+      "confirm": "Deactivate",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "loadFailed": "Service data could not be loaded.",
+      "saveFailed": "The changes could not be saved.",
+      "deactivateFailed": "The service could not be deactivated."
     }
   }
 }

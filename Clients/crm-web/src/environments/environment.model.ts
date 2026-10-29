@@ -4,4 +4,5 @@ export interface Environment {
   employeeApiBaseUrl: string;
   appointmentApiBaseUrl: string;
   authApiBaseUrl: string;
+  catalogApiBaseUrl: string;
 }

@@ -13,4 +13,5 @@ export const environment: Environment = {
   employeeApiBaseUrl: gatewayBaseUrl,
   appointmentApiBaseUrl: gatewayBaseUrl,
   authApiBaseUrl: gatewayBaseUrl,
+  catalogApiBaseUrl: gatewayBaseUrl,
 };

@@ -101,12 +101,13 @@
 
       <div [formGroup]="newServiceForm" class="flex flex-wrap items-end gap-2 mt-2">
         <div class="flex flex-col gap-1">
-          <label class="label" for="newServiceId">{{ 'employee.form.serviceId' | translate }}</label>
-          <input id="newServiceId" type="text" class="input w-full" formControlName="serviceId" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="label" for="newServiceName">{{ 'employee.form.serviceName' | translate }}</label>
-          <input id="newServiceName" type="text" class="input w-full" formControlName="serviceName" />
+          <label class="label" for="newServiceSelect">{{ 'employee.form.serviceSelectLabel' | translate }}</label>
+          <select id="newServiceSelect" class="select w-full" formControlName="selectedServiceId">
+            <option value="">{{ 'employee.form.serviceSelectPlaceholder' | translate }}</option>
+            @for (service of selectableServices(); track service.id) {
+              <option [value]="service.id">{{ service.name }}</option>
+            }
+          </select>
         </div>
         <button type="button" class="btn btn-secondary" (click)="addService()">
           {{ 'employee.form.addService' | translate }}

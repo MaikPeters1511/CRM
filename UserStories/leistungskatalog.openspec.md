@@ -104,7 +104,7 @@ Das System SHALL die Zuordnung von einer oder mehreren Leistungen zu einem Mitar
 ## 8. Tasks (Implementierungs-Checkliste)
 - [x] 1. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/CatalogService.Tests`
 - [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web) – `Services/catalog-service/`
-- [ ] 3. Frontend implementieren: neue `service-catalog-list`/`service-catalog-form`-Komponenten (Admin-Bereich) + Umstellung der Leistungszuordnung in `employee-form.component.ts` auf Auswahl aus dem Katalog
+- [x] 3. Frontend implementieren: neue `service-catalog-list`/`service-catalog-form`-Komponenten (Admin-Bereich) + Umstellung der Leistungszuordnung in `employee-form.component.ts` auf Auswahl aus dem Katalog
 - [ ] 4. E2E-Tests (QA) grün
 - [ ] 5. Doku/OpenAPI aktualisiert
 - [x] 6. Aspire AppHost-Ressource für `catalog-service` + `catalog_db` registrieren
