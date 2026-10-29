@@ -40,7 +40,7 @@ builder.Services.AddIdentityServiceInfrastructure(builder.Configuration);
 // bekannten Angular-Dev-Origins statt AllowAnyOrigin. Ueber Konfiguration erweiterbar,
 // damit produktive Frontend-Origins nicht im Code hartkodiert werden muessen.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? ["http://localhost:4200", "http://localhost:4201"];
+    ?? ["http://localhost:4200"];
 
 builder.Services.AddCors(options =>
 {
