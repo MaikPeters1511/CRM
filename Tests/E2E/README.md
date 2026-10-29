@@ -991,6 +991,27 @@ page: 1 })` mit dem eingegebenen Namen aufruft (serverseitige Suche existiert la
 Pagination/Suche - pragmatischer Kurzfristig-Fix, loest das Problem aber nur bis zur naechsten
 Groessenordnung.
 
+**UMGESETZT (frontend-agent, 2026-10-29):** Der oben beschriebene `pageSize=200`-Kurzfristig-Fix
+wurde durch den damals bereits vorgeschlagenen echten Fix ersetzt. `EMPLOYEE_LOOKUP_PAGE_SIZE`
+und das `pageSize`-Feld in `EmployeeSearchParams` (`appointments/domain/employee.model.ts`)
+wurden entfernt. `appointment-form.component.ts` (`#employee-select`) und
+`calendar-view.component.ts` (`#employee-filter`) bleiben echte `<select>`-Elemente (Playwright
+`selectOption()`-Kompatibilitaet bleibt erhalten), bekommen aber je ein vorgeschaltetes, debounced
+(300ms, `distinctUntilChanged`) Freitext-Suchfeld (`#employee-search` bzw.
+`#employee-filter-search`, eigene i18n-Keys `appointment.form.employeeSearch` /
+`appointment.calendar.employeeFilterSearch`), das `employeeApi.search({ search: term, page: 1 })`
+gegen die bereits vorhandene `SearchEmployeesQuery.Search` aufruft. Ein initialer,
+ungedebouncter `search({ search: null, page: 1 })`-Aufruf laedt weiterhin eine sinnvolle
+Default-Liste. Betroffene Playwright-Tests (`appointments.spec.ts`: "Wochenansicht..."; alle 5
+Tests in `rbac.spec.ts`) tippen vor `selectOption(...)` nun den (eindeutigen, zeitstempelbasierten)
+Nachnamen des Zielmitarbeiters in das neue Suchfeld, damit er im `<select>` erscheint, unabhaengig
+von der Gesamtzahl aktiver Mitarbeiter. Unit-Tests in
+`Tests/CrmWeb.Tests/appointments/{infrastructure,presentation}/*.spec.ts` wurden entsprechend
+angepasst (129/129 gruen), `ng build` fehlerfrei. Die eigentliche Playwright-Suite wurde in dieser
+Session NICHT gegen den echten, lokal hochgefahrenen Stack ausgefuehrt (kein AppHost/Docker in
+dieser Umgebung verfuegbar) - das muss vor dem naechsten Merge/Release noch real verifiziert
+werden (siehe qa-agent).
+
 ## Rate-Limiting-Hinweis (kein Bug, aber relevant fuer Testlaeufe)
 
 Der Brute-Force-Schutz auf `POST /api/auth/login` (max. 5 Versuche/Minute/IP, siehe

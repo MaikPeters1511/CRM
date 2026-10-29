@@ -223,6 +223,7 @@
       "today": "Today",
       "next": "Next",
       "employeeFilter": "Employee",
+      "employeeFilterSearch": "Search employees",
       "allEmployees": "All employees",
       "loading": "Loading appointments…",
       "gridLabel": "Appointment calendar"
@@ -237,6 +238,7 @@
       "heading": "Create appointment",
       "customer": "Customer",
       "employee": "Employee",
+      "employeeSearch": "Search employees",
       "employeePlaceholder": "Select an employee",
       "service": "Service",
       "servicePlaceholder": "Select a service",

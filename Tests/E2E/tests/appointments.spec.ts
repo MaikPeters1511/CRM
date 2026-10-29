@@ -49,7 +49,7 @@ async function setupEmployeeWithMondaySchedule(adminToken: string) {
   await setWorkingHours(adminToken, employee.id, [
     { weekday: 'Monday', startTime: '09:00:00', endTime: '17:00:00' },
   ]);
-  return employee;
+  return { ...employee, lastName };
 }
 
 test('Termin im verfuegbaren Zeitfenster anlegen', async ({ page }) => {
@@ -73,6 +73,12 @@ test('Termin im verfuegbaren Zeitfenster anlegen', async ({ page }) => {
     .getByRole('button', { name: customer.lastName ?? 'Anna' })
     .click();
   await expect(page.locator('#customer-search')).toHaveValue(new RegExp(customer.lastName ?? 'Anna'));
+  // Mitarbeiter ueber das debounced Suchfeld eingrenzen (echte serverseitige Suche statt
+  // pageSize=200-Workaround, siehe Tests/E2E/README.md Bug 10) - der eindeutige, erst in diesem
+  // Testlauf angelegte Nachname garantiert, dass genau dieser Mitarbeiter im Select erscheint,
+  // unabhaengig von der Gesamtzahl bereits existierender aktiver Mitarbeiter.
+  await page.locator('#employee-search').fill(employee.lastName);
+  await expect(page.locator('#employee-select').locator(`option[value="${employee.id}"]`)).toHaveCount(1);
   await page.locator('#employee-select').selectOption(employee.id);
   await page.locator('#date-input').fill(dateIso);
   await page.locator('#service-select').selectOption(SERVICE.serviceId);
@@ -101,6 +107,9 @@ test('Termin ausserhalb der Arbeitszeit zeigt Validierungsfehler und persistiert
   await page.locator('#customer-search').fill(customer.lastName);
   await page.locator('#customer-results').getByRole('button', { name: customer.lastName }).click();
   await expect(page.locator('#customer-search')).toHaveValue(new RegExp(customer.lastName));
+  // Mitarbeiter ueber das debounced Suchfeld eingrenzen (siehe Kommentar im ersten Test oben).
+  await page.locator('#employee-search').fill(employee.lastName);
+  await expect(page.locator('#employee-select').locator(`option[value="${employee.id}"]`)).toHaveCount(1);
   await page.locator('#employee-select').selectOption(employee.id);
   await page.locator('#date-input').fill(dateIso);
   await page.locator('#service-select').selectOption(SERVICE.serviceId);
@@ -149,6 +158,9 @@ test('Doppelbuchung fuer denselben Mitarbeiter wird verhindert', async ({ page }
   await page.locator('#customer-search').fill(customerB.lastName);
   await page.locator('#customer-results').getByRole('button', { name: customerB.lastName }).click();
   await expect(page.locator('#customer-search')).toHaveValue(new RegExp(customerB.lastName));
+  // Mitarbeiter ueber das debounced Suchfeld eingrenzen (siehe Kommentar im ersten Test oben).
+  await page.locator('#employee-search').fill(employee.lastName);
+  await expect(page.locator('#employee-select').locator(`option[value="${employee.id}"]`)).toHaveCount(1);
   await page.locator('#employee-select').selectOption(employee.id);
   await page.locator('#date-input').fill(dateIso);
   await page.locator('#service-select').selectOption(SERVICE.serviceId);
@@ -255,6 +267,9 @@ test('Wochenansicht zeigt Termine eines Mitarbeiters zeitlich korrekt', async ({
   await settleAfterNavigation(page);
 
   await page.getByRole('tab', { name: /woche|week/i }).click();
+  // Mitarbeiter ueber das debounced Suchfeld eingrenzen (siehe Kommentar oben, Bug 10 Nachfolge-Fix).
+  await page.locator('#employee-filter-search').fill(employee.lastName);
+  await expect(page.locator('#employee-filter').locator(`option[value="${employee.id}"]`)).toHaveCount(1);
   await page.locator('#employee-filter').selectOption(employee.id);
   // nextWeekday(1) liegt in der kommenden Kalenderwoche -> einmal "naechste Periode".
   await page.getByRole('button', { name: /weiter|next/i }).click();

@@ -223,6 +223,7 @@
       "today": "Heute",
       "next": "Weiter",
       "employeeFilter": "Mitarbeiter",
+      "employeeFilterSearch": "Mitarbeiter suchen",
       "allEmployees": "Alle Mitarbeiter",
       "loading": "Termine werden geladen…",
       "gridLabel": "Terminkalender"
@@ -237,6 +238,7 @@
       "heading": "Termin anlegen",
       "customer": "Kunde",
       "employee": "Mitarbeiter",
+      "employeeSearch": "Mitarbeiter suchen",
       "employeePlaceholder": "Mitarbeiter auswählen",
       "service": "Leistung",
       "servicePlaceholder": "Leistung auswählen",

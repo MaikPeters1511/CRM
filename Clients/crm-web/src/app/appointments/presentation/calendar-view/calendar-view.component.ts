@@ -1,11 +1,13 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { AuthStateService } from '../../../auth/application/auth-state.service';
 import { CalendarStateService } from '../../application/calendar-state.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
 import { AppointmentListItem, AppointmentStatus, CalendarViewMode } from '../../domain/appointment.model';
-import { EMPLOYEE_LOOKUP_PAGE_SIZE, EmployeeLookupItem } from '../../domain/employee.model';
+import { EmployeeLookupItem } from '../../domain/employee.model';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 08:00 - 19:00
 
@@ -33,6 +35,7 @@ export class CalendarViewComponent implements OnInit {
   private readonly employeeApi = inject(EmployeeApiService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStateService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly state = inject(CalendarStateService);
 
   /**
@@ -46,6 +49,8 @@ export class CalendarViewComponent implements OnInit {
   readonly viewModes: CalendarViewMode[] = ['day', 'week', 'month'];
   readonly hours = HOURS;
 
+  private readonly _employeeFilterQuery = signal('');
+  readonly employeeFilterQuery = this._employeeFilterQuery.asReadonly();
   private readonly _employees = signal<EmployeeLookupItem[]>([]);
   readonly employees = this._employees.asReadonly();
 
@@ -96,11 +101,34 @@ export class CalendarViewComponent implements OnInit {
     );
   });
 
+  constructor() {
+    // Echte, debounced serverseitige Suche (Bug 10 Nachfolge-Fix). `skip(1)` ignoriert die
+    // synchrone Erstemission von `toObservable` fuer den initialen (leeren) Suchbegriff - die
+    // sinnvolle Default-Liste wird separat (ungedebounced) in `ngOnInit` geladen. Die Subscription
+    // wird nur fuer Admin registriert, da das Suchfeld/der Filter fuer Employee gar nicht
+    // gerendert wird (RBAC, siehe Klassendoku).
+    if (this.isAdmin()) {
+      toObservable(this._employeeFilterQuery)
+        .pipe(
+          skip(1),
+          debounceTime(300),
+          distinctUntilChanged(),
+          switchMap((term) => this.employeeApi.search({ search: term.trim() || null, page: 1 })),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: (result) => this._employees.set(result.items.filter((e) => e.isActive)),
+          error: () => this._employees.set([]),
+        });
+    }
+  }
+
   ngOnInit(): void {
     this.state.loadAppointments();
-    // Die Mitarbeiterliste wird nur fuer den (Admin-only) Mitarbeiterfilter benoetigt.
+    // Die Mitarbeiterliste wird nur fuer den (Admin-only) Mitarbeiterfilter benoetigt. Sinnvolle
+    // Default-Liste beim initialen Laden (kein Suchbegriff), damit das Select nicht leer startet.
     if (this.isAdmin()) {
-      this.employeeApi.search({ search: null, page: 1, pageSize: EMPLOYEE_LOOKUP_PAGE_SIZE }).subscribe({
+      this.employeeApi.search({ search: null, page: 1 }).subscribe({
         next: (result) => this._employees.set(result.items.filter((e) => e.isActive)),
         error: () => this._employees.set([]),
       });
@@ -111,6 +139,10 @@ export class CalendarViewComponent implements OnInit {
     this.state.setViewMode(mode);
     this._focusedRow.set(0);
     this._focusedCol.set(0);
+  }
+
+  onEmployeeFilterQueryInput(value: string): void {
+    this._employeeFilterQuery.set(value);
   }
 
   selectEmployeeFilter(employeeId: string): void {

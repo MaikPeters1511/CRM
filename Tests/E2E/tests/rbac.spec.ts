@@ -74,7 +74,7 @@ async function setupEmployeeWithAppointment(adminToken: string, lastNamePrefix: 
     end: `${dateIso}T${endHour}:00Z`,
   });
   expect(appointment, 'Vorbedingung: Termin fuer RBAC-Test muss anlegbar sein').not.toBeNull();
-  return { employee, customer, appointment: appointment!, dateIso };
+  return { employee: { ...employee, lastName }, customer, appointment: appointment!, dateIso };
 }
 
 test('Admin sieht alle Termine (Gesamtuebersicht ueber mehrere Mitarbeiter)', async ({ page }) => {
@@ -93,8 +93,13 @@ test('Admin sieht alle Termine (Gesamtuebersicht ueber mehrere Mitarbeiter)', as
   // dieser Zeile unabhaengig von einem Termin zeigt (Strict-Mode-Verstoss ueber alle 7
   // Tagesspalten) - der eigentliche Termin ist ein eigener <button> (calendar-view.component.html).
   await expect(page.getByRole('button', { name: /09:00/ })).toBeVisible();
+  // Mitarbeiter ueber das debounced Suchfeld eingrenzen (Bug 10 Nachfolge-Fix, siehe Tests/E2E/README.md).
+  await page.locator('#employee-filter-search').fill(employeeB.lastName);
+  await expect(page.locator('#employee-filter').locator(`option[value="${employeeB.id}"]`)).toHaveCount(1);
   await page.locator('#employee-filter').selectOption(employeeB.id);
   await expect(page.getByRole('button', { name: /11:00/ })).toBeVisible();
+  await page.locator('#employee-filter-search').fill(employeeA.lastName);
+  await expect(page.locator('#employee-filter').locator(`option[value="${employeeA.id}"]`)).toHaveCount(1);
   await page.locator('#employee-filter').selectOption(employeeA.id);
   await expect(page.getByRole('button', { name: /09:00/ })).toBeVisible();
 });

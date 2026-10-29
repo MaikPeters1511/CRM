@@ -106,49 +106,44 @@ describe('CalendarViewComponent', () => {
     expect(employeeApiMock.search).toHaveBeenCalled();
   });
 
-  it('requests a page size large enough to cover all active employees, not just the default page-1/20 window (Bug 10 fix)', () => {
+  it('loads the default employee list on init via the real server-side search, without a pageSize override (Bug 10 Nachfolge-Fix)', () => {
     const { employeeApiMock } = setup('Admin');
     const callArgs = employeeApiMock.search.mock.calls[0][0];
-    expect(callArgs).toEqual(expect.objectContaining({ search: null, page: 1 }));
-    expect(callArgs.pageSize).toBeGreaterThan(20);
+    expect(callArgs).toEqual({ search: null, page: 1 });
   });
 
-  it('makes an employee beyond position 20 (e.g. totalCount 37) available in the employee filter (Bug 10 regression)', () => {
-    const employeeOnPage2 = { id: 'e21', firstName: 'Neuer', lastName: 'Mitarbeiter', isActive: true, services: [] };
-    const stateMock = {
-      viewMode: () => 'week' as const,
-      anchorDate: () => '2024-05-15',
-      employeeFilter: () => null,
-      appointments: () => [appointment],
-      loading: () => false,
-      errors: () => [],
-      hasErrors: () => false,
-      conflict: () => false,
-      range: () => ({ from: '2024-05-13', to: '2024-05-19' }),
-      setViewMode: vi.fn(),
-      setEmployeeFilter: vi.fn(),
-      shift: vi.fn(),
-      goToToday: vi.fn(),
-      loadAppointments: vi.fn(),
-    };
-    const employeeApiMock = {
-      search: vi.fn().mockReturnValue(of({ items: [employeeOnPage2], totalCount: 37, page: 1, pageSize: 200 })),
-    };
-    const authMock = { isAdmin: () => true };
-    TestBed.configureTestingModule({
-      imports: [CalendarViewComponent],
-      providers: [
-        provideRouter([]),
-        provideTranslateService(),
-        { provide: CalendarStateService, useValue: stateMock },
-        { provide: EmployeeApiService, useValue: employeeApiMock },
-        { provide: AuthStateService, useValue: authMock },
-      ],
-    });
-    const fixture = TestBed.createComponent(CalendarViewComponent);
-    fixture.detectChanges();
+  it('debounces the employee filter search input (300ms) and queries the server with the typed term', () => {
+    vi.useFakeTimers();
+    const { component, employeeApiMock } = setup('Admin');
+    employeeApiMock.search.mockClear();
 
-    expect(fixture.componentInstance.employees()).toContainEqual(employeeOnPage2);
+    component.onEmployeeFilterQueryInput('Neu');
+    TestBed.tick();
+    vi.advanceTimersByTime(299);
+    expect(employeeApiMock.search).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(employeeApiMock.search).toHaveBeenCalledWith({ search: 'Neu', page: 1 });
+
+    vi.useRealTimers();
+  });
+
+  it('makes an employee found by the search term available in the employee filter, even if it would be beyond the default page (e.g. totalCount 37) (Bug 10 Nachfolge-Fix)', () => {
+    vi.useFakeTimers();
+    const employeeOnPage2 = { id: 'e21', firstName: 'Neuer', lastName: 'Mitarbeiter', isActive: true, services: [] };
+    const { component, employeeApiMock } = setup('Admin');
+    employeeApiMock.search.mockReturnValue(
+      of({ items: [employeeOnPage2], totalCount: 37, page: 1, pageSize: 20 }),
+    );
+
+    component.onEmployeeFilterQueryInput(employeeOnPage2.lastName);
+    TestBed.tick();
+    vi.advanceTimersByTime(300);
+
+    expect(employeeApiMock.search).toHaveBeenCalledWith({ search: employeeOnPage2.lastName, page: 1 });
+    expect(component.employees()).toContainEqual(employeeOnPage2);
+
+    vi.useRealTimers();
   });
 
   it('hides the employee filter dropdown for Employee (RBAC: server liefert ohnehin nur eigene Termine)', () => {

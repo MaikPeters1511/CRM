@@ -3,17 +3,12 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { CalendarStateService } from '../../application/calendar-state.service';
 import { CustomerApiService } from '../../infrastructure/customer-api.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
 import { CustomerLookupItem } from '../../domain/customer.model';
-import {
-  AvailableSlot,
-  EMPLOYEE_LOOKUP_PAGE_SIZE,
-  EmployeeLookupItem,
-  EmployeeServiceAssignment,
-} from '../../domain/employee.model';
+import { AvailableSlot, EmployeeLookupItem, EmployeeServiceAssignment } from '../../domain/employee.model';
 
 /**
  * Smart/Container-Component: Terminformular (terminverwaltung.openspec.md Abschnitt 4).
@@ -50,6 +45,8 @@ export class AppointmentFormComponent {
   private readonly _selectedCustomerLabel = signal<string | null>(null);
   readonly selectedCustomerLabel = this._selectedCustomerLabel.asReadonly();
 
+  private readonly _employeeQuery = signal('');
+  readonly employeeQuery = this._employeeQuery.asReadonly();
   private readonly _employees = signal<EmployeeLookupItem[]>([]);
   readonly employees = this._employees.asReadonly();
   private readonly _selectedEmployeeId = signal('');
@@ -75,10 +72,28 @@ export class AppointmentFormComponent {
       )
       .subscribe((result) => this._customerResults.set(result.items));
 
-    this.employeeApi.search({ search: null, page: 1, pageSize: EMPLOYEE_LOOKUP_PAGE_SIZE }).subscribe({
+    // Sinnvolle Default-Liste beim initialen Laden (kein Suchbegriff) - damit das Select nicht
+    // leer startet, bevor der Nutzer ueberhaupt etwas in das Suchfeld eingegeben hat.
+    this.employeeApi.search({ search: null, page: 1 }).subscribe({
       next: (result) => this._employees.set(result.items.filter((e) => e.isActive)),
       error: () => this._employees.set([]),
     });
+
+    // Echte, debounced serverseitige Suche (Bug 10 Nachfolge-Fix): `skip(1)` ignoriert die
+    // synchrone Erstemission von `toObservable` fuer den initialen (leeren) Suchbegriff, die
+    // bereits ueber den obigen Default-Aufruf abgedeckt ist.
+    toObservable(this._employeeQuery)
+      .pipe(
+        skip(1),
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((term) => this.employeeApi.search({ search: term.trim() || null, page: 1 })),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (result) => this._employees.set(result.items.filter((e) => e.isActive)),
+        error: () => this._employees.set([]),
+      });
 
     this.form.controls.employeeId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -95,6 +110,10 @@ export class AppointmentFormComponent {
     this.form.controls.customerId.setValue(customer.id);
     this._selectedCustomerLabel.set(`${customer.firstName} ${customer.lastName}`);
     this._customerResults.set([]);
+  }
+
+  onEmployeeQueryInput(value: string): void {
+    this._employeeQuery.set(value);
   }
 
   onEmployeeChange(employeeId: string): void {

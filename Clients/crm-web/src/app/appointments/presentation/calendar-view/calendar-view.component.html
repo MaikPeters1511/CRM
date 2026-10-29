@@ -36,6 +36,17 @@
 
     @if (isAdmin()) {
       <div class="flex flex-col gap-1">
+        <label class="label" for="employee-filter-search">{{ 'appointment.calendar.employeeFilterSearch' | translate }}</label>
+        <input
+          id="employee-filter-search"
+          type="text"
+          class="input input-sm"
+          aria-controls="employee-filter"
+          [value]="employeeFilterQuery()"
+          (input)="onEmployeeFilterQueryInput($any($event.target).value)"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
         <label class="label" for="employee-filter">{{ 'appointment.calendar.employeeFilter' | translate }}</label>
         <select
           id="employee-filter"

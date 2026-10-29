@@ -52,16 +52,31 @@ describe('AppointmentFormComponent', () => {
     expect(component.employees()).toEqual([employee]);
   });
 
-  it('requests a page size large enough to cover all active employees, not just the default page-1/20 window (Bug 10 fix)', () => {
+  it('loads the default employee list on init via the real server-side search, without a pageSize override (Bug 10 Nachfolge-Fix)', () => {
     const { employeeApiMock } = setup();
-    expect(employeeApiMock.search).toHaveBeenCalledWith(
-      expect.objectContaining({ search: null, page: 1, pageSize: expect.any(Number) }),
-    );
+    expect(employeeApiMock.search).toHaveBeenCalledWith({ search: null, page: 1 });
     const callArgs = employeeApiMock.search.mock.calls[0][0];
-    expect(callArgs.pageSize).toBeGreaterThan(20);
+    expect(callArgs.pageSize).toBeUndefined();
   });
 
-  it('makes an employee beyond position 20 (e.g. totalCount 37) selectable in the dropdown (Bug 10 regression)', () => {
+  it('debounces the employee search input (300ms) and queries the server with the typed term', () => {
+    vi.useFakeTimers();
+    const { component, employeeApiMock } = setup();
+    employeeApiMock.search.mockClear();
+
+    component.onEmployeeQueryInput('Neu');
+    TestBed.tick();
+    vi.advanceTimersByTime(299);
+    expect(employeeApiMock.search).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(employeeApiMock.search).toHaveBeenCalledWith({ search: 'Neu', page: 1 });
+
+    vi.useRealTimers();
+  });
+
+  it('makes an employee found by the search term selectable in the dropdown, even if it would be beyond the default page (e.g. totalCount 37) (Bug 10 Nachfolge-Fix)', () => {
+    vi.useFakeTimers();
     const employeeOnPage2 = {
       id: 'e21',
       firstName: 'Neuer',
@@ -69,32 +84,19 @@ describe('AppointmentFormComponent', () => {
       isActive: true,
       services: [],
     };
-    const customerApiMock = { search: vi.fn().mockReturnValue(of({ items: [], totalCount: 0, page: 1, pageSize: 20 })) };
-    const employeeApiMock = {
-      search: vi.fn().mockReturnValue(of({ items: [employee, employeeOnPage2], totalCount: 37, page: 1, pageSize: 200 })),
-      getAvailability: vi.fn().mockReturnValue(of([])),
-    };
-    const stateMock = {
-      hasErrors: () => false,
-      errors: () => [],
-      conflict: () => false,
-      clearErrors: vi.fn(),
-      createAppointment: vi.fn(),
-    };
-    TestBed.configureTestingModule({
-      imports: [AppointmentFormComponent],
-      providers: [
-        provideRouter([]),
-        provideTranslateService(),
-        { provide: CalendarStateService, useValue: stateMock },
-        { provide: CustomerApiService, useValue: customerApiMock },
-        { provide: EmployeeApiService, useValue: employeeApiMock },
-      ],
-    });
-    const fixture = TestBed.createComponent(AppointmentFormComponent);
-    fixture.detectChanges();
+    const { component, employeeApiMock } = setup();
+    employeeApiMock.search.mockReturnValue(
+      of({ items: [employeeOnPage2], totalCount: 37, page: 1, pageSize: 20 }),
+    );
 
-    expect(fixture.componentInstance.employees()).toContainEqual(employeeOnPage2);
+    component.onEmployeeQueryInput(employeeOnPage2.lastName);
+    TestBed.tick();
+    vi.advanceTimersByTime(300);
+
+    expect(employeeApiMock.search).toHaveBeenCalledWith({ search: employeeOnPage2.lastName, page: 1 });
+    expect(component.employees()).toContainEqual(employeeOnPage2);
+
+    vi.useRealTimers();
   });
 
   it('offers the selected employee services for the service dropdown', () => {

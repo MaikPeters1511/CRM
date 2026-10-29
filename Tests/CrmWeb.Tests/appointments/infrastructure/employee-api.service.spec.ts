@@ -26,13 +26,12 @@ describe('EmployeeApiService (Mitarbeiter-/Leistungsauswahl, Verfuegbarkeit)', (
     req.flush({ items: [], totalCount: 0, page: 1, pageSize: 20 });
   });
 
-  it('sends GET /api/employees with pageSize so all active employees (not just page 1/20) load (Bug 10 fix)', () => {
-    service.search({ search: null, page: 1, pageSize: 200 }).subscribe();
-    const req = httpMock.expectOne(
-      (r) => r.url === baseUrl && r.params.get('page') === '1' && r.params.get('pageSize') === '200',
-    );
+  it('sends GET /api/employees without a pageSize override - relies on the real server-side search instead of loading all employees at once (Bug 10 Nachfolge-Fix)', () => {
+    service.search({ search: null, page: 1 }).subscribe();
+    const req = httpMock.expectOne((r) => r.url === baseUrl && r.params.get('page') === '1');
+    expect(req.request.params.has('pageSize')).toBe(false);
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [], totalCount: 37, page: 1, pageSize: 200 });
+    req.flush({ items: [], totalCount: 37, page: 1, pageSize: 20 });
   });
 
   it('sends GET /api/employees/{id}/availability?from=&to= (Live-Verfuegbarkeitsanzeige)', () => {
