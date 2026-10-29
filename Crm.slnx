@@ -37,8 +37,16 @@
     <Project Path="Services/appointment-service/src/AppointmentService.Infrastructure/AppointmentService.Infrastructure.csproj" />
     <Project Path="Services/appointment-service/src/AppointmentService.Web/AppointmentService.Web.csproj" />
   </Folder>
+  <Folder Name="/Services/catalog-service/" />
+  <Folder Name="/Services/catalog-service/src/">
+    <Project Path="Services/catalog-service/src/CatalogService.Application/CatalogService.Application.csproj" />
+    <Project Path="Services/catalog-service/src/CatalogService.Domain/CatalogService.Domain.csproj" />
+    <Project Path="Services/catalog-service/src/CatalogService.Infrastructure/CatalogService.Infrastructure.csproj" />
+    <Project Path="Services/catalog-service/src/CatalogService.Web/CatalogService.Web.csproj" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/AppointmentService.Tests/AppointmentService.Tests.csproj" />
+    <Project Path="Tests/CatalogService.Tests/CatalogService.Tests.csproj" />
     <Project Path="Tests/CustomerService.Tests/CustomerService.Tests.csproj" />
     <Project Path="Tests/EmployeeService.Tests/EmployeeService.Tests.csproj" />
     <Project Path="Tests/IdentityService.Tests/IdentityService.Tests.csproj" />

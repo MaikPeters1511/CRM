@@ -31,6 +31,11 @@ var employeeDb = employeePostgres.AddDatabase("employee-db", databaseName: "empl
 var appointmentPostgres = builder.AddPostgres("appointment-postgres");
 var appointmentDb = appointmentPostgres.AddDatabase("appointment-db", databaseName: "appointment_db");
 
+// catalog-service (leistungskatalog.openspec.md): eigene PostgreSQL-Instanz, kein Konsument
+// fuer Integration Events (siehe Proposal "Impact") - daher keine RabbitMQ-Referenz noetig.
+var catalogPostgres = builder.AddPostgres("catalog-postgres");
+var catalogDb = catalogPostgres.AddDatabase("catalog-db", databaseName: "catalog_db");
+
 // Gemeinsamer Message-Broker fuer Wolverine Integration Events (ADR 0001, Abschnitt 2/7).
 var rabbitmq = builder.AddRabbitMQ("rabbitmq");
 
@@ -83,6 +88,16 @@ var appointmentService = builder.AddProject<Projects.AppointmentService_Web>("ap
 // ADR 0001 Abschnitt 2) - daher auch hier eine Service-Discovery-Referenz in dieser Richtung.
 employeeService.WithReference(appointmentService);
 
+// catalog-service: nur crm-web ruft diesen Service (ueber das Gateway) auf, kein synchroner
+// Backend-zu-Backend-Call von employee-service/appointment-service (kein Gold-Plating, siehe
+// Proposal "Impact" und Design-Abschnitt der Change-Spec).
+var catalogService = builder.AddProject<Projects.CatalogService_Web>("catalog-service")
+    .WithReference(catalogDb, connectionName: "catalog_db")
+    .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
+    .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
+    .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
+    .WaitFor(catalogDb);
+
 // API-Gateway (ADR 0001, Abschnitt 4): reiner Reverse-Proxy + Auth-Termination,
 // erreicht identity-service/customer-service/employee-service/appointment-service ausschliesslich
 // ueber Aspire Service Discovery. Gateway validiert das JWT (Auth-Termination), die Services
@@ -92,6 +107,7 @@ var gateway = builder.AddProject<Projects.Crm_Gateway>("gateway")
     .WithReference(customerService)
     .WithReference(employeeService)
     .WithReference(appointmentService)
+    .WithReference(catalogService)
     .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
     .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
@@ -99,6 +115,7 @@ var gateway = builder.AddProject<Projects.Crm_Gateway>("gateway")
     .WaitFor(customerService)
     .WaitFor(employeeService)
     .WaitFor(appointmentService)
+    .WaitFor(catalogService)
     .WithExternalHttpEndpoints();
 
 // crm-web (ADR 0002, Frontend-Konsolidierung): einzige Angular-Anwendung, spricht ausschliesslich
