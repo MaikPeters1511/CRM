@@ -237,7 +237,7 @@ test('Termin stornieren markiert ihn als Cancelled und gibt den Slot frei', asyn
   await page.locator('#cancel-reason').fill('E2E Testabsage');
   await page.getByRole('dialog').getByRole('button', { name: /stornieren|cancel/i }).click();
 
-  await expect(page.getByText(/cancelled|storniert/i)).toBeVisible();
+  await expect(page.locator('.badge').getByText(/cancelled|storniert/i)).toBeVisible();
 });
 
 test('Wochenansicht zeigt Termine eines Mitarbeiters zeitlich korrekt', async ({ page }) => {

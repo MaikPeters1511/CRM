@@ -92,7 +92,7 @@ test('Admin sieht alle Termine (Gesamtuebersicht ueber mehrere Mitarbeiter)', as
   // Hinweis: getByText('09:00') wuerde die Stundenbeschriftung treffen, die JEDE Kalenderzelle
   // dieser Zeile unabhaengig von einem Termin zeigt (Strict-Mode-Verstoss ueber alle 7
   // Tagesspalten) - der eigentliche Termin ist ein eigener <button> (calendar-view.component.html).
-  await expect(page.getByRole('button', { name: /09:00/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /09:00/ }).first()).toBeVisible();
   // Mitarbeiter ueber das debounced Suchfeld eingrenzen (Bug 10 Nachfolge-Fix, siehe Tests/E2E/README.md).
   await page.locator('#employee-filter-search').fill(employeeB.lastName);
   await expect(page.locator('#employee-filter').locator(`option[value="${employeeB.id}"]`)).toHaveCount(1);

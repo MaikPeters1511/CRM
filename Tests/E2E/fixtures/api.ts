@@ -102,7 +102,7 @@ export async function setWorkingHours(
 export async function createCustomer(
   token: string,
   body: { firstName: string; lastName: string; email?: string; phone?: string },
-): Promise<{ id: string }> {
+): Promise<{ id: string; firstName: string; lastName: string; email?: string; phone?: string }> {
   const response = await fetch(`${urls.customerApi}/customers`, {
     method: 'POST',
     headers: authHeaders(token),

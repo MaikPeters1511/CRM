@@ -1127,6 +1127,75 @@ Fix diesen Lauf (idealerweise gegen eine frische Datenbank, siehe Hinweis zu Bug
 Bei dann durchgehend 30/30 gruen ist `terminverwaltung.openspec.md` archivierungsreif (vorbehaltlich
 offener Doku-Tasks, analog zu den anderen drei Specs).
 
+## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-29, nach Bug-10-Nachfolge-Fix: echte Mitarbeitersuche statt `pageSize=200`)
+
+**Hintergrund:** `frontend-agent` hat den `pageSize=200`-Kurzfristig-Fix fuer Bug 10 (siehe oben)
+durch den eigentlich vorgeschlagenen echten Fix ersetzt - ein debounced Freitext-Suchfeld
+(`#employee-search` im Terminformular, `#employee-filter-search` im Kalenderfilter), das die
+bereits vorhandene `SearchEmployeesQuery.Search` nutzt, statt serverseitig pauschal 200
+Mitarbeiter zu laden. `frontend-agent` konnte die angepassten Playwright-Tests in seiner Umgebung
+NICHT real ausfuehren (kein Docker/AppHost verfuegbar) - dieser Lauf holt das nach.
+
+**Vorab-Pruefung TS2339 (neun vorbestehende Fehler, `npx tsc --noEmit` in `Tests/E2E`):** real
+nachvollzogen und bestaetigt vorbestehend (nicht durch die Mitarbeitersuche-Aenderung verursacht).
+Ursache: `createCustomer()` (`Tests/E2E/fixtures/api.ts`) deklarierte als Rueckgabetyp nur
+`Promise<{ id: string }>`, obwohl der echte `POST /api/customers`-Response-Body (`CustomerDto`,
+`Services/customer-service/src/CustomerService.Application/Customers/CustomerDto.cs`) auch
+`firstName`/`lastName`/`email`/`phone` enthaelt - mehrere Call-Sites in `appointments.spec.ts`
+griffen bereits vorher auf `customer.lastName` zu (ein reiner TS-Typisierungsfehler, kein
+Laufzeitfehler, da das Feld zur Laufzeit tatsaechlich vorhanden ist). Diese neun Fehler haetten
+den gesamten Playwright-Lauf blockiert (`npx playwright test` fuehrt intern denselben
+TS-Compile-Schritt aus) - daher vor dem eigentlichen Lauf behoben: Rueckgabetyp von
+`createCustomer()` um `firstName`/`lastName`/`email`/`phone` ergaenzt (`Tests/E2E/fixtures/api.ts`).
+`npx tsc --noEmit` danach fehlerfrei.
+
+**Setup:** Kompletter Stack real hochgefahren per `dotnet run --project AppHost/Crm.AppHost`
+(User Secrets `jwt-signing-key`/`identity-admin-password`/`identity-employee-password` neu
+gesetzt, da in dieser Umgebung noch keine vorhanden waren; Admin `Admin123!`/Employee
+`Employee123!`, identisch zu den Defaults in `fixtures/env.ts`), `crm-web` startet seit der
+`AddJavaScriptApp`-Integration automatisch mit (kein separates `npx ng serve` mehr noetig). Echte,
+nicht-persistente Postgres-/RabbitMQ-Container (per Docker).
+
+**Ergebnis (drei Laeufe):**
+
+- **Lauf 1 (frische Datenbank, direkt nach dem TS2339-Fix): 29 von 30 gruen, 1 rot.** Die
+  Mitarbeitersuche selbst (`#employee-search`/`#employee-filter-search`) funktionierte in JEDEM
+  betroffenen Test (`appointments.spec.ts` "Termin im verfuegbaren Zeitfenster anlegen",
+  "Wochenansicht...", alle 5 `rbac.spec.ts`-Tests) auf Anhieb - kein einziges Timing-/Debounce-
+  Problem, kein falscher Selektor. Die eine rote Stelle
+  (`appointments.spec.ts` "Termin stornieren markiert ihn als Cancelled...") war ein reiner,
+  von der Mitarbeitersuche-Aenderung unabhaengiger Testcode-Bug: `getByText(/cancelled|storniert/i)`
+  war mehrdeutig (`strict mode violation`, traf sowohl den Status-Badge als auch eine `<dd>`-Zelle
+  in der Terminhistorie). Fix: auf `page.locator('.badge').getByText(/cancelled|storniert/i)`
+  praezisiert (`Tests/E2E/tests/appointments.spec.ts`) - danach isoliert erneut gruen.
+- **Lauf 2 (direkt im Anschluss, OHNE Stack-Neustart - bewusst, um Akkumulationseffekte wie beim
+  historischen Bug 10 erneut zu pruefen): 28 von 30 gruen, 2 rot**, beide in `rbac.spec.ts` und
+  beide eindeutig auf Testdaten-Akkumulation ueber zwei Laeufe hinweg zurueckzufuehren (kein
+  Produktbug, keine Regression der Mitarbeitersuche): (a) "Admin sieht alle Termine" scheiterte an
+  einem Strict-Mode-Verstoss (3 statt 1 Treffer fuer `getByRole('button', { name: /09:00/ })`), weil
+  nach zwei Laeufen mehrere verschiedene Mitarbeiter inzwischen einen 09:00-Termin am selben
+  "naechsten Montag" hatten - die anfaengliche, ungefilterte Sichtpruefung brauchte nur EINEN
+  Treffer, nicht alle; Fix: `.first()` ergaenzt. (b) "Employee sieht eigene Termine" scheiterte an
+  einer echten Doppelbuchung derselben fest-verdrahteten Employee-Id
+  (`seedUsers.employee.id`) auf denselben Slot (13:00-14:00 Montag) aus Lauf 1 - erwartetes
+  Verhalten der Kollisionspruefung, kein Bug, nur ein Artefakt des bewussten Verzichts auf einen
+  Stack-Neustart zwischen Lauf 1 und 2.
+- **Lauf 3 (massgeblich, kompletter AppHost-Neustart inkl. frischer, leerer Postgres-/RabbitMQ-
+  Container, nach dem `.first()`-Fix): 30 von 30 gruen.** Laufzeit 8,7 Minuten. Alle fuenf
+  Spec-Dateien vollstaendig gruen: `customers.spec.ts` 6/6, `employees.spec.ts` 7/7,
+  `appointments.spec.ts` 6/6, `rbac.spec.ts` 5/5, `auth.spec.ts` 6/6.
+
+**Fazit:** Der Bug-10-Nachfolge-Fix (echte serverseitige Mitarbeitersuche statt `pageSize=200`) ist
+vollstaendig verifiziert - kein einziger Test scheitert an den neuen Suchfeldern
+(`#employee-search`/`#employee-filter-search`), kein Debounce-Timing-Problem. Die einzigen
+Fehlschlaege in dieser Session waren (1) ein vorbestehender, von der Aenderung unabhaengiger
+TS-Typisierungsfehler (vor dem Lauf behoben), (2) ein vorbestehender, von der Aenderung
+unabhaengiger mehrdeutiger Locator in einem anderen Test (behoben), (3) zwei reine
+Testdaten-Akkumulationseffekte beim bewussten Zweitlauf OHNE Neustart (durch `.first()` robuster
+gemacht, kein Produktbug). **Kein neuer Produktbug gefunden.** `terminverwaltung.openspec.md`
+bleibt aus QA-Sicht vollstaendig gruen und archivierungsreif (identisch zum Stand der vorherigen
+Session, siehe "Finale Empfehlung" unten - durch diesen Lauf erneut bestaetigt, nicht veraendert).
+
 ## Finale Empfehlung (qa-agent, 2026-10-01, nach Bug-9/10-Fixes - massgeblich)
 
 **30 von 30 E2E-Tests sind gruen** (real verifiziert gegen eine frisch gestartete, leere
