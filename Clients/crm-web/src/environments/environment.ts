@@ -1,13 +1,16 @@
 import { Environment } from './environment.model';
 
+// Dev-Modus spricht wie der Produktions-Build ausschliesslich ueber das YARP-Gateway
+// (Gateway/Crm.Gateway, fester Dev-Port aus Properties/launchSettings.json), nicht mehr
+// direkt mit den einzelnen Services - konsistent mit ADR 0001 Abschnitt 4 (Gateway als
+// einziger extern erreichbarer Eintrittspunkt). Erfordert, dass das Gateway laeuft
+// (automatisch der Fall, wenn ueber `dotnet run --project AppHost/Crm.AppHost` gestartet).
+const gatewayBaseUrl = 'https://localhost:7238/api';
+
 export const environment: Environment = {
   production: false,
-  // Direkter Zugriff auf customer-service, solange kein API-Gateway existiert (siehe ADR 0001).
-  customerApiBaseUrl: 'http://localhost:5149/api',
-  // Direkter Zugriff auf employee-service, analog zu customerApiBaseUrl.
-  employeeApiBaseUrl: 'http://localhost:5159/api',
-  // Direkter Zugriff auf appointment-service, analog zu customerApiBaseUrl.
-  appointmentApiBaseUrl: 'http://localhost:5169/api',
-  // Direkter Zugriff auf identity-service (Login), analog zu customerApiBaseUrl.
-  authApiBaseUrl: 'http://localhost:5179/api',
+  customerApiBaseUrl: gatewayBaseUrl,
+  employeeApiBaseUrl: gatewayBaseUrl,
+  appointmentApiBaseUrl: gatewayBaseUrl,
+  authApiBaseUrl: gatewayBaseUrl,
 };
