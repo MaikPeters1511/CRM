@@ -109,7 +109,7 @@ Das System SHALL die Zuordnung von einer oder mehreren Leistungen zu einem Mitar
 - [ ] 5. Doku/OpenAPI aktualisiert
 - [x] 6. Aspire AppHost-Ressource für `catalog-service` + `catalog_db` registrieren
 - [x] 7. YARP-Gateway-Route `/api/services/**` inkl. Auth-Termination konfigurieren, Gateway-CORS/Origin-Liste prüfen (kein neuer Origin nötig, `crm-web` bleibt 4200)
-- [ ] 8. `mitarbeiterverwaltung.openspec.md`/`UserStories/specs/employee-management.openspec.md` Abschnitt 4/5 entsprechend der MODIFIED Requirement aktualisieren (Hinweis auf Katalog-Abhängigkeit ergänzen)
+- [x] 8. `UserStories/specs/employee-management.openspec.md` (Requirement "Leistungen/Qualifikationen zuordnen" + Architektur-Verweise) aktualisiert; `UserStories/archive/2026-10-01-mitarbeiterverwaltung.openspec.md` mit Nachtrags-Hinweis versehen (po-agent, 2026-10-30)
 
 ## 9. Acceptance Criteria (DoD)
 - [ ] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün.

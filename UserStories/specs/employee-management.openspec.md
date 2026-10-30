@@ -22,12 +22,17 @@ Das System SHALL das Anlegen eines Mitarbeiters mit Pflichtfeldern (Vorname, Nac
 - **THEN** wird ein Konfliktfehler angezeigt und kein Datensatz persistiert
 
 #### Requirement: Leistungen/Qualifikationen zuordnen
-Das System SHALL die Zuordnung von einer oder mehreren Leistungen (Services) zu einem Mitarbeiter ermöglichen.
+Das System SHALL die Zuordnung von einer oder mehreren Leistungen zu einem Mitarbeiter durch Auswahl aus dem zentralen Leistungskatalog (`catalog-service`, siehe `UserStories/specs/service-catalog.openspec.md`) ermöglichen — keine manuelle Eingabe von `ServiceId`/`ServiceName`. Bereits zugeordnete Leistungen bleiben als Snapshot (`ServiceId`+`ServiceName` zum Zeitpunkt der Zuordnung) unverändert sichtbar, auch wenn die Leistung im Katalog später deaktiviert wird.
 
-##### Scenario: Leistung zuordnen
-- **GIVEN** ein bestehender Mitarbeiter und eine definierte Leistung "Beratung" existieren
-- **WHEN** ein Admin die Leistung dem Mitarbeiter zuordnet und speichert
-- **THEN** erscheint der Mitarbeiter bei der Terminvergabe als möglicher Ansprechpartner für "Beratung"
+##### Scenario: Leistung aus Katalog zuordnen
+- **GIVEN** ein bestehender Mitarbeiter und eine aktive Leistung "Beratung" existieren im Leistungskatalog
+- **WHEN** ein Admin die Leistung im Mitarbeiterformular aus der Auswahlliste wählt und speichert
+- **THEN** wird die Zuordnung mit der `ServiceId` und dem aktuellen `ServiceName` aus dem Katalog gespeichert, und der Mitarbeiter erscheint bei der Terminvergabe als möglicher Ansprechpartner für "Beratung"
+
+##### Scenario: Bereits zugeordnete, inzwischen deaktivierte Leistung bleibt sichtbar
+- **GIVEN** ein Mitarbeiter hat eine Leistung zugeordnet, die inzwischen im Katalog deaktiviert wurde
+- **WHEN** der Admin das Mitarbeiterformular öffnet
+- **THEN** bleibt die bestehende Zuordnung unverändert sichtbar (Snapshot-Name), ist aber nicht erneut aus der Auswahlliste neu zuordenbar
 
 #### Requirement: Arbeitszeiten verwalten
 Das System SHALL die Definition wiederkehrender Wochenarbeitszeiten je Mitarbeiter ermöglichen.
@@ -68,6 +73,7 @@ Das System SHALL das Deaktivieren eines Mitarbeiters ermöglichen, ohne bestehen
 - `docs/adr/0002-frontend-konsolidierung.md` (Feature-Bereich `employees` in `Clients/crm-web`)
 - Integration Event: `EmployeeDeactivated`
 - Inter-Service: `GetEmployeeAvailabilityQuery` ruft synchron `appointment-service` (Polly-Resilienz) für die Konfliktprüfung.
+- Frontend-Abhängigkeit (nur Lesezugriff, kein Backend-zu-Backend-Call): Das Mitarbeiterformular (`employee-form.component.ts`) ruft `catalog-service` direkt über das Gateway auf (`GET /api/services?status=true`), um die Leistungsauswahl zu befüllen — siehe `UserStories/specs/service-catalog.openspec.md`.
 
 ## Tests
 - `Tests/EmployeeService.Tests` (Backend, inkl. echter Infrastruktur-Tests gegen Testcontainers-PostgreSQL), `Tests/CrmWeb.Tests` (Frontend, Feature-Bereich `employees`), `Tests/E2E/tests/employees.spec.ts` (7/7 grün).

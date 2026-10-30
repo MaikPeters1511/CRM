@@ -38,6 +38,8 @@ Das System SHALL das Anlegen eines Mitarbeiters mit Pflichtfeldern (Vorname, Nac
 #### Requirement: Leistungen/Qualifikationen zuordnen
 Das System SHALL die Zuordnung von einer oder mehreren Leistungen (Services) zu einem Mitarbeiter ermöglichen.
 
+> **Nachtrag (2026-10-30):** Zum Zeitpunkt dieser Change-Spec erfolgte die Zuordnung noch per manueller `ServiceId`/`ServiceName`-Eingabe (kein zentraler Katalog). Mit `UserStories/leistungskatalog.openspec.md` wurde dieses Requirement durch Auswahl aus einem zentralen Leistungskatalog (`catalog-service`) ersetzt — siehe aktuelle Fassung in `UserStories/specs/employee-management.openspec.md`.
+
 ##### Scenario: Leistung zuordnen
 - **GIVEN** ein bestehender Mitarbeiter und eine definierte Leistung "Beratung" existieren
 - **WHEN** ein Admin die Leistung dem Mitarbeiter zuordnet und speichert
