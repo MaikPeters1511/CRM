@@ -106,15 +106,15 @@ Das System SHALL die Zuordnung von einer oder mehreren Leistungen zu einem Mitar
 - [x] 2. Backend implementieren (Domain → Application → Infrastructure → Web) – `Services/catalog-service/`
 - [x] 3. Frontend implementieren: neue `service-catalog-list`/`service-catalog-form`-Komponenten (Admin-Bereich) + Umstellung der Leistungszuordnung in `employee-form.component.ts` auf Auswahl aus dem Katalog
 - [x] 4. E2E-Tests (QA) grün
-- [ ] 5. Doku/OpenAPI aktualisiert
+- [x] 5. Doku/OpenAPI aktualisiert (doc-agent, 2026-10-30: `Services/catalog-service/README.md` neu, Root-`README.md`/`AppHost/README.md` um `catalog-service` ergänzt; Swagger/XML-Doc-Kommentare in `CatalogService.Web` waren bereits konform zum etablierten Muster)
 - [x] 6. Aspire AppHost-Ressource für `catalog-service` + `catalog_db` registrieren
 - [x] 7. YARP-Gateway-Route `/api/services/**` inkl. Auth-Termination konfigurieren, Gateway-CORS/Origin-Liste prüfen (kein neuer Origin nötig, `crm-web` bleibt 4200)
 - [x] 8. `UserStories/specs/employee-management.openspec.md` (Requirement "Leistungen/Qualifikationen zuordnen" + Architektur-Verweise) aktualisiert; `UserStories/archive/2026-10-01-mitarbeiterverwaltung.openspec.md` mit Nachtrags-Hinweis versehen (po-agent, 2026-10-30)
 
 ## 9. Acceptance Criteria (DoD)
-- [ ] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün.
-- [ ] Backend API (C# 14) ist implementiert und getestet (TUnit).
-- [ ] Angular-Komponenten sind implementiert und gestylt (DaisyUI 5).
-- [ ] E2E Tests (QA Agent) sind grün.
-- [ ] Swagger/OpenAPI Compliance ist gegeben.
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/service-catalog.openspec.md` übernommen).
+- [x] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün.
+- [x] Backend API (C# 14) ist implementiert und getestet (TUnit).
+- [x] Angular-Komponenten sind implementiert und gestylt (DaisyUI 5).
+- [x] E2E Tests (QA Agent) sind grün.
+- [x] Swagger/OpenAPI Compliance ist gegeben.
+- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/service-catalog.openspec.md` übernommen). — ausstehend, Aufgabe des `po-agent`.

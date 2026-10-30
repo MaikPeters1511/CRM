@@ -18,20 +18,23 @@ Dieses Verzeichnis enthält die .NET Aspire Orchestrierung für das CRM gemäß
 | `customer-postgres` → DB `customer-db` (Connection-String-Name `customer_db`) | PostgreSQL-Container | Eigene Datenbank für `customer-service` |
 | `employee-postgres` → DB `employee-db` (Connection-String-Name `employee_db`) | PostgreSQL-Container | Eigene Datenbank für `employee-service` |
 | `appointment-postgres` → DB `appointment-db` (Connection-String-Name `appointment_db`) | PostgreSQL-Container | Eigene Datenbank für `appointment-service` |
+| `catalog-postgres` → DB `catalog-db` (Connection-String-Name `catalog_db`) | PostgreSQL-Container | Eigene Datenbank für `catalog-service` |
 | `rabbitmq` | RabbitMQ-Container | Wolverine Messaging (Integration Events `CustomerDeactivated`, `EmployeeDeactivated`, `AppointmentCreated`/`Cancelled`/`Rescheduled`) |
 | `identity-service` | Aspire-Projektressource | `Services/identity-service/src/IdentityService.Web` (JWT-Ausstellung, `POST /api/auth/login`) |
 | `customer-service` | Aspire-Projektressource | `Services/customer-service/src/CustomerService.Web` |
 | `employee-service` | Aspire-Projektressource | `Services/employee-service/src/EmployeeService.Web` |
 | `appointment-service` | Aspire-Projektressource | `Services/appointment-service/src/AppointmentService.Web` (referenziert `customer-service`/`employee-service` per Service Discovery) |
+| `catalog-service` | Aspire-Projektressource | `Services/catalog-service/src/CatalogService.Web` (kein synchroner Backend-zu-Backend-Call von anderen Services, nur `crm-web` greift zu) |
 | `gateway` | Aspire-Projektressource | YARP-Reverse-Proxy (`Gateway/Crm.Gateway`), einziger extern erreichbarer HTTP-Endpunkt für API-Traffic |
 | `crm-web` | Aspire-JavaScript-App (`Aspire.Hosting.JavaScript`, `AddJavaScriptApp`) | Konsolidiertes Angular-Frontend (`Clients/crm-web`, ADR 0002), startet automatisch per `npm start` (`ng serve`), fester Port `4200` (`isProxied: false`, da der Angular-Dev-Server selbst an diesen Port bindet), wartet auf `gateway` |
 
-Alle vier fachlichen Services sowie der Gateway sind seit der Umsetzung von
-`terminverwaltung.openspec.md`/`authentifizierung.openspec.md` vollständig im AppHost verdrahtet
-(siehe `AppHost/Crm.AppHost/AppHost.cs`). Ein gemeinsames JWT-Schema (Issuer/Audience/
-Signing-Key, siehe Aspire-Parameter `jwt-issuer`/`jwt-audience`/`jwt-signing-key`) wird an
-`identity-service` (Aussteller) und Gateway/`customer-service`/`employee-service`/
-`appointment-service` (Validierer, Defense in Depth) verteilt.
+Alle fünf fachlichen Services sowie der Gateway sind seit der Umsetzung von
+`terminverwaltung.openspec.md`/`authentifizierung.openspec.md`/`leistungskatalog.openspec.md`
+vollständig im AppHost verdrahtet (siehe `AppHost/Crm.AppHost/AppHost.cs`). Ein gemeinsames
+JWT-Schema (Issuer/Audience/Signing-Key, siehe Aspire-Parameter
+`jwt-issuer`/`jwt-audience`/`jwt-signing-key`) wird an `identity-service` (Aussteller) und
+Gateway/`customer-service`/`employee-service`/`appointment-service`/`catalog-service`
+(Validierer, Defense in Depth) verteilt.
 
 ## Starten
 
@@ -53,11 +56,11 @@ ausschließlich `http://localhost:4200`, passend zum festen `crm-web`-Dev-Port.
 
 ## Verifikation
 
-- `dotnet build Crm.slnx` (Repo-Root) – kompiliert AppHost, ServiceDefaults, Gateway, alle vier
+- `dotnet build Crm.slnx` (Repo-Root) – kompiliert AppHost, ServiceDefaults, Gateway, alle fünf
   Services und (separat, siehe Hinweis zu `.esproj` unten) `crm-web` fehlerfrei.
-- `dotnet test Crm.slnx` – 140/140 Tests grün.
-- `dotnet run` des AppHosts wurde real ausgeführt (Docker Desktop verfügbar): alle drei
-  Postgres-Container und RabbitMQ starten, alle vier Services, `gateway` und `crm-web` erreichen
+- `dotnet test Crm.slnx` – Tests grün.
+- `dotnet run` des AppHosts wurde real ausgeführt (Docker Desktop verfügbar): alle vier
+  Postgres-Container und RabbitMQ starten, alle fünf Services, `gateway` und `crm-web` erreichen
   den Zustand `Running` (nicht `Finished`) ohne Fehler in den Logs.
   - `crm-web` antwortet unter `http://localhost:4200` mit `200`.
   - `gateway` antwortet unter `/health` mit `200`; `GET /api/customers` ohne Token liefert `401`
