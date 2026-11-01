@@ -1,6 +1,6 @@
 # Change: Leistungskatalog (Service Catalog)
 
-> **Status:** proposed
+> **Status:** archived (2026-11-01)
 > Ablage: `UserStories/leistungskatalog.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-leistungskatalog.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -117,4 +117,4 @@ Das System SHALL die Zuordnung von einer oder mehreren Leistungen zu einem Mitar
 - [x] Angular-Komponenten sind implementiert und gestylt (DaisyUI 5).
 - [x] E2E Tests (QA Agent) sind grün.
 - [x] Swagger/OpenAPI Compliance ist gegeben.
-- [ ] Spec ist archiviert (Status `archived`, Requirements ggf. in `UserStories/specs/service-catalog.openspec.md` übernommen). — ausstehend, Aufgabe des `po-agent`.
+- [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/service-catalog.openspec.md`, Change verschoben nach `UserStories/archive/2026-11-01-leistungskatalog.openspec.md`).

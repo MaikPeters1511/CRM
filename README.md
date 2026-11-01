@@ -32,17 +32,19 @@ untereinander — siehe Architekturentscheidungen unten.
 
 ## Fachliche Spezifikationen (OpenSpec)
 
-Alle Anforderungen sind als Change-Specs nach dem [OpenSpec](https://openspec.dev/docs/)-Workflow
-(propose → apply → archive) in `UserStories/` dokumentiert:
+Alle Anforderungen folgen dem [OpenSpec](https://openspec.dev/docs/)-Workflow (propose → apply →
+archive) in `UserStories/`. Alle sechs bisherigen Change-Specs sind bereits vollständig
+abgenommen und archiviert; die dauerhaft gültigen Requirements liegen in `UserStories/specs/`:
 
-- [`UserStories/kundenverwaltung.openspec.md`](UserStories/kundenverwaltung.openspec.md)
-- [`UserStories/mitarbeiterverwaltung.openspec.md`](UserStories/mitarbeiterverwaltung.openspec.md)
-- [`UserStories/terminverwaltung.openspec.md`](UserStories/terminverwaltung.openspec.md)
-- [`UserStories/authentifizierung.openspec.md`](UserStories/authentifizierung.openspec.md)
-- [`UserStories/frontend-konsolidierung.openspec.md`](UserStories/frontend-konsolidierung.openspec.md)
-- [`UserStories/leistungskatalog.openspec.md`](UserStories/leistungskatalog.openspec.md)
+- [`UserStories/specs/customer-management.openspec.md`](UserStories/specs/customer-management.openspec.md)
+- [`UserStories/specs/employee-management.openspec.md`](UserStories/specs/employee-management.openspec.md)
+- [`UserStories/specs/appointment-scheduling.openspec.md`](UserStories/specs/appointment-scheduling.openspec.md)
+- [`UserStories/specs/identity.openspec.md`](UserStories/specs/identity.openspec.md)
+- [`UserStories/specs/frontend-shell.openspec.md`](UserStories/specs/frontend-shell.openspec.md)
+- [`UserStories/specs/service-catalog.openspec.md`](UserStories/specs/service-catalog.openspec.md)
 
-Nach Abnahme/Archivierung werden die jeweiligen Requirements nach `UserStories/specs/` übernommen.
+Die ursprünglichen Change-Specs (Proposal/Design/Tasks-Historie) liegen in `UserStories/archive/`.
+Eine neue Anforderung entsteht als neue Change-Spec direkt in `UserStories/`.
 
 ## Lokales Setup
 
