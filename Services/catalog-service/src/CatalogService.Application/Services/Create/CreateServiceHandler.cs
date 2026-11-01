@@ -1,5 +1,7 @@
 using CatalogService.Application.Abstractions;
+using CatalogService.Application.IntegrationEvents;
 using CatalogService.Domain.Services;
+using Wolverine;
 
 namespace CatalogService.Application.Services.Create;
 
@@ -9,6 +11,7 @@ public static class CreateServiceHandler
         CreateServiceCommand command,
         IServiceRepository repository,
         TimeProvider timeProvider,
+        IMessageBus messageBus,
         CancellationToken cancellationToken)
     {
         var result = Service.Create(
@@ -23,9 +26,13 @@ public static class CreateServiceHandler
             return CreateServiceResult.Failure(result.Errors);
         }
 
-        await repository.AddAsync(result.Service!, cancellationToken);
+        var service = result.Service!;
+
+        await repository.AddAsync(service, cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
 
-        return CreateServiceResult.Success(ServiceDto.FromDomain(result.Service!));
+        await PublishCatalogChangedEvents.Publish(service, messageBus);
+
+        return CreateServiceResult.Success(ServiceDto.FromDomain(service));
     }
 }

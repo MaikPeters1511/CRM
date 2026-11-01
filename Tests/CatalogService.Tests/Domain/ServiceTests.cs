@@ -29,6 +29,17 @@ public class ServiceTests
     }
 
     [Test]
+    public async Task Create_WithValidName_RaisesServiceCatalogEntryChangedWithCreatedType()
+    {
+        var result = Service.Create("Beratung", "Erstberatung", 30, "admin-1", Now);
+
+        var domainEvent = result.Service!.DomainEvents.OfType<ServiceCatalogEntryChanged>().Single();
+        await Assert.That(domainEvent.ServiceId).IsEqualTo(result.Service.Id);
+        await Assert.That(domainEvent.ChangeType).IsEqualTo(ServiceCatalogChangeType.Created);
+        await Assert.That(domainEvent.IsActive).IsTrue();
+    }
+
+    [Test]
     public async Task Create_WithoutDescriptionAndDuration_Succeeds()
     {
         var result = Service.Create(
@@ -67,6 +78,7 @@ public class ServiceTests
     public async Task Update_WithChangedField_PersistsChangesAndSetsModifiedAudit()
     {
         var service = Service.Create("Beratung", "Erstberatung", 30, "admin-1", Now).Service!;
+        service.ClearDomainEvents();
 
         var modifiedAt = Now.AddDays(1);
         var result = service.Update(
@@ -82,6 +94,10 @@ public class ServiceTests
         await Assert.That(service.DefaultDurationMinutes).IsEqualTo(45);
         await Assert.That(service.ModifiedAt).IsEqualTo(modifiedAt);
         await Assert.That(service.ModifiedBy).IsEqualTo("admin-2");
+
+        var domainEvent = service.DomainEvents.OfType<ServiceCatalogEntryChanged>().Single();
+        await Assert.That(domainEvent.ChangeType).IsEqualTo(ServiceCatalogChangeType.Updated);
+        await Assert.That(domainEvent.Name).IsEqualTo("Beratung Premium");
     }
 
     [Test]
@@ -101,6 +117,7 @@ public class ServiceTests
     public async Task Deactivate_OnActiveService_SetsInactiveAndAudit()
     {
         var service = Service.Create("Beratung", null, null, "admin-1", Now).Service!;
+        service.ClearDomainEvents();
 
         var deactivatedAt = Now.AddDays(2);
         service.Deactivate("admin-1", deactivatedAt);
@@ -108,6 +125,10 @@ public class ServiceTests
         await Assert.That(service.IsActive).IsFalse();
         await Assert.That(service.ModifiedAt).IsEqualTo(deactivatedAt);
         await Assert.That(service.ModifiedBy).IsEqualTo("admin-1");
+
+        var domainEvent = service.DomainEvents.OfType<ServiceCatalogEntryChanged>().Single();
+        await Assert.That(domainEvent.ChangeType).IsEqualTo(ServiceCatalogChangeType.Deactivated);
+        await Assert.That(domainEvent.IsActive).IsFalse();
     }
 
     [Test]

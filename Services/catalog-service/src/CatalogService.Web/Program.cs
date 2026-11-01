@@ -4,6 +4,7 @@ using CatalogService.Web.ErrorHandling;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Wolverine;
+using Wolverine.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +76,19 @@ builder.Host.UseWolverine(opts =>
     // anderen Services (siehe dort fuer die ausfuehrliche Begruendung); gezielter Opt-in statt
     // globaler Lockerung der ServiceLocationPolicy.
     opts.CodeGeneration.AlwaysUseServiceLocationFor<CatalogService.Application.Abstractions.IServiceRepository>();
+
+    var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
+        ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");
+
+    if (!string.IsNullOrWhiteSpace(rabbitMqConnectionString))
+    {
+        opts.UseRabbitMq(new Uri(rabbitMqConnectionString)).AutoProvision();
+
+        // Ausgehendes Integration Event fuer ai-service (docs/adr/0003, Folgeaufgaben):
+        // haelt dessen Qdrant-Verfuegbarkeitsindex bei Leistungs-Aenderungen aktuell.
+        opts.PublishMessage<CatalogService.Application.IntegrationEvents.ServiceCatalogChangedIntegrationEvent>()
+            .ToRabbitExchange("service-catalog-changed");
+    }
 });
 
 // Auth-Validierung unabhaengig vom Gateway (Defense in Depth, ADR 0001 Abschnitt 4):

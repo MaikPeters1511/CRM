@@ -3,11 +3,12 @@ using CatalogService.Domain.Common;
 namespace CatalogService.Domain.Services;
 
 /// <summary>
-/// Leistungskatalog-Eintrag (UserStories/leistungskatalog.openspec.md Abschnitt 5/7). Bewusst ohne
-/// Domain-Event-Publishing (kein Konsument fuer "ServiceDeactivated" vorhanden; "ServiceId"/"ServiceName"
-/// bleiben in employee-service als Snapshot-Werte - siehe Proposal, Abschnitt "Impact") - kein Gold-Plating.
+/// Leistungskatalog-Eintrag (UserStories/leistungskatalog.openspec.md Abschnitt 5/7). Seit
+/// ai-service (docs/adr/0003-ai-service-qdrant-index-strategie.md, Folgeaufgaben) existiert erstmals
+/// ein Konsument fuer Aenderungen am Katalog: jede Mutation feuert <see cref="ServiceCatalogEntryChanged"/>,
+/// damit die Application-Schicht ein <c>ServiceCatalogChangedIntegrationEvent</c> veroeffentlichen kann.
 /// </summary>
-public sealed class Service : Entity
+public sealed class Service : AggregateRoot
 {
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
@@ -59,6 +60,10 @@ public sealed class Service : Entity
             createdBy,
             createdAt);
 
+        service.AddDomainEvent(new ServiceCatalogEntryChanged(
+            service.Id, service.Name, service.Description, service.DefaultDurationMinutes,
+            service.IsActive, ServiceCatalogChangeType.Created, createdAt));
+
         return ServiceMutationResult.Success(service);
     }
 
@@ -81,6 +86,10 @@ public sealed class Service : Entity
         ModifiedBy = modifiedBy;
         ModifiedAt = modifiedAt;
 
+        AddDomainEvent(new ServiceCatalogEntryChanged(
+            Id, Name, Description, DefaultDurationMinutes, IsActive,
+            ServiceCatalogChangeType.Updated, modifiedAt));
+
         return ServiceMutationResult.Success(this);
     }
 
@@ -94,6 +103,10 @@ public sealed class Service : Entity
         IsActive = false;
         ModifiedBy = deactivatedBy;
         ModifiedAt = deactivatedAt;
+
+        AddDomainEvent(new ServiceCatalogEntryChanged(
+            Id, Name, Description, DefaultDurationMinutes, IsActive,
+            ServiceCatalogChangeType.Deactivated, deactivatedAt));
     }
 
     private static IReadOnlyList<string> Validate(string name)

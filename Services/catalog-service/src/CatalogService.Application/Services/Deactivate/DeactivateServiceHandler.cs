@@ -1,4 +1,6 @@
 using CatalogService.Application.Abstractions;
+using CatalogService.Application.IntegrationEvents;
+using Wolverine;
 
 namespace CatalogService.Application.Services.Deactivate;
 
@@ -8,6 +10,7 @@ public static class DeactivateServiceHandler
         DeactivateServiceCommand command,
         IServiceRepository repository,
         TimeProvider timeProvider,
+        IMessageBus messageBus,
         CancellationToken cancellationToken)
     {
         var service = await repository.GetByIdAsync(command.ServiceId, cancellationToken);
@@ -19,6 +22,8 @@ public static class DeactivateServiceHandler
         service.Deactivate(command.DeactivatedBy, timeProvider.GetUtcNow());
 
         await repository.SaveChangesAsync(cancellationToken);
+
+        await PublishCatalogChangedEvents.Publish(service, messageBus);
 
         return DeactivateServiceResult.Success();
     }
