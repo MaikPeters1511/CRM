@@ -1,0 +1,282 @@
+# Produktions-/Deployment-Orchestrierung fuer das CRM (siehe README.md, Abschnitt
+# "Produktions-Deployment"). .NET Aspire (AppHost/) bleibt der bevorzugte Weg fuer die lokale
+# Entwicklung - dieses Compose-File ist AUSSCHLIESSLICH fuer Produktions-/Deployment-Zwecke
+# gedacht, kein Ersatz fuer den Aspire-Dev-Workflow.
+#
+# Alle Secrets (Passwoerter, JWT-Signing-Key) kommen aus einer .env-Datei im Projekt-Root
+# (git-ignoriert, siehe .env.example fuer Platzhalter/Dokumentation). NIEMALS echte Werte in
+# dieser Datei hartkodieren.
+#
+# Start:   docker compose -f docker-compose.prod.yml up -d --build
+# Stop:    docker compose -f docker-compose.prod.yml down        (-v zusaetzlich fuer Volumes)
+# Config:  docker compose -f docker-compose.prod.yml config       (Syntax-/Referenzvalidierung)
+#
+# TLS: crm-web exponiert hier bewusst nur Port 80 (HTTP) innerhalb des Containers/Netzwerks.
+# Fuer echtes TLS in Produktion wird ein vorgeschalteter externer Reverse-Proxy/Load-Balancer
+# (z.B. Traefik, nginx mit Let's-Encrypt-Automatisierung, Cloud-Load-Balancer) empfohlen, der
+# TLS terminiert und auf den hier exponierten Port weiterleitet - eine automatisierte
+# Zertifikatsverwaltung ist bewusst NICHT Teil dieses Compose-Files (kein Gold-Plating). Wer
+# eigene Zertifikate direkt in nginx terminieren moechte, kann stattdessen ein Volume mit
+# Zertifikat/Key in den crm-web-Container moutenten und Clients/crm-web/nginx.conf.template um
+# einen zusaetzlichen "listen 443 ssl;"-Server-Block erweitern (hier nicht vorkonfiguriert).
+
+services:
+  # ---------------------------------------------------------------------------------------------
+  # PostgreSQL: eine Instanz pro DB-tragendem Service (Database-per-Service, ADR 0001).
+  # ---------------------------------------------------------------------------------------------
+  customer-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: customer_db
+      POSTGRES_USER: ${CUSTOMER_DB_USER}
+      POSTGRES_PASSWORD: ${CUSTOMER_DB_PASSWORD}
+    volumes:
+      - customer-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CUSTOMER_DB_USER} -d customer_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [crm-network]
+
+  employee-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: employee_db
+      POSTGRES_USER: ${EMPLOYEE_DB_USER}
+      POSTGRES_PASSWORD: ${EMPLOYEE_DB_PASSWORD}
+    volumes:
+      - employee-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${EMPLOYEE_DB_USER} -d employee_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [crm-network]
+
+  appointment-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: appointment_db
+      POSTGRES_USER: ${APPOINTMENT_DB_USER}
+      POSTGRES_PASSWORD: ${APPOINTMENT_DB_PASSWORD}
+    volumes:
+      - appointment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APPOINTMENT_DB_USER} -d appointment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [crm-network]
+
+  catalog-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: catalog_db
+      POSTGRES_USER: ${CATALOG_DB_USER}
+      POSTGRES_PASSWORD: ${CATALOG_DB_PASSWORD}
+    volumes:
+      - catalog-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CATALOG_DB_USER} -d catalog_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [crm-network]
+
+  # ---------------------------------------------------------------------------------------------
+  # RabbitMQ: gemeinsamer Broker fuer Wolverine Integration Events (customer-/employee-/
+  # appointment-service; catalog-service und identity-service brauchen das nicht, ADR 0001).
+  # ---------------------------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [crm-network]
+
+  # ---------------------------------------------------------------------------------------------
+  # .NET-Services. Build-Context ist jeweils das Repo-Root (siehe Kommentar im jeweiligen
+  # Dockerfile): jedes Web-Projekt referenziert zusaetzlich AppHost/Crm.ServiceDefaults.
+  # ---------------------------------------------------------------------------------------------
+  identity-service:
+    build:
+      context: .
+      dockerfile: Services/identity-service/src/IdentityService.Web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
+      Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
+      Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
+      IdentitySeed__AdminPassword: ${IDENTITY_ADMIN_PASSWORD}
+      IdentitySeed__EmployeePassword: ${IDENTITY_EMPLOYEE_PASSWORD}
+      RateLimiting__Login__PermitLimit: ${LOGIN_RATE_LIMIT_PERMIT_LIMIT:-5}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+    networks: [crm-network]
+
+  customer-service:
+    build:
+      context: .
+      dockerfile: Services/customer-service/src/CustomerService.Web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__customer_db: Host=customer-postgres;Port=5432;Database=customer_db;Username=${CUSTOMER_DB_USER};Password=${CUSTOMER_DB_PASSWORD}
+      ConnectionStrings__rabbitmq: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
+      Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
+      Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+    depends_on:
+      customer-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [crm-network]
+
+  employee-service:
+    build:
+      context: .
+      dockerfile: Services/employee-service/src/EmployeeService.Web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__employee_db: Host=employee-postgres;Port=5432;Database=employee_db;Username=${EMPLOYEE_DB_USER};Password=${EMPLOYEE_DB_PASSWORD}
+      ConnectionStrings__rabbitmq: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
+      Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
+      Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+      # Synchroner Call employee-service -> appointment-service (GET /api/appointments, ADR 0001
+      # Abschnitt 2); Container-Port ist immer 8080 (ASPNETCORE_URLS, siehe Dockerfile).
+      APPOINTMENT_SERVICE_BASE_URL: http://appointment-service:8080
+    depends_on:
+      employee-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [crm-network]
+
+  appointment-service:
+    build:
+      context: .
+      dockerfile: Services/appointment-service/src/AppointmentService.Web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__appointment_db: Host=appointment-postgres;Port=5432;Database=appointment_db;Username=${APPOINTMENT_DB_USER};Password=${APPOINTMENT_DB_PASSWORD}
+      ConnectionStrings__rabbitmq: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
+      Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
+      Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+      # Synchrone Vorbedingungs-Calls appointment-service -> customer-service/employee-service
+      # (ADR 0001 Abschnitt 2/5); Container-Port ist immer 8080 (ASPNETCORE_URLS, siehe Dockerfile).
+      CUSTOMER_SERVICE_BASE_URL: http://customer-service:8080
+      EMPLOYEE_SERVICE_BASE_URL: http://employee-service:8080
+    depends_on:
+      appointment-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      customer-service:
+        condition: service_started
+      employee-service:
+        condition: service_started
+    networks: [crm-network]
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: Services/catalog-service/src/CatalogService.Web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__catalog_db: Host=catalog-postgres;Port=5432;Database=catalog_db;Username=${CATALOG_DB_USER};Password=${CATALOG_DB_PASSWORD}
+      Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
+      Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
+      Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+    depends_on:
+      catalog-postgres:
+        condition: service_healthy
+    networks: [crm-network]
+
+  # ---------------------------------------------------------------------------------------------
+  # Gateway (YARP): einziger oeffentlicher HTTP-Eintrittspunkt fuer API-Traffic, Auth-Termination.
+  # Downstream-Adressen muessen auf Container-Port 8080 zeigen (appsettings.json-Default nutzt
+  # Port 80 fuer Aspire Service Discovery) - daher explizite Overrides je Cluster.
+  # ---------------------------------------------------------------------------------------------
+  gateway:
+    build:
+      context: .
+      dockerfile: Gateway/Crm.Gateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
+      Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
+      Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+      ReverseProxy__Clusters__identity-service-cluster__Destinations__destination1__Address: http://identity-service:8080
+      ReverseProxy__Clusters__customer-service-cluster__Destinations__destination1__Address: http://customer-service:8080
+      ReverseProxy__Clusters__employee-service-cluster__Destinations__destination1__Address: http://employee-service:8080
+      ReverseProxy__Clusters__appointment-service-cluster__Destinations__destination1__Address: http://appointment-service:8080
+      ReverseProxy__Clusters__catalog-service-cluster__Destinations__destination1__Address: http://catalog-service:8080
+    depends_on:
+      identity-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+      employee-service:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+    networks: [crm-network]
+
+  # ---------------------------------------------------------------------------------------------
+  # Frontend: Angular-SPA, ausgeliefert ueber nginx, /api/** -> gateway (siehe
+  # Clients/crm-web/nginx.conf.template).
+  # ---------------------------------------------------------------------------------------------
+  crm-web:
+    build:
+      context: ./Clients/crm-web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      API_GATEWAY_UPSTREAM: gateway:8080
+    ports:
+      - "${CRM_WEB_HTTP_PORT:-80}:80"
+      # Optional fuer eigene TLS-Zertifikate direkt in nginx (siehe Hinweis oben) - hier nur der
+      # Port freigegeben, kein vorkonfigurierter "listen 443 ssl;"-Server-Block:
+      # - "${CRM_WEB_HTTPS_PORT:-443}:443"
+    depends_on:
+      gateway:
+        condition: service_started
+    networks: [crm-network]
+
+networks:
+  crm-network:
+    driver: bridge
+
+volumes:
+  customer-db-data:
+  employee-db-data:
+  appointment-db-data:
+  catalog-db-data:
+  rabbitmq-data:

@@ -66,6 +66,43 @@ dotnet run --project AppHost/Crm.AppHost
 Details zur Aspire-Orchestrierung, den einzelnen Ressourcen und zum manuellen Einzelstart jedes
 Service: [`AppHost/README.md`](AppHost/README.md).
 
+## Produktions-Deployment (Docker Compose)
+
+**Wichtig:** .NET Aspire (`AppHost/Crm.AppHost`, siehe oben) bleibt der bevorzugte Weg fuer die
+**lokale Entwicklung**. `docker-compose.prod.yml` im Projekt-Root ist eine eigenstaendige
+Orchestrierung ausschliesslich fuer **Produktions-/Deployment-Zwecke** (Aspire ist kein
+Produktions-Deployment-Mechanismus) - kein Ersatz fuer den Aspire-Dev-Workflow.
+
+Orchestriert werden: 4× PostgreSQL (eine DB pro datentragendem Service), 1× RabbitMQ, alle fuenf
+.NET-Services (je eigenes `Dockerfile` im jeweiligen `*.Web/`-Projektordner, Build-Context ist das
+Repo-Root, da jedes Web-Projekt zusaetzlich `AppHost/Crm.ServiceDefaults` referenziert), das
+YARP-Gateway (`Gateway/Crm.Gateway/Dockerfile`) sowie `crm-web` (`Clients/crm-web/Dockerfile`,
+Angular-Production-Build hinter nginx, `/api/**` wird per `envsubst`-generierter
+nginx-Konfiguration an den `gateway`-Container weitergeleitet, siehe
+`Clients/crm-web/nginx.conf.template`).
+
+```bash
+# 1. Secrets/Konfiguration einmalig setzen (Datei bleibt lokal, ist git-ignoriert)
+cp .env.example .env
+# .env mit echten Werten fuellen (DB-Passwoerter, RABBITMQ_*, JWT_SIGNING_KEY,
+# IDENTITY_ADMIN_PASSWORD/IDENTITY_EMPLOYEE_PASSWORD, FRONTEND_ORIGIN, ...)
+
+# 2. Alles bauen und starten
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Stoppen (optional -v, um auch die Datenbank-/RabbitMQ-Volumes zu entfernen):
+docker compose -f docker-compose.prod.yml down
+```
+
+`crm-web` ist danach unter `http://localhost` (Port aus `CRM_WEB_HTTP_PORT`, Standard `80`)
+erreichbar. **TLS:** Dieses Compose-File terminiert selbst kein TLS; fuer echtes HTTPS in
+Produktion wird ein vorgeschalteter externer Reverse-Proxy/Load-Balancer (z. B. Traefik, ein
+weiteres nginx mit Let's-Encrypt-Automatisierung, Cloud-Load-Balancer) empfohlen. Wer eigene
+Zertifikate direkt terminieren moechte, kann ein Zertifikat/Key-Volume in den `crm-web`-Container
+mounten und `Clients/crm-web/nginx.conf.template` um einen `listen 443 ssl;`-Block erweitern
+(siehe Kommentare in `docker-compose.prod.yml`) - eine automatisierte Zertifikatsverwaltung ist
+bewusst nicht Teil dieses Setups.
+
 ## Tests
 
 - Backend-Unit-/Integrationstests (TUnit) liegen unter `Tests/<Service>.Tests/` (z.B.

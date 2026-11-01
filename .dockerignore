@@ -1,0 +1,35 @@
+# Gilt fuer alle Docker-Builds in diesem Repo (siehe docker-compose.prod.yml).
+#
+# Hinweis: Alle .NET-Dockerfiles (Services/*/src/*.Web/Dockerfile, Gateway/Crm.Gateway/Dockerfile)
+# verwenden das Repo-ROOT als Build-Context, da jedes Web-Projekt zusaetzlich
+# AppHost/Crm.ServiceDefaults referenziert. Ein .dockerignore pro Service-Unterordner haette
+# dadurch keine Wirkung (Docker wertet nur das .dockerignore am Context-Root aus) - daher ein
+# einziges, repo-weites .dockerignore statt mehrerer wirkungsloser Kopien je Service.
+
+# .NET Build-Artefakte
+**/bin/
+**/obj/
+
+# Node/Angular
+**/node_modules/
+**/dist/
+**/.angular/
+
+# Git/IDE/OS
+.git/
+.vs/
+.vscode/
+.idea/
+.DS_Store
+
+# Secrets / lokale Konfiguration
+.env
+.env.*
+!.env.example
+
+# Tests/Docs (nicht fuer Produktions-Images benoetigt)
+Tests/
+docs/
+UserStories/
+.junie/
+.claude/
