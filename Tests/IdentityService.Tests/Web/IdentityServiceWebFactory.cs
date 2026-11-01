@@ -11,13 +11,20 @@ public sealed class IdentityServiceWebFactory : WebApplicationFactory<Program>
     public const string EmployeeEmail = "employee@crm.local";
     public const string EmployeePassword = "Test-Employee-Passw0rd!";
 
+    private readonly Action<Dictionary<string, string?>>? _configureRateLimit;
+
+    public IdentityServiceWebFactory(Action<Dictionary<string, string?>>? configureRateLimit = null)
+    {
+        _configureRateLimit = configureRateLimit;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
 
         builder.ConfigureAppConfiguration((_, configBuilder) =>
         {
-            configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+            var settings = new Dictionary<string, string?>
             {
                 ["Authentication:JwtBearer:Issuer"] = "https://crm-identity-test",
                 ["Authentication:JwtBearer:Audience"] = "crm-api-test",
@@ -26,7 +33,9 @@ public sealed class IdentityServiceWebFactory : WebApplicationFactory<Program>
                 ["IdentitySeed:AdminPassword"] = AdminPassword,
                 ["IdentitySeed:EmployeeEmail"] = EmployeeEmail,
                 ["IdentitySeed:EmployeePassword"] = EmployeePassword,
-            });
+            };
+            _configureRateLimit?.Invoke(settings);
+            configBuilder.AddInMemoryCollection(settings);
         });
     }
 }

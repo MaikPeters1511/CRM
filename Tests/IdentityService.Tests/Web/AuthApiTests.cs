@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using IdentityService.Web.Controllers;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 
 namespace IdentityService.Tests.Web;
 
@@ -90,5 +92,33 @@ public class AuthApiTests
         const string expectedEmployeeUserId = "e573eed0-8c40-749f-f05c-aa6839c81cb4";
 
         await Assert.That(body!.UserId).IsEqualTo(expectedEmployeeUserId);
+    }
+
+    /// <summary>
+    /// Regressionstest fuer die konfigurierbare Rate-Limit-Grenze (Tests/E2E/README.md,
+    /// "Rate-Limiting-Hinweis"): "RateLimiting:Login:PermitLimit" MUSS tatsaechlich gebunden und
+    /// angewendet werden, damit CI/E2E-Laeufe das produktive 5/Minute-Limit ueber den
+    /// Aspire-Parameter "login-rate-limit-permit-limit" lockern koennen, ohne appsettings.json zu
+    /// aendern. Nutzt absichtlich ein kleines Limit (2) statt des Produktions-Defaults (5), damit
+    /// der Test mit wenigen Requests deterministisch und schnell bleibt.
+    /// </summary>
+    [Test]
+    public async Task PostLogin_ExceedsConfiguredPermitLimit_ReturnsTooManyRequests()
+    {
+        using var factory = new IdentityServiceWebFactory(configureRateLimit: config =>
+        {
+            config["RateLimiting:Login:PermitLimit"] = "2";
+            config["RateLimiting:Login:WindowSeconds"] = "60";
+        });
+        using var client = factory.CreateClient();
+
+        HttpResponseMessage? last = null;
+        for (var i = 0; i < 3; i++)
+        {
+            last = await client.PostAsJsonAsync("/api/auth/login",
+                new LoginRequest(IdentityServiceWebFactory.AdminEmail, "wrong-password"));
+        }
+
+        await Assert.That(last!.StatusCode).IsEqualTo(HttpStatusCode.TooManyRequests);
     }
 }

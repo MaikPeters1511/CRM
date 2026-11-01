@@ -18,6 +18,19 @@ var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
 var identityAdminPassword = builder.AddParameter("identity-admin-password", secret: true);
 var identityEmployeePassword = builder.AddParameter("identity-employee-password", secret: true);
 
+// Login-Brute-Force-Limit (OWASP A04, siehe identity-service/Program.cs) ist ueber Konfiguration
+// einstellbar, damit CI/E2E-Laeufe mit vielen aufeinanderfolgenden Logins das produktive
+// 5/Minute-Limit lockern koennen, ohne appsettings.json zu aendern:
+//   dotnet user-secrets set "Parameters:login-rate-limit-permit-limit" "1000" --project AppHost/Crm.AppHost
+// Bewusst NICHT ueber builder.AddParameter(name, defaultValue) gelesen: dieser Zwei-Argumente-
+// Overload liefert nur einen fixen Literal-Wert und wird NICHT durch einen vorhandenen
+// "Parameters:<name>"-Konfigurationseintrag (User Secret/Env-Var) ueberschrieben - das gilt
+// ebenso fuer jwtIssuer/jwtAudience oben, dort faellt es nur nicht auf, weil sie bisher nie
+// overridet werden mussten. Stattdessen direkt aus builder.Configuration lesen (derselbe
+// "Parameters:<name>"-Schluessel, aber mit echter Override-Faehigkeit) und als einfachen
+// String-Wert durchreichen.
+var loginRateLimitPermitLimit = builder.Configuration["Parameters:login-rate-limit-permit-limit"] ?? "5";
+
 // Database-per-Service (ADR 0001, Abschnitt 1 und 7): kein gemeinsamer DB-Server.
 // Aspire-Ressourcennamen erlauben keine Unterstriche; die tatsaechliche Connection-String-
 // Konfiguration ("ConnectionStrings:customer_db"/"employee_db", siehe *.Infrastructure/DependencyInjection.cs)
@@ -48,7 +61,8 @@ var identityService = builder.AddProject<Projects.IdentityService_Web>("identity
     .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
     .WithEnvironment("IdentitySeed__AdminPassword", identityAdminPassword)
-    .WithEnvironment("IdentitySeed__EmployeePassword", identityEmployeePassword);
+    .WithEnvironment("IdentitySeed__EmployeePassword", identityEmployeePassword)
+    .WithEnvironment("RateLimiting__Login__PermitLimit", loginRateLimitPermitLimit);
 
 var customerService = builder.AddProject<Projects.CustomerService_Web>("customer-service")
     .WithReference(customerDb, connectionName: "customer_db")

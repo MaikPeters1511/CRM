@@ -51,19 +51,31 @@ builder.Services.AddCors(options =>
 });
 
 // OWASP A04 (Insecure Design) / Brute-Force-Schutz: Login-Endpoint auf wenige
-// Versuche pro Zeitfenster und Client-IP begrenzen.
+// Versuche pro Zeitfenster und Client-IP begrenzen. Ueber Konfiguration einstellbar
+// (Abschnitt "RateLimiting:Login"), damit CI/E2E-Laeufe mit vielen aufeinanderfolgenden
+// Logins (siehe Tests/E2E/README.md, Rate-Limiting-Hinweis) das produktive 5/Minute-Limit
+// ueber den Aspire-Parameter "login-rate-limit-permit-limit" lockern koennen, ohne
+// appsettings.json zu aendern. Die Werte werden absichtlich ERST innerhalb der
+// Partition-Factory (also lazy zur Request-Zeit ueber IConfiguration aus DI) gelesen,
+// nicht eager in eine lokale Variable VOR builder.Build() - sonst wirken
+// Konfigurations-Overrides von WebApplicationFactory in Tests nicht (greifen erst nach
+// Build(), eager gelesene Werte wuerden den appsettings.json-Default einfrieren).
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy("login", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
+    {
+        var loginRateLimit = context.RequestServices.GetRequiredService<IConfiguration>()
+            .GetSection("RateLimiting:Login");
+        return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                Window = TimeSpan.FromMinutes(1),
-                PermitLimit = 5,
+                Window = TimeSpan.FromSeconds(loginRateLimit.GetValue("WindowSeconds", 60)),
+                PermitLimit = loginRateLimit.GetValue("PermitLimit", 5),
                 QueueLimit = 0,
-            }));
+            });
+    });
 });
 
 builder.Services.AddProblemDetails();

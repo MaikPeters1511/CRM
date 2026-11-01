@@ -1094,9 +1094,18 @@ Der Brute-Force-Schutz auf `POST /api/auth/login` (max. 5 Versuche/Minute/IP, si
 `authentifizierung.openspec.md`) funktioniert **korrekt** (in dieser Session mehrfach
 reproduziert: wiederholte Testlaeufe/manuelle `curl`-Aufrufe fuehrten zuverlaessig zu
 `429 Too Many Requests`). Bei CI-Laeufen mit vielen aufeinanderfolgenden Tests, die alle
-einen Login durchfuehren, kann dies zu Flakiness fuehren - ggf. die Rate-Limit-Konfiguration
-fuer Test-/CI-Umgebungen ueber eine Umgebungsvariable grosszuegiger konfigurierbar machen
-(nicht Teil dieses QA-Auftrags, nur als Hinweis fuer den naechsten Sprint).
+einen Login durchfuehren, kann dies zu Flakiness fuehren.
+
+**Umgesetzt (2026-11-01):** Das Limit ist jetzt konfigurierbar statt hartkodiert
+(`Program.cs` liest `RateLimiting:Login:PermitLimit`/`WindowSeconds`, Default weiterhin 5/60s).
+Fuer CI/lokale E2E-Laeufe ohne Flakiness-Risiko kann das Limit ueber den Aspire-Parameter
+gelockert werden, ohne `appsettings.json` zu aendern:
+```bash
+dotnet user-secrets set "Parameters:login-rate-limit-permit-limit" "1000" --project AppHost/Crm.AppHost
+```
+Die bestehenden Retry-Mechanismen in `fixtures/auth.ts`/`fixtures/api.ts` (Warten bis zu 61s bei
+429) bleiben als Sicherheitsnetz bestehen, sollten aber bei gesetztem, gelockertem Parameter nicht
+mehr greifen.
 
 ## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-01, nach Bug-9/10-Fixes)
 
