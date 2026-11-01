@@ -44,11 +44,19 @@
     <Project Path="Services/catalog-service/src/CatalogService.Infrastructure/CatalogService.Infrastructure.csproj" />
     <Project Path="Services/catalog-service/src/CatalogService.Web/CatalogService.Web.csproj" />
   </Folder>
+  <Folder Name="/Services/ai-service/" />
+  <Folder Name="/Services/ai-service/src/">
+    <Project Path="Services/ai-service/src/AiService.Application/AiService.Application.csproj" />
+    <Project Path="Services/ai-service/src/AiService.Domain/AiService.Domain.csproj" />
+    <Project Path="Services/ai-service/src/AiService.Infrastructure/AiService.Infrastructure.csproj" />
+    <Project Path="Services/ai-service/src/AiService.Web/AiService.Web.csproj" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/AppointmentService.Tests/AppointmentService.Tests.csproj" />
     <Project Path="Tests/CatalogService.Tests/CatalogService.Tests.csproj" />
     <Project Path="Tests/CustomerService.Tests/CustomerService.Tests.csproj" />
     <Project Path="Tests/EmployeeService.Tests/EmployeeService.Tests.csproj" />
     <Project Path="Tests/IdentityService.Tests/IdentityService.Tests.csproj" />
+    <Project Path="Tests/AiService.Tests/AiService.Tests.csproj" />
   </Folder>
 </Solution>

@@ -52,6 +52,24 @@ var catalogDb = catalogPostgres.AddDatabase("catalog-db", databaseName: "catalog
 // Gemeinsamer Message-Broker fuer Wolverine Integration Events (ADR 0001, Abschnitt 2/7).
 var rabbitmq = builder.AddRabbitMQ("rabbitmq");
 
+// ai-service (ki-terminassistent.openspec.md, docs/adr/0003-ai-service-qdrant-index-strategie.md):
+// eigene, schlanke PostgreSQL-Instanz NUR fuer Chatverlauf/Session-Metadaten (ai_db) sowie ein
+// Qdrant-Vektorindex-Container fuer die semantische Kandidaten-Vorauswahl (ADR 0003, Abschnitt 5) -
+// generische Container-Ressource statt eines dedizierten Aspire-Hosting-Pakets (keine offizielle
+// Aspire.Hosting.Qdrant-Integration im Projekt eingebunden, kein Gold-Plating).
+var aiPostgres = builder.AddPostgres("ai-postgres");
+var aiDb = aiPostgres.AddDatabase("ai-db", databaseName: "ai_db");
+
+var qdrant = builder.AddContainer("qdrant", "qdrant/qdrant", "v1.12.1")
+    .WithHttpEndpoint(port: 6333, targetPort: 6333, name: "http")
+    .WithVolume("qdrant-data", "/qdrant/storage");
+
+// Secrets fuer die externe LLM-Anbindung (Requirement "Konfigurierbare LLM-Anbindung (OpenAI/LMStudio)",
+// CLAUDE.md "Keine Hardcoded Secrets"):
+//   dotnet user-secrets set "Parameters:openai-api-key" "<echter Key>" --project AppHost/Crm.AppHost
+var openAiApiKey = builder.AddParameter("openai-api-key", secret: true);
+var lmStudioBaseUrl = builder.Configuration["Parameters:lmstudio-base-url"] ?? "";
+
 // identity-service: eigenstaendiger, selbst gehosteter JWT-Issuer (kein externer IdP,
 // siehe UserStories/authentifizierung.openspec.md). Kein identity_db in diesem Entwicklungsstand:
 // nur zwei Seed-Testnutzer (Admin/Employee), in-memory gehasht ueber PasswordHasher<T>
@@ -112,6 +130,35 @@ var catalogService = builder.AddProject<Projects.CatalogService_Web>("catalog-se
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
     .WaitFor(catalogDb);
 
+// ai-service: synchrone Service-Discovery-Referenzen auf appointment-service/employee-service/
+// catalog-service/customer-service fuer die Polly-abgesicherten Live-Calls (ki-terminassistent.openspec.md,
+// Abschnitt 5), sowie Qdrant/RabbitMQ/ai_db fuer den Verfuegbarkeitsindex (ADR 0003).
+var aiService = builder.AddProject<Projects.AiService_Web>("ai-service")
+    .WithReference(aiDb, connectionName: "ai_db")
+    .WithReference(rabbitmq, connectionName: "rabbitmq")
+    .WithReference(appointmentService)
+    .WithReference(employeeService)
+    .WithReference(catalogService)
+    .WithReference(customerService)
+    .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
+    .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
+    .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
+    .WithEnvironment("OpenAi__ApiKey", openAiApiKey)
+    .WithEnvironment("LmStudio__BaseUrl", lmStudioBaseUrl)
+    .WaitFor(aiDb)
+    .WaitFor(rabbitmq)
+    .WaitFor(qdrant)
+    .WaitFor(appointmentService)
+    .WaitFor(employeeService)
+    .WaitFor(catalogService)
+    .WaitFor(customerService);
+
+// Qdrant-Umgebungsvariable wird ueber Aspire Service Discovery als
+// "services__qdrant__http__0" injiziert - QdrantAvailabilityIndexClient liest stattdessen bewusst
+// "Qdrant:BaseUrl"/QDRANT_BASE_URL (einfache HTTP-Basis-URL ohne Service-Discovery-Schema), daher
+// hier explizit auf die generierte Endpoint-URL gemappt.
+aiService.WithEnvironment("Qdrant__BaseUrl", qdrant.GetEndpoint("http"));
+
 // API-Gateway (ADR 0001, Abschnitt 4): reiner Reverse-Proxy + Auth-Termination,
 // erreicht identity-service/customer-service/employee-service/appointment-service ausschliesslich
 // ueber Aspire Service Discovery. Gateway validiert das JWT (Auth-Termination), die Services
@@ -122,6 +169,7 @@ var gateway = builder.AddProject<Projects.Crm_Gateway>("gateway")
     .WithReference(employeeService)
     .WithReference(appointmentService)
     .WithReference(catalogService)
+    .WithReference(aiService)
     .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
     .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
@@ -130,6 +178,7 @@ var gateway = builder.AddProject<Projects.Crm_Gateway>("gateway")
     .WaitFor(employeeService)
     .WaitFor(appointmentService)
     .WaitFor(catalogService)
+    .WaitFor(aiService)
     .WithExternalHttpEndpoints();
 
 // crm-web (ADR 0002, Frontend-Konsolidierung): einzige Angular-Anwendung, spricht ausschliesslich

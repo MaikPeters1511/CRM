@@ -19,22 +19,32 @@ Dieses Verzeichnis enthält die .NET Aspire Orchestrierung für das CRM gemäß
 | `employee-postgres` → DB `employee-db` (Connection-String-Name `employee_db`) | PostgreSQL-Container | Eigene Datenbank für `employee-service` |
 | `appointment-postgres` → DB `appointment-db` (Connection-String-Name `appointment_db`) | PostgreSQL-Container | Eigene Datenbank für `appointment-service` |
 | `catalog-postgres` → DB `catalog-db` (Connection-String-Name `catalog_db`) | PostgreSQL-Container | Eigene Datenbank für `catalog-service` |
-| `rabbitmq` | RabbitMQ-Container | Wolverine Messaging (Integration Events `CustomerDeactivated`, `EmployeeDeactivated`, `AppointmentCreated`/`Cancelled`/`Rescheduled`) |
+| `ai-postgres` → DB `ai-db` (Connection-String-Name `ai_db`) | PostgreSQL-Container | Eigene, schlanke Datenbank für `ai-service` (nur Chatverlauf/Session-Metadaten) |
+| `qdrant` | Generische Container-Ressource (`qdrant/qdrant`) | Vektorindex für `ai-service` (semantische Kandidaten-Vorauswahl, docs/adr/0003) |
+| `rabbitmq` | RabbitMQ-Container | Wolverine Messaging (Integration Events `CustomerDeactivated`, `EmployeeDeactivated`, `AppointmentCreated`/`Cancelled`/`Rescheduled`, `ServiceCatalogChanged`) |
 | `identity-service` | Aspire-Projektressource | `Services/identity-service/src/IdentityService.Web` (JWT-Ausstellung, `POST /api/auth/login`) |
 | `customer-service` | Aspire-Projektressource | `Services/customer-service/src/CustomerService.Web` |
 | `employee-service` | Aspire-Projektressource | `Services/employee-service/src/EmployeeService.Web` |
 | `appointment-service` | Aspire-Projektressource | `Services/appointment-service/src/AppointmentService.Web` (referenziert `customer-service`/`employee-service` per Service Discovery) |
 | `catalog-service` | Aspire-Projektressource | `Services/catalog-service/src/CatalogService.Web` (kein synchroner Backend-zu-Backend-Call von anderen Services, nur `crm-web` greift zu) |
+| `ai-service` | Aspire-Projektressource | `Services/ai-service/src/AiService.Web` (KI-Terminassistent; referenziert `appointment-service`/`employee-service`/`catalog-service`/`customer-service` per Service Discovery für die Polly-abgesicherten Live-Calls, sowie `qdrant`/`ai-db`/`rabbitmq`) |
 | `gateway` | Aspire-Projektressource | YARP-Reverse-Proxy (`Gateway/Crm.Gateway`), einziger extern erreichbarer HTTP-Endpunkt für API-Traffic |
 | `crm-web` | Aspire-JavaScript-App (`Aspire.Hosting.JavaScript`, `AddJavaScriptApp`) | Konsolidiertes Angular-Frontend (`Clients/crm-web`, ADR 0002), startet automatisch per `npm start` (`ng serve`), fester Port `4200` (`isProxied: false`, da der Angular-Dev-Server selbst an diesen Port bindet), wartet auf `gateway` |
 
-Alle fünf fachlichen Services sowie der Gateway sind seit der Umsetzung von
-`terminverwaltung.openspec.md`/`authentifizierung.openspec.md`/`leistungskatalog.openspec.md`
-vollständig im AppHost verdrahtet (siehe `AppHost/Crm.AppHost/AppHost.cs`). Ein gemeinsames
-JWT-Schema (Issuer/Audience/Signing-Key, siehe Aspire-Parameter
-`jwt-issuer`/`jwt-audience`/`jwt-signing-key`) wird an `identity-service` (Aussteller) und
-Gateway/`customer-service`/`employee-service`/`appointment-service`/`catalog-service`
-(Validierer, Defense in Depth) verteilt.
+Alle sechs fachlichen Services sowie der Gateway sind seit der Umsetzung von
+`terminverwaltung.openspec.md`/`authentifizierung.openspec.md`/`leistungskatalog.openspec.md`/
+`ki-terminassistent.openspec.md` vollständig im AppHost verdrahtet (siehe
+`AppHost/Crm.AppHost/AppHost.cs`). Ein gemeinsames JWT-Schema (Issuer/Audience/Signing-Key, siehe
+Aspire-Parameter `jwt-issuer`/`jwt-audience`/`jwt-signing-key`) wird an `identity-service`
+(Aussteller) und Gateway/`customer-service`/`employee-service`/`appointment-service`/
+`catalog-service`/`ai-service` (Validierer, Defense in Depth) verteilt.
+
+**ai-service-Secret (OpenAI-API-Key, kein Hardcoding, CLAUDE.md):**
+```bash
+dotnet user-secrets set "Parameters:openai-api-key" "<echter OpenAI-API-Key>" --project AppHost/Crm.AppHost
+```
+Alternativ `LlmProvider=LmStudio` + `Parameters:lmstudio-base-url` für eine lokale LMStudio-Instanz
+(kein API-Key nötig) - siehe `Services/ai-service/README.md`.
 
 ## Starten
 

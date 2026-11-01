@@ -12,9 +12,10 @@ konsolidierten Angular-22-Anwendung und .NET Aspire als lokaler Orchestrierung.
 | `employee-service` | `Services/employee-service/` | Mitarbeiterverwaltung (Rollen, Leistungen, Arbeitszeiten, Abwesenheiten, Verfügbarkeit) + eigene DB `employee_db` | `http://localhost:5159` |
 | `appointment-service` | `Services/appointment-service/` | Terminverwaltung (Anlegen/Verschieben/Stornieren, Kollisionsprüfung, Kalender, RBAC) + eigene DB `appointment_db` | `http://localhost:5169` |
 | `catalog-service` | `Services/catalog-service/` | Leistungskatalog (Anlegen/Bearbeiten/Deaktivieren von Leistungen für die Mitarbeiter-Zuordnung) + eigene DB `catalog_db` | `http://localhost:5189` |
+| `ai-service` | `Services/ai-service/` | KI-Terminassistent (Chat, unverbindliche Terminvorschläge per RAG über Qdrant + OpenAI/LMStudio) + eigene DB `ai_db` (nur Chatverlauf) | `http://localhost:5289` |
 | `Gateway/Crm.Gateway` | `Gateway/Crm.Gateway/` | YARP-Reverse-Proxy, einziger öffentlicher HTTP-Eintrittspunkt, Auth-Termination (JWT) | dynamisch (Aspire) |
 | `Clients/crm-web` | `Clients/crm-web/` | Eine konsolidierte Angular-22-Standalone-Anwendung (Kunden/Mitarbeiter/Termine/Login) | `http://localhost:4200` |
-| `AppHost/Crm.AppHost` | `AppHost/` | .NET Aspire AppHost: orchestriert alle Services, 3× PostgreSQL, RabbitMQ, Gateway | Aspire-Dashboard |
+| `AppHost/Crm.AppHost` | `AppHost/` | .NET Aspire AppHost: orchestriert alle Services, 4× PostgreSQL, RabbitMQ, Qdrant, Gateway | Aspire-Dashboard |
 
 Jeder Backend-Service ist intern nach Clean Architecture (Domain/Application/Infrastructure/Web)
 geschichtet und besitzt sein eigenes Swagger/OpenAPI-Dokument unter `/swagger` (nur in
@@ -58,8 +59,8 @@ dotnet user-secrets set "Parameters:jwt-signing-key" "$(openssl rand -base64 32)
 dotnet user-secrets set "Parameters:identity-admin-password" "Admin123!"
 dotnet user-secrets set "Parameters:identity-employee-password" "Employee123!"
 
-# 2. Alles starten (identity-/customer-/employee-/appointment-/catalog-service, Gateway,
-#    4× PostgreSQL, RabbitMQ UND das Angular-Frontend crm-web laufen automatisch mit)
+# 2. Alles starten (identity-/customer-/employee-/appointment-/catalog-/ai-service, Gateway,
+#    4× PostgreSQL, RabbitMQ, Qdrant UND das Angular-Frontend crm-web laufen automatisch mit)
 dotnet run --project AppHost/Crm.AppHost
 ```
 
@@ -121,6 +122,7 @@ JWT-Bearer-Schema für `[Authorize]`-geschützte Endpoints:
 - `employee-service`: `http://localhost:5159/swagger`
 - `appointment-service`: `http://localhost:5169/swagger`
 - `catalog-service`: `http://localhost:5189/swagger`
+- `ai-service`: `http://localhost:5289/swagger`
 
 Die genauen Endpunkte, Rollen und Modelle sind je Capability auch in Abschnitt 5 der zugehörigen
 OpenSpec-Datei (siehe oben) beschrieben.
@@ -136,7 +138,8 @@ OpenSpec-Datei (siehe oben) beschrieben.
 │   ├── customer-service/
 │   ├── employee-service/
 │   ├── appointment-service/
-│   └── catalog-service/
+│   ├── catalog-service/
+│   └── ai-service/
 ├── Clients/crm-web/          # Konsolidierte Angular-22-Anwendung
 ├── Tests/                    # Backend-Unit-/Integrationstests + E2E (Playwright)
 ├── UserStories/               # OpenSpec Change-Specs & Capability-Specs

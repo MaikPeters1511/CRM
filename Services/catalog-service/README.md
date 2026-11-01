@@ -34,6 +34,9 @@ werden beim Start automatisch angewendet (`DatabaseMigrationHostedService`).
   im Mitarbeiterformular zu befüllen. Es gibt keinen synchronen Backend-zu-Backend-Call von
   `employee-service`/`appointment-service` zu `catalog-service` — `EmployeeServiceAssignment`
   speichert `ServiceId`/`ServiceName` als Snapshot-Werte zum Zeitpunkt der Zuordnung.
-- Kein Integration-Event-Publishing (kein Konsument vorhanden, siehe OpenSpec Abschnitt 7 — kein
-  Gold-Plating).
+- Integration-Event-Publishing: `ServiceCatalogChangedIntegrationEvent` (Rabbit-Exchange
+  `service-catalog-changed`) bei Anlegen/Bearbeiten/Deaktivieren einer Leistung. Konsument:
+  `ai-service` (siehe [`docs/adr/0003-ai-service-qdrant-index-strategie.md`](../../docs/adr/0003-ai-service-qdrant-index-strategie.md)).
+  Zuvor bewusst ohne Events (kein Konsument, kein Gold-Plating) — siehe archivierte
+  `leistungskatalog.openspec.md`.
 - JWT-Validierung gegen `identity-service` (gemeinsamer Signing-Key, kein OIDC-Discovery).
