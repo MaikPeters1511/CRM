@@ -23,6 +23,13 @@ describe('CalendarViewComponent', () => {
     cancellationReason: null,
   };
 
+  function fakeDragEvent(): DragEvent {
+    return {
+      preventDefault: vi.fn(),
+      dataTransfer: { setData: vi.fn(), effectAllowed: '' },
+    } as unknown as DragEvent;
+  }
+
   function setup(role: 'Admin' | 'Employee' = 'Admin', absenceEntries: unknown[] = []) {
     const stateMock = {
       viewMode: () => 'week' as const,
@@ -41,6 +48,7 @@ describe('CalendarViewComponent', () => {
       shift: vi.fn(),
       goToToday: vi.fn(),
       loadAppointments: vi.fn(),
+      rescheduleAppointment: vi.fn(),
     };
     const employeeApiMock = {
       search: vi.fn().mockReturnValue(
@@ -135,6 +143,61 @@ describe('CalendarViewComponent', () => {
     expect(
       Array.from(hints).some((hint) => (hint as HTMLElement).textContent?.includes('appointment.calendar.createHere')),
     ).toBe(true);
+  });
+
+  it('reschedules the appointment, snapped to the full hour, when dropped on a different hour/day cell', () => {
+    const { component, stateMock } = setup();
+    const targetCell = { label: '14:00', dateIso: '2024-05-16', hour: 14, appointments: [] };
+
+    component.onAppointmentDragStart(fakeDragEvent(), appointment);
+    component.onCellDrop(fakeDragEvent(), targetCell);
+
+    expect(stateMock.rescheduleAppointment).toHaveBeenCalledWith(
+      'a1',
+      { newStart: '2024-05-16T14:00:00', newEnd: '2024-05-16T15:00:00' },
+      expect.any(Function),
+    );
+  });
+
+  it('does not reschedule when the appointment is dropped back on its own unchanged cell', () => {
+    const { component, stateMock } = setup();
+    const sameCell = { label: '10:00', dateIso: '2024-05-15', hour: 10, appointments: [appointment] };
+
+    component.onAppointmentDragStart(fakeDragEvent(), appointment);
+    component.onCellDrop(fakeDragEvent(), sameCell);
+
+    expect(stateMock.rescheduleAppointment).not.toHaveBeenCalled();
+  });
+
+  it('keeps the original time of day and only changes the date when dropped on a month-view day cell', () => {
+    const { component, stateMock } = setup();
+    const monthCell = { label: '16', dateIso: '2024-05-16', hour: null, appointments: [] };
+
+    component.onAppointmentDragStart(fakeDragEvent(), appointment);
+    component.onCellDrop(fakeDragEvent(), monthCell);
+
+    expect(stateMock.rescheduleAppointment).toHaveBeenCalledWith(
+      'a1',
+      { newStart: '2024-05-16T10:00:00', newEnd: '2024-05-16T11:00:00' },
+      expect.any(Function),
+    );
+  });
+
+  it('marks a cell as the drop target on dragover only while a drag is in progress, and clears it on drop', () => {
+    const { component } = setup();
+    const cell = { label: '14:00', dateIso: '2024-05-16', hour: 14, appointments: [] };
+
+    expect(component.isDropTarget(cell)).toBe(false);
+
+    component.onAppointmentDragStart(fakeDragEvent(), appointment);
+    const dragOverEvent = fakeDragEvent();
+    component.onCellDragOver(dragOverEvent, cell);
+
+    expect(dragOverEvent.preventDefault).toHaveBeenCalled();
+    expect(component.isDropTarget(cell)).toBe(true);
+
+    component.onCellDrop(fakeDragEvent(), cell);
+    expect(component.isDropTarget(cell)).toBe(false);
   });
 
   it('moves focus between cells on arrow key navigation', () => {

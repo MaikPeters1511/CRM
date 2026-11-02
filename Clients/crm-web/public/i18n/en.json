@@ -286,6 +286,7 @@
       "gridLabel": "Appointment calendar",
       "createHere": "Create appointment",
       "openDay": "Open day",
+      "dragHint": "Appointments can be dragged with the mouse onto another time slot to reschedule them. Alternatively, every appointment's detail page has a reschedule form.",
       "absences": {
         "heading": "Approved absences"
       }

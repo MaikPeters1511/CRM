@@ -286,6 +286,7 @@
       "gridLabel": "Terminkalender",
       "createHere": "Termin anlegen",
       "openDay": "Tag öffnen",
+      "dragHint": "Termine können mit der Maus auf einen anderen Zeitslot gezogen werden, um sie zu verschieben. Alternativ steht in der Detailansicht jedes Termins ein Verschieben-Formular zur Verfügung.",
       "absences": {
         "heading": "Genehmigte Abwesenheiten"
       }

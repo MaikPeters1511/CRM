@@ -165,6 +165,7 @@
           <span>{{ 'appointment.calendar.loading' | translate }}</span>
         </div>
       } @else {
+        <p class="sr-only">{{ 'appointment.calendar.dragHint' | translate }}</p>
         <div
           role="grid"
           [attr.aria-label]="'appointment.calendar.gridLabel' | translate"
@@ -204,10 +205,16 @@
                   class="group relative min-h-20 p-1.5 border-r border-base-200 last:border-r-0 hover:bg-base-200/40 focus:outline-2 focus:-outline-offset-2 focus:outline-primary transition-colors flex flex-col gap-1 min-w-28"
                   [class.bg-primary/5]="isToday(cell.dateIso)"
                   [class.cursor-pointer]="cell.appointments.length === 0"
+                  [class.bg-primary/15]="isDropTarget(cell)"
+                  [class.outline-2]="isDropTarget(cell)"
+                  [class.outline-primary]="isDropTarget(cell)"
                   [attr.aria-label]="cell.appointments.length === 0 ? cell.label + ' ' + cell.dateIso + ' – ' + (emptyCellHintKey(cell) | translate) : cell.label + ' ' + cell.dateIso"
                   (keydown)="onGridKeydown($event, rowIndex, colIndex, cell)"
                   (click)="cell.appointments.length === 0 && openCell(cell)"
                   (dblclick)="openCell(cell)"
+                  (dragover)="onCellDragOver($event, cell)"
+                  (dragleave)="onCellDragLeave(cell)"
+                  (drop)="onCellDrop($event, cell)"
                 >
                   <div class="flex items-center justify-between">
                     <span
@@ -237,7 +244,8 @@
                   @for (appointment of cell.appointments; track appointment.id) {
                     <button
                       type="button"
-                      class="btn btn-xs h-auto min-h-0 py-1 px-2 w-full items-start text-left gap-0.5 rounded-md shadow-2xs flex-col"
+                      draggable="true"
+                      class="btn btn-xs h-auto min-h-0 py-1 px-2 w-full items-start text-left gap-0.5 rounded-md shadow-2xs flex-col cursor-grab active:cursor-grabbing"
                       [class.btn-success]="appointment.status === 'Confirmed'"
                       [class.btn-error]="appointment.status === 'Cancelled'"
                       [class.btn-neutral]="appointment.status === 'Completed'"
@@ -245,6 +253,8 @@
                       [title]="appointmentTooltip(appointment)"
                       [attr.aria-label]="appointmentTooltip(appointment)"
                       (click)="openCell(cell)"
+                      (dragstart)="onAppointmentDragStart($event, appointment)"
+                      (dragend)="onAppointmentDragEnd()"
                     >
                       <span class="flex items-center gap-1.5 w-full">
                         <span aria-hidden="true" class="text-[11px]">
