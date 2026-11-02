@@ -123,4 +123,11 @@ export class EmployeeFormComponent implements OnInit {
   cancel(): void {
     this.router.navigate(['/employees']);
   }
+
+  goToSchedule(): void {
+    const id = this.employeeId();
+    if (id) {
+      this.router.navigate(['/employees', id, 'schedule']);
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, effect, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { EmployeeStateService } from '../../application/employee-state.service';
@@ -6,6 +6,8 @@ import { Weekday, WEEKDAYS, WorkingHoursSlot } from '../../domain/employee.model
 
 /** Zeitraster-Editor arbeitet mit vollen Stunden von 06:00 bis 20:00 Uhr. */
 export const SCHEDULE_HOURS: number[] = Array.from({ length: 14 }, (_, i) => i + 6);
+export const SCHEDULE_END_HOURS: number[] = Array.from({ length: 14 }, (_, i) => i + 7);
+const WORKWEEK_DAYS: readonly Weekday[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 function slotKey(weekday: Weekday, hour: number): string {
   return `${weekday}-${hour}`;
@@ -79,9 +81,12 @@ export class EmployeeScheduleComponent implements OnInit {
 
   protected readonly weekdays = WEEKDAYS;
   protected readonly hours = SCHEDULE_HOURS;
+  protected readonly endHours = SCHEDULE_END_HOURS;
 
   private readonly _selected = signal<Set<string>>(new Set());
   protected readonly selected = this._selected.asReadonly();
+
+  protected readonly totalWeeklyHours = computed(() => this._selected().size);
 
   private employeeId = '';
 
@@ -113,6 +118,84 @@ export class EmployeeScheduleComponent implements OnInit {
       }
       return next;
     });
+  }
+
+  isDayActive(weekday: Weekday): boolean {
+    return this.hours.some((h) => this._selected().has(slotKey(weekday, h)));
+  }
+
+  toggleDay(weekday: Weekday): void {
+    if (this.isDayActive(weekday)) {
+      this.clearDay(weekday);
+    } else {
+      this.setDayRange(weekday, 8, 17);
+    }
+  }
+
+  clearDay(weekday: Weekday): void {
+    this._selected.update((set) => {
+      const next = new Set(set);
+      for (const h of this.hours) {
+        next.delete(slotKey(weekday, h));
+      }
+      return next;
+    });
+  }
+
+  dayStartHour(weekday: Weekday): number {
+    const active = this.hours.filter((h) => this._selected().has(slotKey(weekday, h)));
+    return active.length > 0 ? Math.min(...active) : 8;
+  }
+
+  dayEndHour(weekday: Weekday): number {
+    const active = this.hours.filter((h) => this._selected().has(slotKey(weekday, h)));
+    return active.length > 0 ? Math.max(...active) + 1 : 17;
+  }
+
+  setDayRange(weekday: Weekday, startVal: number | string, endVal: number | string): void {
+    const start = Number(startVal);
+    const end = Number(endVal);
+    if (Number.isNaN(start) || Number.isNaN(end) || start >= end) {
+      return;
+    }
+    this._selected.update((set) => {
+      const next = new Set(set);
+      for (const h of this.hours) {
+        next.delete(slotKey(weekday, h));
+      }
+      for (let h = start; h < end; h++) {
+        if (this.hours.includes(h)) {
+          next.add(slotKey(weekday, h));
+        }
+      }
+      return next;
+    });
+  }
+
+  daySummary(weekday: Weekday): string {
+    const slots = mergeSlotsToWorkingHours(this._selected()).filter((s) => s.weekday === weekday);
+    if (slots.length === 0) {
+      return '';
+    }
+    return slots.map((s) => `${s.startTime.slice(0, 5)} – ${s.endTime.slice(0, 5)}`).join(', ');
+  }
+
+  applyWorkweekPreset(startHour: number, endHour: number): void {
+    const next = new Set<string>();
+    for (const day of WORKWEEK_DAYS) {
+      for (let h = startHour; h < endHour; h++) {
+        next.add(slotKey(day, h));
+      }
+    }
+    this._selected.set(next);
+  }
+
+  clearAll(): void {
+    this._selected.set(new Set());
+  }
+
+  formatHour(hour: number): string {
+    return `${hour.toString().padStart(2, '0')}:00`;
   }
 
   /** Pfeiltasten-Navigation zwischen den Zeitslot-Zellen (roving tabindex per Fokus). */

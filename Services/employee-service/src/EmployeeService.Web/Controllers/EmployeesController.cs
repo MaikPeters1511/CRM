@@ -127,14 +127,22 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
         };
     }
 
-    /// <summary>Setzt die wiederkehrenden Wochenarbeitszeiten eines Mitarbeiters (Rolle <c>Admin</c>).</summary>
+    /// <summary>
+    /// Setzt die wiederkehrenden Wochenarbeitszeiten eines Mitarbeiters (Rolle <c>Admin</c> fuer beliebige
+    /// Mitarbeiter; Rolle <c>Employee</c> fuer den eigenen Mitarbeiter-Datensatz).
+    /// </summary>
     [HttpPut("{id:guid}/schedule")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> SetSchedule(
         Guid id,
         [FromBody] SetWorkingHoursRequest request,
         CancellationToken cancellationToken)
     {
+        if (!IsAdmin() && !IsOwnEmployeeRecord(id))
+        {
+            return Forbid();
+        }
+
         var command = new SetWorkingHoursCommand(id, request.Slots, GetActorId());
 
         var result = await messageBus.InvokeAsync<SetWorkingHoursResult>(command, cancellationToken);
