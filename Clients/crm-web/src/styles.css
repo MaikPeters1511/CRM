@@ -1,6 +1,22 @@
 @import 'tailwindcss';
 @plugin 'daisyui' {
-  themes: mpcrm --default, light, dark, corporate, forest, synthwave;
+  themes:
+    mpcrm --default,
+    light,
+    dark,
+    corporate,
+    emerald,
+    nord,
+    winter,
+    retro,
+    cyberpunk,
+    forest,
+    synthwave,
+    dracula,
+    night,
+    sunset,
+    coffee,
+    luxury;
 }
 
 @plugin 'daisyui/theme' {

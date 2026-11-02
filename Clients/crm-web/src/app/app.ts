@@ -5,6 +5,8 @@ import { AuthStateService } from './auth/application/auth-state.service';
 import { AssistantStateService } from './assistant/application/assistant-state.service';
 import { AssistantChatWidgetComponent } from './assistant/presentation/assistant-chat-widget/assistant-chat-widget.component';
 import { NotificationBellComponent } from './employees/presentation/notification-bell/notification-bell.component';
+import { ThemeState } from './profile/application/theme.state';
+import { BUILT_IN_THEMES, BuiltInTheme } from './profile/domain/theme.model';
 
 /**
  * Shell-Komponente: Sidebar-Navigation/Router-Outlet fuer die konsolidierte Anwendung
@@ -33,8 +35,14 @@ export class App {
   private readonly router = inject(Router);
   protected readonly authState = inject(AuthStateService);
   protected readonly assistantState = inject(AssistantStateService);
+  protected readonly themeState = inject(ThemeState);
 
   readonly languages = ['de', 'en'] as const;
+  readonly themes = BUILT_IN_THEMES;
+
+  selectTheme(theme: BuiltInTheme): void {
+    this.themeState.selectTheme(theme);
+  }
 
   useLanguage(lang: string): void {
     this.translate.use(lang);

@@ -26,19 +26,71 @@
 
   @if (activeTab() === 'theme') {
     <section aria-labelledby="theme-picker-heading" class="card bg-base-100 border border-base-300 shadow-sm">
-      <div class="card-body">
+      <div class="card-body gap-4">
         <h2 id="theme-picker-heading" class="card-title">{{ 'profile.themePicker.heading' | translate }}</h2>
-        <div class="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="theme-picker-heading">
+        <div
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+          role="radiogroup"
+          aria-labelledby="theme-picker-heading"
+        >
           @for (theme of builtInThemes; track theme) {
             <button
               type="button"
               role="radio"
-              class="btn btn-sm"
-              [class.btn-primary]="themeState.activeTheme() === theme"
+              [attr.data-theme]="theme"
+              class="group text-left rounded-box overflow-hidden border-2 transition-all cursor-pointer bg-base-100 text-base-content shadow-xs hover:shadow-md"
+              [class.border-primary]="themeState.activeTheme() === theme"
+              [class.ring-2]="themeState.activeTheme() === theme"
+              [class.ring-primary/30]="themeState.activeTheme() === theme"
+              [class.border-base-300]="themeState.activeTheme() !== theme"
               [attr.aria-checked]="themeState.activeTheme() === theme"
               (click)="selectTheme(theme)"
             >
-              {{ 'profile.themePicker.themes.' + theme | translate }}
+              <!-- Mini-UI-Vorschau des jeweiligen Themes -->
+              <div class="grid grid-cols-5 grid-rows-3 h-20 border-b border-base-300">
+                <div class="col-span-1 row-span-3 bg-base-200 border-r border-base-300 flex flex-col gap-1 p-1.5">
+                  <div class="w-3 h-3 rounded-xs bg-primary"></div>
+                  <div class="w-full h-1.5 rounded-xs bg-base-300 mt-1"></div>
+                  <div class="w-4/5 h-1.5 rounded-xs bg-base-300"></div>
+                  <div class="w-3/5 h-1.5 rounded-xs bg-base-300"></div>
+                </div>
+                <div class="col-span-4 row-span-1 bg-base-100 border-b border-base-300 flex items-center justify-end gap-1 px-2">
+                  <span class="w-2 h-2 rounded-full bg-primary"></span>
+                  <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                  <span class="w-2 h-2 rounded-full bg-accent"></span>
+                  <span class="w-2 h-2 rounded-full bg-neutral"></span>
+                </div>
+                <div class="col-span-4 row-span-2 bg-base-200/60 p-2 flex flex-col justify-between">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="h-2 w-12 rounded-xs bg-base-content/70"></span>
+                    <span class="px-1.5 py-0.5 rounded-xs bg-primary text-primary-content text-[9px] font-bold leading-none">
+                      CRM
+                    </span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-1">
+                    <div class="h-4 rounded-xs bg-base-100 border border-base-300"></div>
+                    <div class="h-4 rounded-xs bg-base-100 border border-base-300"></div>
+                    <div class="h-4 rounded-xs bg-base-100 border border-base-300"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Theme-Name & Farb-Swatches -->
+              <div class="flex items-center justify-between px-3 py-2 bg-base-100">
+                <span class="text-xs font-semibold truncate">
+                  {{ 'profile.themePicker.themes.' + theme | translate }}
+                </span>
+                <div class="flex items-center gap-1">
+                  @if (themeState.activeTheme() === theme) {
+                    <span class="badge badge-primary badge-xs">✓</span>
+                  } @else {
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-accent"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-neutral"></span>
+                  }
+                </div>
+              </div>
             </button>
           }
         </div>

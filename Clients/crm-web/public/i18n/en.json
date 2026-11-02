@@ -652,8 +652,18 @@
         "light": "Light",
         "dark": "Dark",
         "corporate": "Corporate",
+        "emerald": "Emerald",
+        "nord": "Nord",
+        "winter": "Winter",
+        "retro": "Retro",
+        "cyberpunk": "Cyberpunk",
         "forest": "Forest",
-        "synthwave": "Synthwave"
+        "synthwave": "Synthwave",
+        "dracula": "Dracula",
+        "night": "Night",
+        "sunset": "Sunset",
+        "coffee": "Coffee",
+        "luxury": "Luxury"
       }
     },
     "themeEditor": {
