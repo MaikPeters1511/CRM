@@ -195,85 +195,171 @@
           </div>
 
           <!-- Kalender-Zeilen & Zellen -->
-          @for (row of rows(); track $index; let rowIndex = $index) {
-            <div role="row" class="grid grid-flow-col auto-cols-fr border-b border-base-300 last:border-b-0">
-              @for (cell of row; track $index; let colIndex = $index) {
-                <div
-                  [id]="'calendar-cell-' + rowIndex + '-' + colIndex"
-                  role="gridcell"
-                  tabindex="0"
-                  class="group relative min-h-20 p-1.5 border-r border-base-200 last:border-r-0 hover:bg-base-200/40 focus:outline-2 focus:-outline-offset-2 focus:outline-primary transition-colors flex flex-col gap-1 min-w-28"
-                  [class.bg-primary/5]="isToday(cell.dateIso)"
-                  [class.cursor-pointer]="cell.appointments.length === 0"
-                  [class.bg-primary/15]="isDropTarget(cell)"
-                  [class.outline-2]="isDropTarget(cell)"
-                  [class.outline-primary]="isDropTarget(cell)"
-                  [attr.aria-label]="cell.appointments.length === 0 ? cell.label + ' ' + cell.dateIso + ' – ' + (emptyCellHintKey(cell) | translate) : cell.label + ' ' + cell.dateIso"
-                  (keydown)="onGridKeydown($event, rowIndex, colIndex, cell)"
-                  (click)="cell.appointments.length === 0 && openCell(cell)"
-                  (dblclick)="openCell(cell)"
-                  (dragover)="onCellDragOver($event, cell)"
-                  (dragleave)="onCellDragLeave(cell)"
-                  (drop)="onCellDrop($event, cell)"
-                >
-                  <div class="flex items-center justify-between">
-                    <span
-                      class="text-[11px] font-mono font-medium"
-                      [class.text-primary]="isToday(cell.dateIso)"
-                      [class.font-bold]="isToday(cell.dateIso)"
-                      [class.text-base-content/50]="!isToday(cell.dateIso)"
-                    >
-                      {{ cell.label }}
-                    </span>
-                    @if (cell.appointments.length > 0) {
-                      <span class="badge badge-xs badge-ghost">{{ cell.appointments.length }}</span>
+          @if (state.viewMode() === 'month') {
+            @for (row of rows(); track $index; let rowIndex = $index) {
+              <div role="row" class="grid grid-flow-col auto-cols-fr border-b border-base-300 last:border-b-0">
+                @for (cell of row; track $index; let colIndex = $index) {
+                  <div
+                    [id]="'calendar-cell-' + rowIndex + '-' + colIndex"
+                    role="gridcell"
+                    tabindex="0"
+                    class="group relative min-h-20 p-1.5 border-r border-base-200 last:border-r-0 hover:bg-base-200/40 focus:outline-2 focus:-outline-offset-2 focus:outline-primary transition-colors flex flex-col gap-1 min-w-28"
+                    [class.bg-primary/5]="isToday(cell.dateIso)"
+                    [class.cursor-pointer]="cell.appointments.length === 0"
+                    [attr.aria-label]="cell.appointments.length === 0 ? cell.label + ' ' + cell.dateIso + ' – ' + (emptyCellHintKey(cell) | translate) : cell.label + ' ' + cell.dateIso"
+                    (keydown)="onGridKeydown($event, rowIndex, colIndex, cell)"
+                    (click)="cell.appointments.length === 0 && openCell(cell)"
+                    (dblclick)="openCell(cell)"
+                  >
+                    <div class="flex items-center justify-between">
+                      <span
+                        class="text-[11px] font-mono font-medium"
+                        [class.text-primary]="isToday(cell.dateIso)"
+                        [class.font-bold]="isToday(cell.dateIso)"
+                        [class.text-base-content/50]="!isToday(cell.dateIso)"
+                      >
+                        {{ cell.label }}
+                      </span>
+                      @if (cell.appointments.length > 0) {
+                        <span class="badge badge-xs badge-ghost">{{ cell.appointments.length }}</span>
+                      }
+                    </div>
+
+                    @if (cell.appointments.length === 0) {
+                      <span
+                        aria-hidden="true"
+                        class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity"
+                      >
+                        <span class="badge badge-sm badge-primary badge-soft gap-1">
+                          <span aria-hidden="true">+</span>{{ emptyCellHintKey(cell) | translate }}
+                        </span>
+                      </span>
+                    }
+
+                    @for (appointment of cell.appointments; track appointment.id) {
+                      <button
+                        type="button"
+                        class="btn btn-xs h-auto min-h-0 py-1 px-2 w-full items-start text-left gap-0.5 rounded-md shadow-2xs flex-col"
+                        [class.btn-success]="appointment.status === 'Confirmed'"
+                        [class.btn-error]="appointment.status === 'Cancelled'"
+                        [class.btn-neutral]="appointment.status === 'Completed'"
+                        [class.btn-warning]="appointment.status === 'RequiresReview'"
+                        [title]="appointmentTooltip(appointment)"
+                        [attr.aria-label]="appointmentTooltip(appointment)"
+                        (click)="openAppointment(appointment)"
+                      >
+                        <span class="flex items-center gap-1.5 w-full">
+                          <span aria-hidden="true" class="text-[11px]">
+                            @switch (appointment.status) {
+                              @case ('Confirmed') { ✔ }
+                              @case ('Cancelled') { ✕ }
+                              @case ('Completed') { ★ }
+                              @default { ⚠ }
+                            }
+                          </span>
+                          <span class="font-mono font-semibold text-[11px] whitespace-nowrap">
+                            {{ appointment.startTime | localTime }}–{{ appointment.endTime | localTime }}
+                          </span>
+                        </span>
+                        <span class="text-[11px] opacity-90 whitespace-nowrap">
+                          {{ statusLabelKey(appointment.status) | translate }}
+                        </span>
+                      </button>
                     }
                   </div>
-
-                  @if (cell.appointments.length === 0) {
-                    <span
-                      aria-hidden="true"
-                      class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity"
+                }
+              </div>
+            }
+          } @else {
+            <!-- Tag-/Wochenansicht: ein Termin ist dauerproportional ueber die Stunden-Zellen
+                 seines Tages gelegt (Bugfix: ein Termin wie 08:00-09:45 passte vorher nur in
+                 die 08:00-Zelle und zeigte seine Dauer nicht). Die Stunden-Zellen bleiben fuer
+                 Tastaturnavigation, leer-Klick-zum-Anlegen und Drop-Ziele erhalten. -->
+            <div class="grid grid-flow-col auto-cols-fr">
+              @for (dateIso of days(); track dateIso; let dayIndex = $index) {
+                <div class="relative border-r border-base-200 last:border-r-0 flex flex-col min-w-28">
+                  @for (hour of hours; track hour; let hourIndex = $index) {
+                    @let cell = rows()[hourIndex][dayIndex];
+                    <div
+                      [id]="'calendar-cell-' + hourIndex + '-' + dayIndex"
+                      role="gridcell"
+                      tabindex="0"
+                      [attr.aria-rowindex]="hourIndex + 1"
+                      [attr.aria-colindex]="dayIndex + 1"
+                      class="group relative h-20 p-1.5 border-b border-base-200 last:border-b-0 hover:bg-base-200/40 focus:outline-2 focus:-outline-offset-2 focus:outline-primary transition-colors"
+                      [class.bg-primary/5]="isToday(dateIso)"
+                      [class.cursor-pointer]="cell.appointments.length === 0"
+                      [class.bg-primary/15]="isDropTarget(cell)"
+                      [class.outline-2]="isDropTarget(cell)"
+                      [class.outline-primary]="isDropTarget(cell)"
+                      [attr.aria-label]="cell.appointments.length === 0 ? cell.label + ' ' + dateIso + ' – ' + (emptyCellHintKey(cell) | translate) : cell.label + ' ' + dateIso"
+                      (keydown)="onGridKeydown($event, hourIndex, dayIndex, cell)"
+                      (click)="cell.appointments.length === 0 && openCell(cell)"
+                      (dblclick)="openCell(cell)"
+                      (dragover)="onCellDragOver($event, cell)"
+                      (dragleave)="onCellDragLeave(cell)"
+                      (drop)="onCellDrop($event, cell)"
                     >
-                      <span class="badge badge-sm badge-primary badge-soft gap-1">
-                        <span aria-hidden="true">+</span>{{ emptyCellHintKey(cell) | translate }}
+                      <span
+                        class="text-[11px] font-mono font-medium"
+                        [class.text-primary]="isToday(dateIso)"
+                        [class.font-bold]="isToday(dateIso)"
+                        [class.text-base-content/50]="!isToday(dateIso)"
+                      >
+                        {{ cell.label }}
                       </span>
-                    </span>
+
+                      @if (cell.appointments.length === 0) {
+                        <span
+                          aria-hidden="true"
+                          class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity"
+                        >
+                          <span class="badge badge-sm badge-primary badge-soft gap-1">
+                            <span aria-hidden="true">+</span>{{ emptyCellHintKey(cell) | translate }}
+                          </span>
+                        </span>
+                      }
+                    </div>
                   }
 
-                  @for (appointment of cell.appointments; track appointment.id) {
-                    <button
-                      type="button"
-                      draggable="true"
-                      class="btn btn-xs h-auto min-h-0 py-1 px-2 w-full items-start text-left gap-0.5 rounded-md shadow-2xs flex-col cursor-grab active:cursor-grabbing"
-                      [class.btn-success]="appointment.status === 'Confirmed'"
-                      [class.btn-error]="appointment.status === 'Cancelled'"
-                      [class.btn-neutral]="appointment.status === 'Completed'"
-                      [class.btn-warning]="appointment.status === 'RequiresReview'"
-                      [title]="appointmentTooltip(appointment)"
-                      [attr.aria-label]="appointmentTooltip(appointment)"
-                      (click)="openCell(cell)"
-                      (dragstart)="onAppointmentDragStart($event, appointment)"
-                      (dragend)="onAppointmentDragEnd()"
-                    >
-                      <span class="flex items-center gap-1.5 w-full">
-                        <span aria-hidden="true" class="text-[11px]">
-                          @switch (appointment.status) {
-                            @case ('Confirmed') { ✔ }
-                            @case ('Cancelled') { ✕ }
-                            @case ('Completed') { ★ }
-                            @default { ⚠ }
-                          }
+                  <!-- Ueberlagernde, dauerproportional positionierte Terminbloecke dieses Tages. -->
+                  <div class="pointer-events-none absolute inset-0 px-0.5">
+                    @for (block of (columns()[dayIndex]?.blocks ?? []); track block.appointment.id) {
+                      <button
+                        type="button"
+                        draggable="true"
+                        class="btn btn-xs pointer-events-auto absolute left-0.5 right-0.5 h-auto min-h-0 items-start overflow-hidden rounded-md px-1.5 py-1 text-left shadow-2xs flex-col gap-0.5 cursor-grab active:cursor-grabbing"
+                        [class.btn-success]="block.appointment.status === 'Confirmed'"
+                        [class.btn-error]="block.appointment.status === 'Cancelled'"
+                        [class.btn-neutral]="block.appointment.status === 'Completed'"
+                        [class.btn-warning]="block.appointment.status === 'RequiresReview'"
+                        [style.top.%]="block.top"
+                        [style.height.%]="block.height"
+                        [title]="appointmentTooltip(block.appointment)"
+                        [attr.aria-label]="appointmentTooltip(block.appointment)"
+                        (click)="openAppointment(block.appointment)"
+                        (dragstart)="onAppointmentDragStart($event, block.appointment)"
+                        (dragend)="onAppointmentDragEnd()"
+                      >
+                        <span class="flex items-center gap-1.5 w-full">
+                          <span aria-hidden="true" class="text-[11px]">
+                            @switch (block.appointment.status) {
+                              @case ('Confirmed') { ✔ }
+                              @case ('Cancelled') { ✕ }
+                              @case ('Completed') { ★ }
+                              @default { ⚠ }
+                            }
+                          </span>
+                          <span class="font-mono font-semibold text-[11px] whitespace-nowrap">
+                            {{ block.appointment.startTime | localTime }}–{{ block.appointment.endTime | localTime }}
+                          </span>
                         </span>
-                        <span class="font-mono font-semibold text-[11px] whitespace-nowrap">
-                          {{ appointment.startTime | localTime }}–{{ appointment.endTime | localTime }}
+                        <span class="text-[11px] opacity-90 whitespace-nowrap">
+                          {{ statusLabelKey(block.appointment.status) | translate }}
                         </span>
-                      </span>
-                      <span class="text-[11px] opacity-90 whitespace-nowrap">
-                        {{ statusLabelKey(appointment.status) | translate }}
-                      </span>
-                    </button>
-                  }
+                      </button>
+                    }
+                  </div>
                 </div>
               }
             </div>

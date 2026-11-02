@@ -27,6 +27,23 @@ export interface CalendarCell {
 }
 
 /**
+ * Ein Termin, proportional zu seiner tatsaechlichen Dauer innerhalb eines Tages positioniert
+ * (Bugfix: ein Termin wie 08:00-09:45 erschien bisher nur als kleiner Block in der 08:00-Stunde,
+ * ohne dass die Dauer visuell erkennbar war). `top`/`height` sind Prozentwerte relativ zur
+ * sichtbaren Tagesspanne (erste bis letzte Kalenderstunde).
+ */
+export interface PositionedAppointmentBlock {
+  appointment: AppointmentListItem;
+  top: number;
+  height: number;
+}
+
+export interface DayColumn {
+  dateIso: string;
+  blocks: PositionedAppointmentBlock[];
+}
+
+/**
  * Smart/Container-Component: Kalenderansicht mit Tag-/Wochen-/Monatsumschalter,
  * Mitarbeiterfilter und zeitlich positionierten Terminen (terminverwaltung.openspec.md
  * Abschnitt 4). Kalender-Grid mit `role="grid"`/`role="gridcell"` und vollstaendiger
@@ -161,16 +178,50 @@ export class CalendarViewComponent implements OnInit {
       return weeks;
     }
 
+    // Ueberlappung statt reinem Start-Stunden-Vergleich (Bugfix: ein Termin wie 08:00-09:45
+    // galt bisher ausschliesslich als "in der 08:00-Zelle", wurde in der 09:00-Zelle also als
+    // nicht vorhanden behandelt - Klick/Enter/leer-Hinweis dort waren dadurch falsch).
     return this.hours.map((hour) =>
       days.map((date) => ({
         label: this.localeFormat.formatHour(hour),
         dateIso: date,
         hour,
         appointments: appointments.filter(
-          (a) => a.date === date && Number(a.startTime.slice(0, 2)) === hour,
+          (a) =>
+            a.date === date && toMinutes(a.startTime) < (hour + 1) * 60 && toMinutes(a.endTime) > hour * 60,
         ),
       })),
     );
+  });
+
+  /**
+   * Terminbloecke proportional zur Dauer positioniert (siehe `PositionedAppointmentBlock`),
+   * fuer den ueberlagernden Rendering-Layer der Tag-/Wochenansicht. In der Monatsansicht leer,
+   * da dort die vorhandene, stunden-unabhaengige `rows()`-Darstellung ausreicht.
+   */
+  readonly columns = computed<DayColumn[]>(() => {
+    if (this.state.viewMode() === 'month') {
+      return [];
+    }
+    const dayStartMinutes = this.hours[0] * 60;
+    const totalMinutes = (this.hours[this.hours.length - 1] + 1) * 60 - dayStartMinutes;
+    const appointments = this.state.appointments();
+
+    return this.days().map((dateIso) => ({
+      dateIso,
+      blocks: appointments
+        .filter((a) => a.date === dateIso)
+        .map((appointment) => {
+          const start = clamp(toMinutes(appointment.startTime) - dayStartMinutes, 0, totalMinutes);
+          const end = clamp(toMinutes(appointment.endTime) - dayStartMinutes, 0, totalMinutes);
+          return {
+            appointment,
+            top: (start / totalMinutes) * 100,
+            // Mindesthoehe, damit auch sehr kurze Termine noch als Block sichtbar/klickbar bleiben.
+            height: Math.max(((end - start) / totalMinutes) * 100, 3),
+          };
+        }),
+    }));
   });
 
   constructor() {
@@ -310,7 +361,7 @@ export class CalendarViewComponent implements OnInit {
   openCell(cell: CalendarCell): void {
     const [first] = cell.appointments;
     if (first) {
-      void this.router.navigate(['/appointments', first.id]);
+      this.openAppointment(first);
       return;
     }
     if (cell.hour === null) {
@@ -327,6 +378,11 @@ export class CalendarViewComponent implements OnInit {
       queryParams['employeeId'] = employeeId;
     }
     void this.router.navigate(['/appointments/new'], { queryParams });
+  }
+
+  /** Oeffnet die Detailansicht eines Termins - vom dauerproportionalen Block direkt aufgerufen. */
+  openAppointment(appointment: AppointmentListItem): void {
+    void this.router.navigate(['/appointments', appointment.id]);
   }
 
   /** Beschriftung des Interaktions-Hinweises, der beim Hover/Fokus einer leeren Zelle erscheint. */
@@ -424,6 +480,15 @@ export class CalendarViewComponent implements OnInit {
       document.getElementById(`calendar-cell-${row}-${col}`)?.focus();
     });
   }
+}
+
+function toMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
 function formatHoursMinutes(totalMinutes: number): string {

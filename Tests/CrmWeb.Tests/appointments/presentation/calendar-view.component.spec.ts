@@ -30,12 +30,16 @@ describe('CalendarViewComponent', () => {
     } as unknown as DragEvent;
   }
 
-  function setup(role: 'Admin' | 'Employee' = 'Admin', absenceEntries: unknown[] = []) {
+  function setup(
+    role: 'Admin' | 'Employee' = 'Admin',
+    absenceEntries: unknown[] = [],
+    appointments: AppointmentListItem[] = [appointment],
+  ) {
     const stateMock = {
       viewMode: () => 'week' as const,
       anchorDate: () => '2024-05-15',
       employeeFilter: () => null as string | null,
-      appointments: () => [appointment],
+      appointments: () => appointments,
       absenceEntries: () => absenceEntries,
       loading: () => false,
       errors: () => [],
@@ -198,6 +202,49 @@ describe('CalendarViewComponent', () => {
 
     component.onCellDrop(fakeDragEvent(), cell);
     expect(component.isDropTarget(cell)).toBe(false);
+  });
+
+  it('positions an appointment block proportionally to its duration (Bug: 08:00-09:45 only showed as an 08:00-sized block)', () => {
+    const longAppointment: AppointmentListItem = {
+      ...appointment,
+      id: 'a2',
+      startTime: '08:00:00',
+      endTime: '09:45:00',
+    };
+    const { component } = setup('Admin', [], [longAppointment]);
+
+    const block = component.columns()[2].blocks[0]; // 2024-05-15 ist Tag 3 (Mi) der Woche 13.-19.05.
+    expect(block.top).toBeCloseTo(0, 3);
+    expect(block.height).toBeCloseTo((105 / 720) * 100, 3);
+  });
+
+  it('treats every hour a long appointment overlaps as occupied, not just its starting hour (Bug Nachfolge-Fix)', () => {
+    const longAppointment: AppointmentListItem = {
+      ...appointment,
+      id: 'a2',
+      startTime: '08:00:00',
+      endTime: '09:45:00',
+    };
+    const { component } = setup('Admin', [], [longAppointment]);
+    const rows = component.rows();
+    const dayColumn = 2; // Mittwoch, 2024-05-15
+
+    expect(rows[0][dayColumn].appointments).toContainEqual(longAppointment); // 08:00-Zeile
+    expect(rows[1][dayColumn].appointments).toContainEqual(longAppointment); // 09:00-Zeile
+    expect(rows[2][dayColumn].appointments).not.toContainEqual(longAppointment); // 10:00-Zeile
+  });
+
+  it('renders exactly one block for a multi-hour appointment, not one per overlapped hour cell', () => {
+    const longAppointment: AppointmentListItem = {
+      ...appointment,
+      id: 'a2',
+      startTime: '08:00:00',
+      endTime: '09:45:00',
+    };
+    const { fixture } = setup('Admin', [], [longAppointment]);
+
+    const blocks = fixture.nativeElement.querySelectorAll('.pointer-events-auto');
+    expect(blocks.length).toBe(1);
   });
 
   it('moves focus between cells on arrow key navigation', () => {
