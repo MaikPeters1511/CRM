@@ -1,6 +1,6 @@
 # Change: Abwesenheits-Freigabe-Workflow
 
-> **Status:** proposed
+> **Status:** in-progress (Backend `employee-service`/`appointment-service` umgesetzt, siehe Tasks)
 > Ablage: `UserStories/abwesenheit-workflow.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-abwesenheit-workflow.openspec.md`)
 
 ## 1. Proposal (Why & What)
@@ -122,9 +122,9 @@ Das System SHALL genehmigte Abwesenheiten im Terminkalender als separate, visuel
 `Absence` (Domain-Layer) erhält einen `AbsenceStatus`-Enum und `Approve(decidedBy, decidedAt)`/`Reject(decidedBy, decidedAt)`-Methoden mit Guard (`InvalidOperationException`/Result-Fehler bei bereits entschiedenem Status), die ein `AbsenceDecided`-Domain-Event auslösen. Application-Layer: neue Commands `ApproveAbsenceCommand`/`RejectAbsenceCommand`, Queries `GetPendingAbsencesQuery`/`GetApprovedAbsencesQuery`/`GetEmployeeAbsencesQuery`. Der Handler für Approve/Reject lässt bei Erfolg zusätzlich eine `Notification` anlegen (direkter Repository-Call, da gleicher Bounded Context — kein Messaging nötig für den In-Process-Teil) und publiziert das Integration Event über `IMessageBus`. `Notification` ist ein eigenes, einfaches Aggregate (kein Teil des `Employee`-Aggregats, da unabhängiger Lebenszyklus) mit eigenem EF-Core-Mapping/Repository. Neue EF-Migration für `Absence`-Spaltenerweiterung + `Notifications`-Tabelle. `appointment-service` erhält `IEmployeeAbsenceClient`/`EmployeeAbsenceHttpClient` (Infrastructure) analog zum bestehenden Pattern; `GetCalendarQuery`-Handler kombiniert Termine und Abwesenheiten in der Response, ohne sie zu persistieren.
 
 ## 8. Tasks (Implementierungs-Checkliste)
-- [ ] 1. Tests aus den Scenarios schreiben (Red) – `Tests/EmployeeService.Tests`, `Tests/AppointmentService.Tests`, `Tests/CrmWeb.Tests`
-- [ ] 2. Backend `employee-service`: `Absence`-Status/Approve/Reject, `Notification`-Aggregate, Endpunkte, EF-Migration, Integration Events (backend-agent)
-- [ ] 3. Backend `appointment-service`: `IEmployeeAbsenceClient` + Kalender-Integration (backend-agent)
+- [x] 1. Tests aus den Scenarios schreiben (Red) – `Tests/EmployeeService.Tests`, `Tests/AppointmentService.Tests` (Backend-Teil; `Tests/CrmWeb.Tests` folgt mit Task 4)
+- [x] 2. Backend `employee-service`: `Absence`-Status/Approve/Reject, `Notification`-Aggregate, Endpunkte, EF-Migration, Integration Events (backend-agent)
+- [x] 3. Backend `appointment-service`: `IEmployeeAbsenceClient` + Kalender-Integration (backend-agent)
 - [ ] 4. Frontend: Statusanzeige eigener Anträge, Freigabe-Ansicht, Glocke, Kalender-Integration (frontend-agent)
 - [ ] 5. Lokale Verifikation: Backend-Tests (TUnit) grün, Frontend-Tests grün, Build fehlerfrei
 - [ ] 6. Doku/OpenAPI aktualisieren (doc-agent) — separater Schritt, nicht Teil dieser Session
