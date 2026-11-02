@@ -1,0 +1,48 @@
+<section aria-labelledby="ai-settings-heading" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body">
+    <h2 id="ai-settings-heading" class="card-title">{{ 'settings.ai.heading' | translate }}</h2>
+    <p class="text-sm text-base-content/60 mb-4">{{ 'settings.ai.hint' | translate }}</p>
+
+    @if (state.loading()) {
+      <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'settings.ai.loading' | translate }}</p>
+    } @else if (state.backendUnavailable()) {
+      <div class="alert alert-warning" role="status">{{ 'settings.ai.backendUnavailable' | translate }}</div>
+    } @else {
+      @if (state.hasErrors()) {
+        <div class="alert alert-error mb-4" role="alert">
+          @for (error of state.errors(); track error) {
+            <p>{{ error | translate }}</p>
+          }
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="save()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label class="label cursor-pointer gap-2 sm:col-span-2">
+          <input type="checkbox" class="toggle toggle-primary" formControlName="enabled" />
+          <span class="label-text">{{ 'settings.ai.enabled' | translate }}</span>
+        </label>
+        <label class="form-control">
+          <span class="label-text">{{ 'settings.ai.model' | translate }}</span>
+          <input type="text" class="input input-bordered w-full" formControlName="model" />
+        </label>
+        <label class="form-control">
+          <span class="label-text">{{ 'settings.ai.temperature' | translate }}</span>
+          <input type="number" step="0.1" min="0" max="1" class="input input-bordered w-full" formControlName="temperature" />
+        </label>
+        <label class="label cursor-pointer gap-2 sm:col-span-2">
+          <input type="checkbox" class="toggle toggle-primary" formControlName="suggestionsEnabled" />
+          <span class="label-text">{{ 'settings.ai.suggestionsEnabled' | translate }}</span>
+        </label>
+
+        <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+          <button type="submit" class="btn btn-primary" [disabled]="state.saving()">
+            {{ 'settings.actions.save' | translate }}
+          </button>
+          @if (savedVisible()) {
+            <span class="text-success text-sm" role="status">{{ 'settings.actions.saved' | translate }}</span>
+          }
+        </div>
+      </form>
+    }
+  </div>
+</section>

@@ -1,0 +1,85 @@
+<section aria-labelledby="profile-heading" class="flex flex-col gap-4">
+  <h1 id="profile-heading" class="text-xl font-semibold">{{ 'profile.heading' | translate }}</h1>
+
+  <div role="tablist" class="tabs tabs-lift">
+    <button
+      type="button"
+      role="tab"
+      class="tab"
+      [class.tab-active]="activeTab() === 'theme'"
+      [attr.aria-selected]="activeTab() === 'theme'"
+      (click)="selectTab('theme')"
+    >
+      {{ 'profile.tabs.theme' | translate }}
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="tab"
+      [class.tab-active]="activeTab() === 'security'"
+      [attr.aria-selected]="activeTab() === 'security'"
+      (click)="selectTab('security')"
+    >
+      {{ 'profile.tabs.security' | translate }}
+    </button>
+  </div>
+
+  @if (activeTab() === 'theme') {
+    <section aria-labelledby="theme-picker-heading" class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <h2 id="theme-picker-heading" class="card-title">{{ 'profile.themePicker.heading' | translate }}</h2>
+        <div class="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="theme-picker-heading">
+          @for (theme of builtInThemes; track theme) {
+            <button
+              type="button"
+              role="radio"
+              class="btn btn-sm"
+              [class.btn-primary]="themeState.activeTheme() === theme"
+              [attr.aria-checked]="themeState.activeTheme() === theme"
+              (click)="selectTheme(theme)"
+            >
+              {{ 'profile.themePicker.themes.' + theme | translate }}
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+
+    @if (authState.isAdmin()) {
+      <app-admin-theme-editor />
+    }
+  } @else {
+    <section aria-labelledby="security-heading" class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <h2 id="security-heading" class="card-title">{{ 'profile.security.heading' | translate }}</h2>
+        <p class="text-sm text-base-content/60 mb-4">{{ 'profile.security.hint' | translate }}</p>
+
+        @if (securityState.loading()) {
+          <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'profile.security.loading' | translate }}</p>
+        } @else if (securityState.backendUnavailable()) {
+          <div class="alert alert-warning" role="status">{{ 'profile.security.backendUnavailable' | translate }}</div>
+        } @else {
+          <p class="mb-2">
+            {{ 'profile.security.mfaStatus' | translate: { status: (securityState.policy()?.mfaRequired ? ('profile.security.mfaRequired' | translate) : ('profile.security.mfaOptional' | translate)) } }}
+          </p>
+
+          <h3 class="font-semibold mt-4 mb-2">{{ 'profile.security.passkeysHeading' | translate }}</h3>
+          @if (securityState.devices().length === 0) {
+            <p>{{ 'profile.security.passkeysEmpty' | translate }}</p>
+          } @else {
+            <ul class="flex flex-col gap-2">
+              @for (device of securityState.devices(); track device.id) {
+                <li class="flex items-center justify-between border-b border-base-300 py-2">
+                  <span>{{ device.deviceName }} · {{ device.lastUsedAt }}</span>
+                  <button type="button" class="btn btn-sm btn-ghost text-error" (click)="revokeDevice(device.id)">
+                    {{ 'profile.security.revoke' | translate }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      </div>
+    </section>
+  }
+</section>

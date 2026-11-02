@@ -55,6 +55,16 @@
         >
           {{ 'customer.detail.tabs.appointments' | translate }}
         </button>
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab-active]="activeTab() === 'notes'"
+          [attr.aria-selected]="activeTab() === 'notes'"
+          (click)="selectTab('notes')"
+        >
+          {{ 'customer.detail.tabs.notes' | translate }}
+        </button>
       </div>
 
       @if (activeTab() === 'masterData') {
@@ -84,8 +94,64 @@
             <dd>{{ customer.modifiedBy }}</dd>
           }
         </dl>
+      } @else if (activeTab() === 'appointments') {
+        <div role="tabpanel">
+          @if (historyState.loading()) {
+            <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'customer.detail.appointmentsLoading' | translate }}</p>
+          } @else if (historyState.loadFailed()) {
+            <div class="alert alert-error" role="alert">{{ 'customer.detail.appointmentsLoadFailed' | translate }}</div>
+          } @else if (historyState.entries().length === 0) {
+            <p>{{ 'customer.detail.appointmentsEmpty' | translate }}</p>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>{{ 'customer.detail.appointmentsColumns.date' | translate }}</th>
+                    <th>{{ 'customer.detail.appointmentsColumns.time' | translate }}</th>
+                    <th>{{ 'customer.detail.appointmentsColumns.status' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (entry of historyState.entries(); track entry.id) {
+                    <tr>
+                      <td>{{ entry.date }}</td>
+                      <td>{{ entry.startTime }} – {{ entry.endTime }}</td>
+                      <td><span class="badge badge-outline">{{ 'customer.detail.appointmentStatus.' + entry.status | translate }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
       } @else {
-        <p role="tabpanel">{{ 'customer.detail.appointmentsUnavailable' | translate }}</p>
+        <div role="tabpanel">
+          <div class="alert alert-info mb-4" role="status">{{ 'customer.detail.notesLocalNotice' | translate }}</div>
+          <form class="flex gap-2 mb-4" (ngSubmit)="addNote()">
+            <input
+              type="text"
+              class="input input-bordered flex-1"
+              [attr.aria-label]="'customer.detail.notesInputLabel' | translate"
+              [ngModel]="newNoteText()"
+              (ngModelChange)="newNoteText.set($event)"
+              name="newNote"
+            />
+            <button type="submit" class="btn btn-primary">{{ 'customer.detail.addNote' | translate }}</button>
+          </form>
+          @if (notesState.notesFor(customer.id).length === 0) {
+            <p>{{ 'customer.detail.notesEmpty' | translate }}</p>
+          } @else {
+            <ul class="flex flex-col gap-2">
+              @for (note of notesState.notesFor(customer.id); track note.id) {
+                <li class="border-b border-base-300 pb-2">
+                  <p>{{ note.text }}</p>
+                  <p class="text-xs text-base-content/60">{{ note.createdAt }}</p>
+                </li>
+              }
+            </ul>
+          }
+        </div>
       }
     </div>
   </section>

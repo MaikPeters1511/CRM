@@ -1,0 +1,83 @@
+<section aria-labelledby="general-settings-heading" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body">
+    <h2 id="general-settings-heading" class="card-title">{{ 'settings.general.heading' | translate }}</h2>
+    <p class="text-sm text-base-content/60 mb-4">{{ 'settings.general.hint' | translate }}</p>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <label class="form-control sm:col-span-2">
+        <span class="label-text">{{ 'settings.general.companyName' | translate }}</span>
+        <input type="text" class="input input-bordered w-full" formControlName="companyName" />
+      </label>
+
+      <label class="form-control sm:col-span-2">
+        <span class="label-text">{{ 'settings.general.logoUrl' | translate }}</span>
+        <input type="text" class="input input-bordered w-full" formControlName="logoUrl" />
+      </label>
+
+      <label class="form-control">
+        <span class="label-text">{{ 'settings.general.street' | translate }}</span>
+        <input type="text" class="input input-bordered w-full" formControlName="street" />
+      </label>
+      <label class="form-control">
+        <span class="label-text">{{ 'settings.general.zipCode' | translate }}</span>
+        <input type="text" class="input input-bordered w-full" formControlName="zipCode" />
+      </label>
+      <label class="form-control">
+        <span class="label-text">{{ 'settings.general.city' | translate }}</span>
+        <input type="text" class="input input-bordered w-full" formControlName="city" />
+      </label>
+      <label class="form-control">
+        <span class="label-text">{{ 'settings.general.phone' | translate }}</span>
+        <input type="text" class="input input-bordered w-full" formControlName="phone" />
+      </label>
+      <label class="form-control sm:col-span-2">
+        <span class="label-text">{{ 'settings.general.email' | translate }}</span>
+        <input type="email" class="input input-bordered w-full" formControlName="email" />
+      </label>
+
+      <fieldset class="sm:col-span-2">
+        <legend class="label-text font-semibold mb-2">{{ 'settings.general.openingHours' | translate }}</legend>
+        <div class="flex flex-col gap-2">
+          @for (slot of openingHours(); track slot.weekday; let i = $index) {
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="w-24">{{ 'settings.general.weekdays.' + slot.weekday | translate }}</span>
+              <label class="flex items-center gap-1 text-sm">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm"
+                  [checked]="slot.closed"
+                  (change)="updateOpeningHoursField(i, 'closed', $event.target.checked)"
+                />
+                {{ 'settings.general.closed' | translate }}
+              </label>
+              @if (!slot.closed) {
+                <input
+                  type="time"
+                  class="input input-bordered input-sm"
+                  [value]="slot.from"
+                  (change)="updateOpeningHoursField(i, 'from', $event.target.value)"
+                  [attr.aria-label]="('settings.general.weekdays.' + slot.weekday | translate) + ' ' + ('settings.general.from' | translate)"
+                />
+                <span>–</span>
+                <input
+                  type="time"
+                  class="input input-bordered input-sm"
+                  [value]="slot.to"
+                  (change)="updateOpeningHoursField(i, 'to', $event.target.value)"
+                  [attr.aria-label]="('settings.general.weekdays.' + slot.weekday | translate) + ' ' + ('settings.general.to' | translate)"
+                />
+              }
+            </div>
+          }
+        </div>
+      </fieldset>
+
+      <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+        <button type="submit" class="btn btn-primary">{{ 'settings.actions.save' | translate }}</button>
+        @if (savedVisible()) {
+          <span class="text-success text-sm" role="status">{{ 'settings.actions.saved' | translate }}</span>
+        }
+      </div>
+    </form>
+  </div>
+</section>

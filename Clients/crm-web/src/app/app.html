@@ -75,10 +75,22 @@
                 <span class="badge badge-primary badge-sm">{{ 'crm.nav.assistantBadge' | translate }}</span>
               </button>
             </li>
+            <li>
+              <a routerLink="/settings" routerLinkActive="menu-active">
+                {{ 'crm.nav.settings' | translate }}
+              </a>
+            </li>
           </ul>
         </nav>
 
         <div class="px-3 py-3 border-t border-base-300">
+          @defer (on idle) {
+            <app-notification-bell />
+          } @placeholder {
+            <div class="btn btn-ghost btn-sm w-full justify-start" aria-hidden="true">
+              <span>🔔 {{ 'notifications.bell.label' | translate }}</span>
+            </div>
+          }
           <nav class="flex gap-1 items-center justify-center mb-2" aria-label="language switch">
             @for (lang of languages; track lang) {
               <button

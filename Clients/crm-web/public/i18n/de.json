@@ -72,9 +72,27 @@
       "heading": "Kundendetails",
       "tabs": {
         "masterData": "Stammdaten",
-        "appointments": "Termine"
+        "appointments": "Termine",
+        "notes": "Notizen"
       },
-      "appointmentsUnavailable": "Die Terminhistorie ist noch nicht verfügbar, da der Termin-Service noch nicht angebunden ist.",
+      "appointmentsLoading": "Terminhistorie wird geladen…",
+      "appointmentsLoadFailed": "Die Terminhistorie konnte nicht geladen werden.",
+      "appointmentsEmpty": "Keine Termine vorhanden.",
+      "appointmentsColumns": {
+        "date": "Datum",
+        "time": "Uhrzeit",
+        "status": "Status"
+      },
+      "appointmentStatus": {
+        "Confirmed": "Bestätigt",
+        "Cancelled": "Storniert",
+        "Completed": "Abgeschlossen",
+        "RequiresReview": "Prüfung erforderlich"
+      },
+      "notesLocalNotice": "Notizen werden nur in dieser Sitzung gespeichert, da der Kunden-Service keine Notizen-API bietet.",
+      "notesInputLabel": "Neue Notiz",
+      "addNote": "Notiz hinzufügen",
+      "notesEmpty": "Noch keine Notizen vorhanden.",
       "createdAt": "Angelegt am",
       "createdBy": "Angelegt von",
       "modifiedAt": "Geändert am",
@@ -298,7 +316,8 @@
       "catalog": "Leistungen",
       "assistant": "KI-Assistent",
       "assistantBadge": "NEU",
-      "profile": "Profil"
+      "profile": "Profil",
+      "settings": "Einstellungen"
     },
     "userCard": {
       "role": {
@@ -407,6 +426,211 @@
     },
     "errors": {
       "generic": "Dashboard-Daten konnten nicht geladen werden."
+    }
+  },
+  "notifications": {
+    "bell": {
+      "label": "Benachrichtigungen",
+      "heading": "Benachrichtigungen",
+      "loading": "Benachrichtigungen werden geladen…",
+      "empty": "Keine Benachrichtigungen.",
+      "backendUnavailable": "Benachrichtigungen sind derzeit nicht verfügbar.",
+      "markAllRead": "Alle als gelesen markieren"
+    }
+  },
+  "settings": {
+    "heading": "Einstellungen",
+    "mockupNotice": "Dieser Bereich ist aktuell eine reine Oberflächen-Vorschau ohne Backend-Anbindung. Eingaben werden nur lokal in diesem Browser gespeichert.",
+    "nav": {
+      "label": "Einstellungs-Navigation",
+      "general": "Allgemein",
+      "telephony": "Telefonie (3CX)",
+      "calendarSync": "Kalender-Sync",
+      "payment": "Zahlungsanbieter",
+      "smtp": "SMTP",
+      "datev": "DATEV-Export",
+      "usersRoles": "Benutzer & Rollen",
+      "aiAssistant": "KI-Assistent",
+      "security": "Sicherheit"
+    },
+    "actions": {
+      "save": "Speichern",
+      "saved": "Gespeichert."
+    },
+    "general": {
+      "heading": "Allgemein",
+      "hint": "Firmendaten, Logo und Öffnungszeiten.",
+      "companyName": "Firmenname",
+      "logoUrl": "Logo-URL",
+      "street": "Straße",
+      "zipCode": "PLZ",
+      "city": "Stadt",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "openingHours": "Öffnungszeiten",
+      "closed": "Geschlossen",
+      "from": "von",
+      "to": "bis",
+      "weekdays": {
+        "Monday": "Montag",
+        "Tuesday": "Dienstag",
+        "Wednesday": "Mittwoch",
+        "Thursday": "Donnerstag",
+        "Friday": "Freitag",
+        "Saturday": "Samstag",
+        "Sunday": "Sonntag"
+      }
+    },
+    "telephony": {
+      "heading": "Telefonie (3CX)",
+      "hint": "Anbindung einer 3CX-Telefonanlage.",
+      "enabled": "Telefonie-Integration aktiv",
+      "pbxHost": "3CX-Host",
+      "extension": "Nebenstelle",
+      "apiKey": "API-Schlüssel"
+    },
+    "calendarSync": {
+      "heading": "Kalender-Sync",
+      "hint": "Synchronisation mit einem externen Kalender.",
+      "provider": "Anbieter",
+      "providers": {
+        "none": "Keiner",
+        "google": "Google Kalender",
+        "microsoft365": "Microsoft 365"
+      },
+      "calendarId": "Kalender-ID",
+      "syncEnabled": "Synchronisation aktiv"
+    },
+    "payment": {
+      "heading": "Zahlungsanbieter",
+      "hint": "Anbindung eines Zahlungsanbieters (Stripe).",
+      "provider": "Anbieter",
+      "providers": {
+        "none": "Keiner",
+        "stripe": "Stripe"
+      },
+      "publishableKey": "Publishable Key",
+      "secretKeyConfigured": "Secret Key hinterlegt"
+    },
+    "smtp": {
+      "heading": "SMTP",
+      "hint": "Konfiguration des E-Mail-Versands.",
+      "host": "Host",
+      "port": "Port",
+      "username": "Benutzername",
+      "senderAddress": "Absenderadresse",
+      "useSsl": "SSL/TLS verwenden"
+    },
+    "datev": {
+      "heading": "DATEV-Export",
+      "hint": "Konfiguration des DATEV-Exportformats.",
+      "consultantNumber": "Beraternummer",
+      "clientNumber": "Mandantennummer",
+      "exportFormat": "Exportformat"
+    },
+    "usersRoles": {
+      "heading": "Benutzer & Rollen",
+      "hint": "Übersicht der Mitarbeiter und ihrer Rollen (nur Anzeige - es existiert aktuell keine Rollenänderungs-API).",
+      "loading": "Mitarbeiter werden geladen…",
+      "loadFailed": "Mitarbeiter konnten nicht geladen werden.",
+      "empty": "Keine Mitarbeiter gefunden.",
+      "columns": {
+        "name": "Name",
+        "email": "E-Mail",
+        "role": "Rolle",
+        "status": "Status"
+      },
+      "roles": {
+        "Admin": "Administrator",
+        "Employee": "Mitarbeiter"
+      },
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv"
+    },
+    "ai": {
+      "heading": "KI-Assistent",
+      "hint": "Einstellungen des KI-Assistenten.",
+      "loading": "Einstellungen werden geladen…",
+      "backendUnavailable": "Die KI-Einstellungen sind derzeit nicht verfügbar.",
+      "enabled": "KI-Assistent aktiv",
+      "model": "Modell",
+      "temperature": "Kreativität (Temperature)",
+      "suggestionsEnabled": "Terminvorschläge aktiv",
+      "errors": {
+        "loadFailed": "Einstellungen konnten nicht geladen werden.",
+        "saveFailed": "Einstellungen konnten nicht gespeichert werden."
+      }
+    },
+    "security": {
+      "loading": "Sicherheitseinstellungen werden geladen…",
+      "backendUnavailable": "Die Sicherheitseinstellungen sind derzeit nicht verfügbar.",
+      "policyHeading": "Passwort- & MFA-Richtlinie",
+      "mfaRequired": "Multi-Faktor-Authentifizierung verpflichtend",
+      "minPasswordLength": "Mindest-Passwortlänge",
+      "sessionTimeoutMinutes": "Sitzungs-Timeout (Minuten)",
+      "passwordRequiresSpecialChar": "Sonderzeichen im Passwort erforderlich",
+      "devicesHeading": "Vertrauenswürdige Geräte",
+      "devicesEmpty": "Keine vertrauenswürdigen Geräte hinterlegt.",
+      "revoke": "Entziehen",
+      "auditHeading": "Audit-Log",
+      "auditEmpty": "Keine Audit-Log-Einträge vorhanden.",
+      "exportCsv": "Als CSV exportieren",
+      "auditColumns": {
+        "occurredAt": "Zeitpunkt",
+        "actor": "Benutzer",
+        "action": "Aktion",
+        "details": "Details"
+      },
+      "errors": {
+        "loadFailed": "Sicherheitseinstellungen konnten nicht geladen werden.",
+        "saveFailed": "Sicherheitseinstellungen konnten nicht gespeichert werden.",
+        "revokeFailed": "Gerät konnte nicht entzogen werden."
+      }
+    }
+  },
+  "profile": {
+    "heading": "Profil",
+    "tabs": {
+      "theme": "Theme",
+      "security": "Sicherheit"
+    },
+    "themePicker": {
+      "heading": "Theme auswählen",
+      "themes": {
+        "mpcrm": "MP CRM",
+        "light": "Hell",
+        "dark": "Dunkel",
+        "corporate": "Corporate",
+        "forest": "Forest",
+        "synthwave": "Synthwave"
+      }
+    },
+    "themeEditor": {
+      "heading": "Theme-Editor (Admin)",
+      "hint": "Eigene Farben wählen und live in der Vorschau sehen. Gespeicherte Themes werden lokal in diesem Browser abgelegt.",
+      "name": "Name des Themes",
+      "primary": "Primärfarbe",
+      "accent": "Akzentfarbe",
+      "background": "Hintergrundfarbe",
+      "text": "Textfarbe",
+      "save": "Theme speichern",
+      "previewHeading": "Vorschau",
+      "previewText": "So wirken Ihre Farben in der Oberfläche.",
+      "previewPrimaryButton": "Primär-Aktion",
+      "previewAccentButton": "Akzent-Aktion",
+      "savedHeading": "Gespeicherte Themes"
+    },
+    "security": {
+      "heading": "MFA & Passkeys",
+      "hint": "Multi-Faktor-Authentifizierung und Passkey-Verwaltung.",
+      "loading": "Sicherheitsdaten werden geladen…",
+      "backendUnavailable": "Diese Funktion ist derzeit nicht verfügbar.",
+      "mfaStatus": "Multi-Faktor-Authentifizierung: {{status}}",
+      "mfaRequired": "verpflichtend",
+      "mfaOptional": "optional",
+      "passkeysHeading": "Registrierte Geräte / Passkeys",
+      "passkeysEmpty": "Keine Geräte registriert.",
+      "revoke": "Entziehen"
     }
   }
 }

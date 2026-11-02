@@ -1,0 +1,19 @@
+<section aria-labelledby="settings-heading" class="flex flex-col lg:flex-row gap-6">
+  <h1 id="settings-heading" class="sr-only">{{ 'settings.heading' | translate }}</h1>
+
+  <nav class="lg:w-64 shrink-0" aria-label="{{ 'settings.nav.label' | translate }}">
+    <ul class="menu bg-base-100 border border-base-300 rounded-box w-full gap-1">
+      @for (entry of navEntries; track entry.path) {
+        <li>
+          <a [routerLink]="[entry.path]" routerLinkActive="menu-active">
+            {{ entry.labelKey | translate }}
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <div class="flex-1 min-w-0">
+    <router-outlet />
+  </div>
+</section>

@@ -72,9 +72,27 @@
       "heading": "Customer details",
       "tabs": {
         "masterData": "Master data",
-        "appointments": "Appointments"
+        "appointments": "Appointments",
+        "notes": "Notes"
       },
-      "appointmentsUnavailable": "Appointment history is not available yet because the appointment service is not connected.",
+      "appointmentsLoading": "Loading appointment history…",
+      "appointmentsLoadFailed": "Appointment history could not be loaded.",
+      "appointmentsEmpty": "No appointments found.",
+      "appointmentsColumns": {
+        "date": "Date",
+        "time": "Time",
+        "status": "Status"
+      },
+      "appointmentStatus": {
+        "Confirmed": "Confirmed",
+        "Cancelled": "Cancelled",
+        "Completed": "Completed",
+        "RequiresReview": "Requires review"
+      },
+      "notesLocalNotice": "Notes are only kept for this session - the customer service does not offer a notes API.",
+      "notesInputLabel": "New note",
+      "addNote": "Add note",
+      "notesEmpty": "No notes yet.",
       "createdAt": "Created at",
       "createdBy": "Created by",
       "modifiedAt": "Modified at",
@@ -298,7 +316,8 @@
       "catalog": "Services",
       "assistant": "AI Assistant",
       "assistantBadge": "NEW",
-      "profile": "Profile"
+      "profile": "Profile",
+      "settings": "Settings"
     },
     "userCard": {
       "role": {
@@ -407,6 +426,211 @@
     },
     "errors": {
       "generic": "Dashboard data could not be loaded."
+    }
+  },
+  "notifications": {
+    "bell": {
+      "label": "Notifications",
+      "heading": "Notifications",
+      "loading": "Loading notifications…",
+      "empty": "No notifications.",
+      "backendUnavailable": "Notifications are currently unavailable.",
+      "markAllRead": "Mark all as read"
+    }
+  },
+  "settings": {
+    "heading": "Settings",
+    "mockupNotice": "This area is currently a pure UI mockup without a backend connection. Input is only stored locally in this browser.",
+    "nav": {
+      "label": "Settings navigation",
+      "general": "General",
+      "telephony": "Telephony (3CX)",
+      "calendarSync": "Calendar sync",
+      "payment": "Payment provider",
+      "smtp": "SMTP",
+      "datev": "DATEV export",
+      "usersRoles": "Users & roles",
+      "aiAssistant": "AI assistant",
+      "security": "Security"
+    },
+    "actions": {
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "general": {
+      "heading": "General",
+      "hint": "Company details, logo and opening hours.",
+      "companyName": "Company name",
+      "logoUrl": "Logo URL",
+      "street": "Street",
+      "zipCode": "ZIP code",
+      "city": "City",
+      "phone": "Phone",
+      "email": "Email",
+      "openingHours": "Opening hours",
+      "closed": "Closed",
+      "from": "from",
+      "to": "to",
+      "weekdays": {
+        "Monday": "Monday",
+        "Tuesday": "Tuesday",
+        "Wednesday": "Wednesday",
+        "Thursday": "Thursday",
+        "Friday": "Friday",
+        "Saturday": "Saturday",
+        "Sunday": "Sunday"
+      }
+    },
+    "telephony": {
+      "heading": "Telephony (3CX)",
+      "hint": "Connection to a 3CX phone system.",
+      "enabled": "Telephony integration active",
+      "pbxHost": "3CX host",
+      "extension": "Extension",
+      "apiKey": "API key"
+    },
+    "calendarSync": {
+      "heading": "Calendar sync",
+      "hint": "Synchronization with an external calendar.",
+      "provider": "Provider",
+      "providers": {
+        "none": "None",
+        "google": "Google Calendar",
+        "microsoft365": "Microsoft 365"
+      },
+      "calendarId": "Calendar ID",
+      "syncEnabled": "Sync active"
+    },
+    "payment": {
+      "heading": "Payment provider",
+      "hint": "Connection to a payment provider (Stripe).",
+      "provider": "Provider",
+      "providers": {
+        "none": "None",
+        "stripe": "Stripe"
+      },
+      "publishableKey": "Publishable key",
+      "secretKeyConfigured": "Secret key configured"
+    },
+    "smtp": {
+      "heading": "SMTP",
+      "hint": "Email sending configuration.",
+      "host": "Host",
+      "port": "Port",
+      "username": "Username",
+      "senderAddress": "Sender address",
+      "useSsl": "Use SSL/TLS"
+    },
+    "datev": {
+      "heading": "DATEV export",
+      "hint": "DATEV export format configuration.",
+      "consultantNumber": "Consultant number",
+      "clientNumber": "Client number",
+      "exportFormat": "Export format"
+    },
+    "usersRoles": {
+      "heading": "Users & roles",
+      "hint": "Overview of employees and their roles (read-only - there is currently no role-change API).",
+      "loading": "Loading employees…",
+      "loadFailed": "Employees could not be loaded.",
+      "empty": "No employees found.",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status"
+      },
+      "roles": {
+        "Admin": "Administrator",
+        "Employee": "Employee"
+      },
+      "statusActive": "Active",
+      "statusInactive": "Inactive"
+    },
+    "ai": {
+      "heading": "AI assistant",
+      "hint": "AI assistant settings.",
+      "loading": "Loading settings…",
+      "backendUnavailable": "AI assistant settings are currently unavailable.",
+      "enabled": "AI assistant active",
+      "model": "Model",
+      "temperature": "Creativity (temperature)",
+      "suggestionsEnabled": "Appointment suggestions active",
+      "errors": {
+        "loadFailed": "Settings could not be loaded.",
+        "saveFailed": "Settings could not be saved."
+      }
+    },
+    "security": {
+      "loading": "Loading security settings…",
+      "backendUnavailable": "Security settings are currently unavailable.",
+      "policyHeading": "Password & MFA policy",
+      "mfaRequired": "Multi-factor authentication required",
+      "minPasswordLength": "Minimum password length",
+      "sessionTimeoutMinutes": "Session timeout (minutes)",
+      "passwordRequiresSpecialChar": "Special character required in password",
+      "devicesHeading": "Trusted devices",
+      "devicesEmpty": "No trusted devices configured.",
+      "revoke": "Revoke",
+      "auditHeading": "Audit log",
+      "auditEmpty": "No audit log entries available.",
+      "exportCsv": "Export as CSV",
+      "auditColumns": {
+        "occurredAt": "Timestamp",
+        "actor": "User",
+        "action": "Action",
+        "details": "Details"
+      },
+      "errors": {
+        "loadFailed": "Security settings could not be loaded.",
+        "saveFailed": "Security settings could not be saved.",
+        "revokeFailed": "Device could not be revoked."
+      }
+    }
+  },
+  "profile": {
+    "heading": "Profile",
+    "tabs": {
+      "theme": "Theme",
+      "security": "Security"
+    },
+    "themePicker": {
+      "heading": "Choose a theme",
+      "themes": {
+        "mpcrm": "MP CRM",
+        "light": "Light",
+        "dark": "Dark",
+        "corporate": "Corporate",
+        "forest": "Forest",
+        "synthwave": "Synthwave"
+      }
+    },
+    "themeEditor": {
+      "heading": "Theme editor (admin)",
+      "hint": "Choose your own colors and see them live in the preview. Saved themes are stored locally in this browser.",
+      "name": "Theme name",
+      "primary": "Primary color",
+      "accent": "Accent color",
+      "background": "Background color",
+      "text": "Text color",
+      "save": "Save theme",
+      "previewHeading": "Preview",
+      "previewText": "This is how your colors look in the UI.",
+      "previewPrimaryButton": "Primary action",
+      "previewAccentButton": "Accent action",
+      "savedHeading": "Saved themes"
+    },
+    "security": {
+      "heading": "MFA & passkeys",
+      "hint": "Multi-factor authentication and passkey management.",
+      "loading": "Loading security data…",
+      "backendUnavailable": "This feature is currently unavailable.",
+      "mfaStatus": "Multi-factor authentication: {{status}}",
+      "mfaRequired": "required",
+      "mfaOptional": "optional",
+      "passkeysHeading": "Registered devices / passkeys",
+      "passkeysEmpty": "No devices registered.",
+      "revoke": "Revoke"
     }
   }
 }
