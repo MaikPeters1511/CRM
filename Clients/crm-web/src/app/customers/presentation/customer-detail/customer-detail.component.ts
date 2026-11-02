@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LocalDatePipe, LocalDateTimePipe, LocalTimePipe } from '../../../shared/formatting/locale-format.service';
 import { CustomerStateService } from '../../application/customer-state.service';
 import { CustomerNotesState } from '../../application/customer-notes.state';
 import { AppointmentHistoryState } from '../../application/appointment-history.state';
@@ -15,7 +16,7 @@ type DetailTab = 'masterData' | 'appointments' | 'notes';
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [RouterLink, FormsModule, TranslatePipe],
+  imports: [RouterLink, FormsModule, TranslatePipe, LocalDatePipe, LocalTimePipe, LocalDateTimePipe],
   templateUrl: './customer-detail.component.html',
 })
 export class CustomerDetailComponent implements OnInit {

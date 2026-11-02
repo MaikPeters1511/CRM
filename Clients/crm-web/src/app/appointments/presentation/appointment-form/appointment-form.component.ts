@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
+import { LocalTimePipe } from '../../../shared/formatting/locale-format.service';
 import { CalendarStateService } from '../../application/calendar-state.service';
 import { CustomerApiService } from '../../infrastructure/customer-api.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
@@ -18,7 +19,7 @@ import { AvailableSlot, EmployeeLookupItem, EmployeeServiceAssignment } from '..
 @Component({
   selector: 'app-appointment-form',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe],
+  imports: [ReactiveFormsModule, TranslatePipe, LocalTimePipe],
   templateUrl: './appointment-form.component.html',
 })
 export class AppointmentFormComponent {

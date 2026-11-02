@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LocalDateTimePipe } from '../../../shared/formatting/locale-format.service';
 import { CalendarStateService } from '../../application/calendar-state.service';
 
 /**
@@ -12,7 +13,7 @@ import { CalendarStateService } from '../../application/calendar-state.service';
 @Component({
   selector: 'app-appointment-detail',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe],
+  imports: [ReactiveFormsModule, TranslatePipe, LocalDateTimePipe],
   templateUrl: './appointment-detail.component.html',
 })
 export class AppointmentDetailComponent implements OnInit {

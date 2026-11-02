@@ -52,7 +52,7 @@
           <ul class="flex flex-col gap-2">
             @for (device of state.devices(); track device.id) {
               <li class="flex items-center justify-between border-b border-base-300 py-2">
-                <span>{{ device.deviceName }} · {{ device.lastUsedAt }}</span>
+                <span>{{ device.deviceName }} · {{ device.lastUsedAt | localDateTime }}</span>
                 <button type="button" class="btn btn-sm btn-ghost text-error" (click)="revokeDevice(device.id)">
                   {{ 'settings.security.revoke' | translate }}
                 </button>
@@ -87,7 +87,7 @@
               <tbody>
                 @for (entry of state.auditLog(); track entry.id) {
                   <tr>
-                    <td>{{ entry.occurredAt }}</td>
+                    <td>{{ entry.occurredAt | localDateTime }}</td>
                     <td>{{ entry.actor }}</td>
                     <td>{{ entry.action }}</td>
                     <td>{{ entry.details }}</td>

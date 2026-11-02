@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AuthStateService } from '../../../auth/application/auth-state.service';
 import { SecuritySettingsState } from '../../../settings/application/security-settings.state';
+import { LocalDateTimePipe } from '../../../shared/formatting/locale-format.service';
 import { BUILT_IN_THEMES } from '../../domain/theme.model';
 import { ThemeState } from '../../application/theme.state';
 import { AdminThemeEditorComponent } from '../admin-theme-editor/admin-theme-editor.component';
@@ -16,7 +17,7 @@ type ProfileTab = 'theme' | 'security';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [TranslatePipe, AdminThemeEditorComponent],
+  imports: [TranslatePipe, AdminThemeEditorComponent, LocalDateTimePipe],
   templateUrl: './profile-page.component.html',
 })
 export class ProfilePageComponent implements OnInit {

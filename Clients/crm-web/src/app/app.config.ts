@@ -1,10 +1,16 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeDe from '@angular/common/locales/de';
+import localeEn from '@angular/common/locales/en';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/infrastructure/auth.interceptor';
+
+registerLocaleData(localeDe, 'de');
+registerLocaleData(localeEn, 'en');
 
 export const appConfig: ApplicationConfig = {
   providers: [

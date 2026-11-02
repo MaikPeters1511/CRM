@@ -1,7 +1,7 @@
-import { DatePipe } from '@angular/common';
 import { Component, Input, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LocalDateTimePipe, LocalTimePipe } from '../../../shared/formatting/locale-format.service';
 import { AppointmentSuggestion } from '../../domain/assistant.model';
 
 /**
@@ -14,7 +14,7 @@ import { AppointmentSuggestion } from '../../domain/assistant.model';
 @Component({
   selector: 'app-assistant-suggestion-card',
   standalone: true,
-  imports: [TranslatePipe, DatePipe],
+  imports: [TranslatePipe, LocalDateTimePipe, LocalTimePipe],
   templateUrl: './assistant-suggestion-card.component.html',
 })
 export class AssistantSuggestionCardComponent {

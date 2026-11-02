@@ -6,6 +6,7 @@ import { AssistantStateService } from './assistant/application/assistant-state.s
 import { AssistantChatWidgetComponent } from './assistant/presentation/assistant-chat-widget/assistant-chat-widget.component';
 import { NotificationBellComponent } from './employees/presentation/notification-bell/notification-bell.component';
 import { ThemeState } from './profile/application/theme.state';
+import { LocaleFormatService } from './shared/formatting/locale-format.service';
 
 /**
  * Shell-Komponente: Sidebar-Navigation/Router-Outlet fuer die konsolidierte Anwendung
@@ -35,6 +36,7 @@ export class App {
   protected readonly authState = inject(AuthStateService);
   protected readonly assistantState = inject(AssistantStateService);
   protected readonly themeState = inject(ThemeState);
+  protected readonly localeFormat = inject(LocaleFormatService);
 
   readonly languages = ['de', 'en'] as const;
 

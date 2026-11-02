@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LocalDatePipe, LocalDateTimePipe, LocaleFormatService } from '../../../shared/formatting/locale-format.service';
 import { AbsenceStateService } from '../../application/absence-state.service';
 import { ApprovedAbsence, PendingAbsence } from '../../domain/employee.model';
 
@@ -20,11 +21,12 @@ interface PendingDecision {
 @Component({
   selector: 'app-absence-approvals',
   standalone: true,
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, LocalDatePipe, LocalDateTimePipe],
   templateUrl: './absence-approvals.component.html',
 })
 export class AbsenceApprovalsComponent implements OnInit {
   protected readonly state = inject(AbsenceStateService);
+  protected readonly localeFormat = inject(LocaleFormatService);
 
   private readonly _pendingDecision = signal<PendingDecision | null>(null);
   readonly pendingDecision = this._pendingDecision.asReadonly();
@@ -53,7 +55,11 @@ export class AbsenceApprovalsComponent implements OnInit {
   }
 
   confirmMessageParams(entry: PendingAbsence): { name: string; from: string; to: string } {
-    return { name: `${entry.employeeFirstName} ${entry.employeeLastName}`, from: entry.from, to: entry.to };
+    return {
+      name: `${entry.employeeFirstName} ${entry.employeeLastName}`,
+      from: this.localeFormat.formatDate(entry.from),
+      to: this.localeFormat.formatDate(entry.to),
+    };
   }
 
   requestApprove(entry: PendingAbsence): void {

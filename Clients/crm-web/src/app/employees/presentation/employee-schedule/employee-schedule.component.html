@@ -42,13 +42,13 @@
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs font-semibold uppercase tracking-wider text-base-content/60 mr-1">Schnellauswahl:</span>
           <button type="button" class="btn btn-xs btn-outline border-base-300 bg-base-100 hover:btn-primary" (click)="applyWorkweekPreset(8, 17)">
-            Mo–Fr 08:00–17:00
+            {{ formatHour(8) }} – {{ formatHour(17) }}
           </button>
           <button type="button" class="btn btn-xs btn-outline border-base-300 bg-base-100 hover:btn-primary" (click)="applyWorkweekPreset(9, 17)">
-            Mo–Fr 09:00–17:00
+            {{ formatHour(9) }} – {{ formatHour(17) }}
           </button>
           <button type="button" class="btn btn-xs btn-outline border-base-300 bg-base-100 hover:btn-primary" (click)="applyWorkweekPreset(8, 16)">
-            Mo–Fr 08:00–16:00
+            {{ formatHour(8) }} – {{ formatHour(16) }}
           </button>
         </div>
         <button type="button" class="btn btn-xs btn-ghost text-error" (click)="clearAll()">
@@ -90,9 +90,9 @@
               </div>
 
               <!-- Direkte Von-Bis Auswahl pro Tag -->
-              <div class="w-44 shrink-0 flex items-center gap-1.5">
+              <div class="w-52 shrink-0 flex items-center gap-1.5">
                 <select
-                  class="select select-xs w-20 bg-base-100"
+                  class="select select-xs w-24 bg-base-100"
                   [attr.aria-label]="(('employee.weekday.' + weekday) | translate) + ' Start'"
                   [value]="dayStartHour(weekday)"
                   (change)="setDayRange(weekday, $any($event.target).value, dayEndHour(weekday))"
@@ -103,7 +103,7 @@
                 </select>
                 <span class="text-xs text-base-content/50">–</span>
                 <select
-                  class="select select-xs w-20 bg-base-100"
+                  class="select select-xs w-24 bg-base-100"
                   [attr.aria-label]="(('employee.weekday.' + weekday) | translate) + ' Ende'"
                   [value]="dayEndHour(weekday)"
                   (change)="setDayRange(weekday, dayStartHour(weekday), $any($event.target).value)"

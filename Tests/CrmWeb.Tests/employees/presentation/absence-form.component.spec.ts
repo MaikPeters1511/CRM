@@ -82,7 +82,7 @@ describe('AbsenceFormComponent', () => {
 
     const alert = fixture.nativeElement.querySelector('[role="alert"]');
     expect(alert).toBeTruthy();
-    expect((alert.textContent as string)).toContain('2026-10-15');
+    expect((alert.textContent as string)).toContain('15.10.2026');
   });
 
   it('retries with confirmOverride=true when the user confirms the conflict', () => {

@@ -1,8 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AssistantStateService } from '../../../assistant/application/assistant-state.service';
+import { LocalTimePipe } from '../../../shared/formatting/locale-format.service';
 import { DashboardStateService } from '../../application/dashboard-state.service';
 
 /**
@@ -14,7 +14,7 @@ import { DashboardStateService } from '../../application/dashboard-state.service
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [RouterLink, TranslatePipe, DatePipe],
+  imports: [RouterLink, TranslatePipe, LocalTimePipe],
   templateUrl: './dashboard-page.component.html',
 })
 export class DashboardPageComponent implements OnInit {

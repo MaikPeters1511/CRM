@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LocalDatePipe, LocalTimePipe } from '../../../shared/formatting/locale-format.service';
 import { EmployeeStateService } from '../../application/employee-state.service';
 import { AbsenceStateService } from '../../application/absence-state.service';
 import { AbsenceType } from '../../domain/employee.model';
@@ -16,7 +17,7 @@ import { AbsenceType } from '../../domain/employee.model';
 @Component({
   selector: 'app-absence-form',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe],
+  imports: [ReactiveFormsModule, TranslatePipe, LocalDatePipe, LocalTimePipe],
   templateUrl: './absence-form.component.html',
 })
 export class AbsenceFormComponent implements OnInit {

@@ -135,7 +135,7 @@
                   class="btn btn-xs btn-outline btn-primary font-mono"
                   (click)="applySlot(slot)"
                 >
-                  {{ slot.startTime.slice(0, 5) }} – {{ slot.endTime.slice(0, 5) }}
+                  {{ slot.startTime | localTime }} – {{ slot.endTime | localTime }}
                 </button>
               }
             </div>

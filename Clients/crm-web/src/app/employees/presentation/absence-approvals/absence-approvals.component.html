@@ -39,8 +39,8 @@
                 <tr>
                   <td class="font-medium">{{ entry.employeeFirstName }} {{ entry.employeeLastName }}</td>
                   <td>{{ ('employee.absence.type' + entry.type) | translate }}</td>
-                  <td class="font-mono text-sm">{{ entry.from }} – {{ entry.to }}</td>
-                  <td class="text-sm text-base-content/70">{{ entry.requestedAt }}</td>
+                  <td class="font-mono text-sm">{{ entry.from | localDate }} – {{ entry.to | localDate }}</td>
+                  <td class="text-sm text-base-content/70">{{ entry.requestedAt | localDateTime }}</td>
                   <td>
                     @if (isConfirming(entry)) {
                       <div class="flex items-center gap-2" role="alert">
@@ -118,7 +118,7 @@
                       {{ ('employee.absence.type' + entry.type) | translate }}
                     </span>
                   </td>
-                  <td class="font-mono text-sm">{{ entry.from }} – {{ entry.to }}</td>
+                  <td class="font-mono text-sm">{{ entry.from | localDate }} – {{ entry.to | localDate }}</td>
                   <td class="text-right">
                     <button
                       type="button"

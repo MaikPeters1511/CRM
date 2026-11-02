@@ -65,7 +65,7 @@
               <tbody>
                 @for (appointment of state.upcomingAppointments(); track appointment.id) {
                   <tr data-testid="upcoming-appointment-row">
-                    <td>{{ appointment.start | date: 'shortTime' }} – {{ appointment.end | date: 'shortTime' }}</td>
+                    <td>{{ appointment.start | localTime }} – {{ appointment.end | localTime }}</td>
                     <td>
                       <span
                         class="badge"

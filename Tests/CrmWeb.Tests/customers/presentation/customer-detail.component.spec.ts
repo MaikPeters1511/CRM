@@ -69,7 +69,7 @@ describe('CustomerDetailComponent', () => {
     component.selectTab('appointments');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('2026-01-10');
+    expect(fixture.nativeElement.textContent).toContain('10.01.2026');
   });
 
   it('adds a note on the notes tab and clears the input afterwards', () => {

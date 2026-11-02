@@ -240,7 +240,7 @@
                         }
                       </span>
                       <span class="font-mono font-semibold text-[11px]">
-                        {{ appointment.startTime.slice(0, 5) }}–{{ appointment.endTime.slice(0, 5) }}
+                        {{ appointment.startTime | localTime }}–{{ appointment.endTime | localTime }}
                       </span>
                       <span class="truncate text-[11px] opacity-90">
                         {{ statusLabelKey(appointment.status) | translate }}

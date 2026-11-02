@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LocaleFormatService } from '../../../shared/formatting/locale-format.service';
 import { EmployeeStateService } from '../../application/employee-state.service';
 import { Weekday, WEEKDAYS, WorkingHoursSlot } from '../../domain/employee.model';
 
@@ -77,6 +78,7 @@ export function workingHoursToSelectedSlots(slots: readonly WorkingHoursSlot[]):
 export class EmployeeScheduleComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  protected readonly localeFormat = inject(LocaleFormatService);
   protected readonly state = inject(EmployeeStateService);
 
   protected readonly weekdays = WEEKDAYS;
@@ -177,7 +179,9 @@ export class EmployeeScheduleComponent implements OnInit {
     if (slots.length === 0) {
       return '';
     }
-    return slots.map((s) => `${s.startTime.slice(0, 5)} – ${s.endTime.slice(0, 5)}`).join(', ');
+    return slots
+      .map((s) => `${this.localeFormat.formatTime(s.startTime)} – ${this.localeFormat.formatTime(s.endTime)}`)
+      .join(', ');
   }
 
   applyWorkweekPreset(startHour: number, endHour: number): void {
@@ -195,7 +199,7 @@ export class EmployeeScheduleComponent implements OnInit {
   }
 
   formatHour(hour: number): string {
-    return `${hour.toString().padStart(2, '0')}:00`;
+    return this.localeFormat.formatHour(hour);
   }
 
   /** Pfeiltasten-Navigation zwischen den Zeitslot-Zellen (roving tabindex per Fokus). */

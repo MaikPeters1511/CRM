@@ -2,7 +2,7 @@
   <div class="card-body gap-1">
     <p class="text-sm font-medium">{{ suggestion.serviceName }} — {{ suggestion.employeeName }}</p>
     <p class="text-sm text-base-content/70">
-      {{ suggestion.startTime | date: 'short' }} – {{ suggestion.endTime | date: 'shortTime' }}
+      {{ suggestion.startTime | localDateTime }} – {{ suggestion.endTime | localTime }}
     </p>
     <button type="button" class="btn btn-sm btn-primary mt-1" (click)="applySuggestion()">
       {{ 'assistant.suggestion.createAppointment' | translate }}

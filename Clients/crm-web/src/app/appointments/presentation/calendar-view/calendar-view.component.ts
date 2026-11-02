@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { AuthStateService } from '../../../auth/application/auth-state.service';
+import { LocalTimePipe, LocaleFormatService } from '../../../shared/formatting/locale-format.service';
 import { CalendarStateService } from '../../application/calendar-state.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
 import { AppointmentListItem, AppointmentStatus, CalendarAbsenceEntry, CalendarViewMode } from '../../domain/appointment.model';
@@ -34,7 +35,7 @@ export interface CalendarCell {
 @Component({
   selector: 'app-calendar-view',
   standalone: true,
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, LocalTimePipe],
   templateUrl: './calendar-view.component.html',
 })
 export class CalendarViewComponent implements OnInit {
@@ -42,6 +43,7 @@ export class CalendarViewComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStateService);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly localeFormat = inject(LocaleFormatService);
   readonly state = inject(CalendarStateService);
 
   /**
@@ -82,11 +84,12 @@ export class CalendarViewComponent implements OnInit {
   });
 
   readonly rangeLabel = computed(() => {
+    this.localeFormat.lang();
     const { from, to } = this.state.range();
     if (from === to) {
-      return formatDateShort(from, true);
+      return this.localeFormat.formatDate(from, true);
     }
-    return `${formatDateShort(from, true)} – ${formatDateShort(to, true)}`;
+    return `${this.localeFormat.formatDate(from, true)} – ${this.localeFormat.formatDate(to, true)}`;
   });
 
   readonly stats = computed(() => {
@@ -106,13 +109,11 @@ export class CalendarViewComponent implements OnInit {
   }
 
   dayWeekday(dateIso: string): string {
-    const date = new Date(`${dateIso}T00:00:00Z`);
-    const names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-    return names[date.getUTCDay()] ?? '';
+    return this.localeFormat.formatWeekdayShort(dateIso);
   }
 
   dayNumberAndMonth(dateIso: string): string {
-    return formatDateShort(dateIso, false);
+    return this.localeFormat.formatDate(dateIso, false);
   }
 
   /**
@@ -132,6 +133,7 @@ export class CalendarViewComponent implements OnInit {
 
   /** Einheitliche Grid-Struktur fuer alle drei Ansichten (Tag/Woche => Stunden x Tage, Monat => Wochen x Tage). */
   readonly rows = computed<CalendarCell[][]>(() => {
+    this.localeFormat.lang();
     const days = this.days();
     const appointments = this.state.appointments();
 
@@ -151,7 +153,7 @@ export class CalendarViewComponent implements OnInit {
 
     return this.hours.map((hour) =>
       days.map((date) => ({
-        label: `${hour.toString().padStart(2, '0')}:00`,
+        label: this.localeFormat.formatHour(hour),
         dateIso: date,
         hour,
         appointments: appointments.filter(
@@ -291,12 +293,4 @@ function addOneDay(dateIso: string): string {
   const date = new Date(`${dateIso}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + 1);
   return date.toISOString().slice(0, 10);
-}
-
-function formatDateShort(dateIso: string, withYear: boolean): string {
-  const [year, month, day] = dateIso.split('-');
-  if (!year || !month || !day) {
-    return dateIso;
-  }
-  return withYear ? `${day}.${month}.${year}` : `${day}.${month}.`;
 }

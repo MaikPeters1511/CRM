@@ -1,6 +1,7 @@
 import { Component, OnInit, effect, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LocalDateTimePipe } from '../../../shared/formatting/locale-format.service';
 import { SecuritySettingsState } from '../../application/security-settings.state';
 
 /**
@@ -12,7 +13,7 @@ import { SecuritySettingsState } from '../../application/security-settings.state
 @Component({
   selector: 'app-security-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe],
+  imports: [ReactiveFormsModule, TranslatePipe, LocalDateTimePipe],
   templateUrl: './security-settings.component.html',
 })
 export class SecuritySettingsComponent implements OnInit {

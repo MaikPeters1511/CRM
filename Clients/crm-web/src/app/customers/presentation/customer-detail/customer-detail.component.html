@@ -84,12 +84,12 @@
             <dd>{{ customer.address.country }}</dd>
           }
           <dt class="font-semibold">{{ 'customer.detail.createdAt' | translate }}</dt>
-          <dd>{{ customer.createdAt }}</dd>
+          <dd>{{ customer.createdAt | localDateTime }}</dd>
           <dt class="font-semibold">{{ 'customer.detail.createdBy' | translate }}</dt>
           <dd>{{ customer.createdBy }}</dd>
           @if (customer.modifiedAt) {
             <dt class="font-semibold">{{ 'customer.detail.modifiedAt' | translate }}</dt>
-            <dd>{{ customer.modifiedAt }}</dd>
+            <dd>{{ customer.modifiedAt | localDateTime }}</dd>
             <dt class="font-semibold">{{ 'customer.detail.modifiedBy' | translate }}</dt>
             <dd>{{ customer.modifiedBy }}</dd>
           }
@@ -115,8 +115,8 @@
                 <tbody>
                   @for (entry of historyState.entries(); track entry.id) {
                     <tr>
-                      <td>{{ entry.date }}</td>
-                      <td>{{ entry.startTime }} – {{ entry.endTime }}</td>
+                      <td>{{ entry.date | localDate }}</td>
+                      <td>{{ entry.startTime | localTime }} – {{ entry.endTime | localTime }}</td>
                       <td><span class="badge badge-outline">{{ 'customer.detail.appointmentStatus.' + entry.status | translate }}</span></td>
                     </tr>
                   }
@@ -146,7 +146,7 @@
               @for (note of notesState.notesFor(customer.id); track note.id) {
                 <li class="border-b border-base-300 pb-2">
                   <p>{{ note.text }}</p>
-                  <p class="text-xs text-base-content/60">{{ note.createdAt }}</p>
+                  <p class="text-xs text-base-content/60">{{ note.createdAt | localDateTime }}</p>
                 </li>
               }
             </ul>

@@ -61,8 +61,8 @@ describe('AbsenceApprovalsComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Erika');
     expect(text).toContain('Mustermann');
-    expect(text).toContain('2026-11-01');
-    expect(text).toContain('2026-11-05');
+    expect(text).toContain('01.11.2026');
+    expect(text).toContain('05.11.2026');
   });
 
   it('shows the empty state when there are no pending requests', () => {

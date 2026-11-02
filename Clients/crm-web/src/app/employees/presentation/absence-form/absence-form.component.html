@@ -9,7 +9,7 @@
       <p>{{ 'employee.absence.errors.conflict' | translate }}</p>
       <ul>
         @for (appointment of state.absenceConflict(); track appointment.date + appointment.startTime) {
-          <li>{{ appointment.date }} {{ appointment.startTime }}–{{ appointment.endTime }}</li>
+          <li>{{ appointment.date | localDate }} {{ appointment.startTime | localTime }}–{{ appointment.endTime | localTime }}</li>
         }
       </ul>
       <div class="flex gap-2 mt-2">
@@ -94,7 +94,7 @@
           <li class="flex items-center justify-between gap-2 border border-base-300 rounded-box p-2.5">
             <span>
               {{ ('employee.absence.type' + absence.type) | translate }}
-              {{ absence.from }} – {{ absence.to }}
+              {{ absence.from | localDate }} – {{ absence.to | localDate }}
             </span>
             <div class="flex items-center gap-2">
               <span
