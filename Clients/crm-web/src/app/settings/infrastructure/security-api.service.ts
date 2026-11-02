@@ -38,6 +38,47 @@ interface BackendAuditLogEntryResponse {
   details: string;
 }
 
+const AUDIT_EVENT_TYPES_BY_INDEX: readonly string[] = [
+  'LoginSucceeded',
+  'LoginFailed',
+  'AccountLocked',
+  'RoleChanged',
+  'PasswordChanged',
+  'MfaEnabled',
+  'MfaDisabled',
+  'PasskeyRegistered',
+  'PasskeyRemoved',
+  'DeviceConfirmationRequested',
+  'DeviceApproved',
+  'DeviceRevoked',
+  'SecurityPolicyChanged',
+  'ApiKeyRotated',
+  'CustomerCreated',
+  'CustomerUpdated',
+  'CustomerDeactivated',
+  'EmployeeCreated',
+  'EmployeeUpdated',
+  'EmployeeDeactivated',
+  'WorkingHoursUpdated',
+  'AbsenceCreated',
+  'AbsenceApproved',
+  'AbsenceRejected',
+  'AbsenceDeleted',
+  'AppointmentCreated',
+  'AppointmentRescheduled',
+  'AppointmentCancelled',
+  'ServiceCreated',
+  'ServiceUpdated',
+  'ServiceDeactivated',
+  'DataChanged',
+];
+
+const KNOWN_USERS_BY_ID: Readonly<Record<string, string>> = {
+  'ccb1ab35-30ab-4b04-94cb-6d7ee594b49c': 'CRM Admin (admin@crm.local)',
+  'e573eed0-8c40-749f-f05c-aa6839c81cb4': 'CRM Employee (employee@crm.local)',
+  '00000000-0000-0000-0000-000000000000': 'System / Unbekannt',
+};
+
 /**
  * Infrastructure-Service: kapselt die Aufrufe an die Identity-Security-API (MFA-Pflicht,
  * Passwort-Richtlinie, Geraete-Vertrauen, Audit-Log).
@@ -114,11 +155,41 @@ export class SecurityApiService {
           return items.map((entry) => ({
             id: entry.id,
             occurredAt: entry.occurredAt ?? entry.occurredAtUtc ?? '',
-            actor: entry.actor ?? entry.actorUserId ?? '',
-            action: String(entry.action ?? entry.eventType ?? ''),
+            actor: this.resolveActorLabel(entry.actor, entry.actorUserId),
+            action: this.resolveActionName(entry.action, entry.eventType),
             details: entry.details,
           }));
         }),
       );
+  }
+
+  private resolveActorLabel(actor?: string, actorUserId?: string): string {
+    const raw = (actor && !this.isUuid(actor) ? actor : actorUserId || actor || '').trim();
+    const lower = raw.toLowerCase();
+    if (KNOWN_USERS_BY_ID[lower]) {
+      return KNOWN_USERS_BY_ID[lower];
+    }
+    const current = this.authState.currentUser();
+    if (current && current.userId.toLowerCase() === lower) {
+      return current.displayName;
+    }
+    return actor || actorUserId || '';
+  }
+
+  private resolveActionName(action?: string, eventType?: string | number): string {
+    if (action && Number.isNaN(Number(action))) {
+      return action;
+    }
+    if (typeof eventType === 'number') {
+      return AUDIT_EVENT_TYPES_BY_INDEX[eventType] ?? String(eventType);
+    }
+    if (typeof eventType === 'string' && !Number.isNaN(Number(eventType))) {
+      return AUDIT_EVENT_TYPES_BY_INDEX[Number(eventType)] ?? eventType;
+    }
+    return String(action ?? eventType ?? '');
+  }
+
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
   }
 }

@@ -1,6 +1,6 @@
 namespace IdentityService.Domain.Audit;
 
-/// <summary>Erfasste sicherheitsrelevante Ereignistypen (identity-audit-log.openspec.md).</summary>
+/// <summary>Erfasste sicherheitsrelevante und fachliche Ereignistypen (identity-audit-log.openspec.md).</summary>
 public enum AuditEventType
 {
     LoginSucceeded,
@@ -19,4 +19,23 @@ public enum AuditEventType
 
     /// <summary>Optional: aktuell existiert im Projekt kein API-Key-Rotationsmechanismus; vorgesehen fuer Folge-Changes.</summary>
     ApiKeyRotated,
+
+    CustomerCreated,
+    CustomerUpdated,
+    CustomerDeactivated,
+    EmployeeCreated,
+    EmployeeUpdated,
+    EmployeeDeactivated,
+    WorkingHoursUpdated,
+    AbsenceCreated,
+    AbsenceApproved,
+    AbsenceRejected,
+    AbsenceDeleted,
+    AppointmentCreated,
+    AppointmentRescheduled,
+    AppointmentCancelled,
+    ServiceCreated,
+    ServiceUpdated,
+    ServiceDeactivated,
+    DataChanged,
 }

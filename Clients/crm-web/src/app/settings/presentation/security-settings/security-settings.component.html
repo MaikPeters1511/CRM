@@ -87,10 +87,14 @@
               <tbody>
                 @for (entry of state.auditLog(); track entry.id) {
                   <tr>
-                    <td>{{ entry.occurredAt | localDateTime }}</td>
-                    <td>{{ entry.actor }}</td>
-                    <td>{{ entry.action }}</td>
-                    <td>{{ entry.details }}</td>
+                    <td class="whitespace-nowrap font-mono text-xs">{{ entry.occurredAt | localDateTime }}</td>
+                    <td class="font-medium">{{ entry.actor }}</td>
+                    <td>
+                      <span class="badge badge-sm font-medium" [class]="actionBadgeClass(entry.action)">
+                        {{ formatAction(entry.action) }}
+                      </span>
+                    </td>
+                    <td class="text-sm text-base-content/80">{{ entry.details }}</td>
                   </tr>
                 }
               </tbody>

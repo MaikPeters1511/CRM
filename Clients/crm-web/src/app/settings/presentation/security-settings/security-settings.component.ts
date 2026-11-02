@@ -1,8 +1,78 @@
 import { Component, OnInit, effect, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { LocalDateTimePipe } from '../../../shared/formatting/locale-format.service';
+import { LocalDateTimePipe, LocaleFormatService } from '../../../shared/formatting/locale-format.service';
 import { SecuritySettingsState } from '../../application/security-settings.state';
+
+const AUDIT_ACTION_LABELS_DE: Readonly<Record<string, string>> = {
+  LoginSucceeded: 'Anmeldung erfolgreich',
+  LoginFailed: 'Anmeldung fehlgeschlagen',
+  AccountLocked: 'Konto gesperrt',
+  RoleChanged: 'Rolle geändert',
+  PasswordChanged: 'Passwort geändert',
+  MfaEnabled: 'MFA aktiviert',
+  MfaDisabled: 'MFA deaktiviert',
+  PasskeyRegistered: 'Passkey registriert',
+  PasskeyRemoved: 'Passkey entfernt',
+  DeviceConfirmationRequested: 'Gerätebestätigung angefordert',
+  DeviceApproved: 'Gerät bestätigt',
+  DeviceRevoked: 'Gerät widerrufen',
+  SecurityPolicyChanged: 'Sicherheitsrichtlinie geändert',
+  ApiKeyRotated: 'API-Schlüssel rotiert',
+  CustomerCreated: 'Kunde erstellt',
+  CustomerUpdated: 'Kunde geändert',
+  CustomerDeactivated: 'Kunde deaktiviert',
+  EmployeeCreated: 'Mitarbeiter erstellt',
+  EmployeeUpdated: 'Mitarbeiter geändert',
+  EmployeeDeactivated: 'Mitarbeiter deaktiviert',
+  WorkingHoursUpdated: 'Arbeitszeiten geändert',
+  AbsenceCreated: 'Abwesenheit erstellt',
+  AbsenceApproved: 'Abwesenheit genehmigt',
+  AbsenceRejected: 'Abwesenheit abgelehnt',
+  AbsenceDeleted: 'Abwesenheit gelöscht',
+  AppointmentCreated: 'Termin erstellt',
+  AppointmentRescheduled: 'Termin verschoben',
+  AppointmentCancelled: 'Termin storniert',
+  ServiceCreated: 'Leistung erstellt',
+  ServiceUpdated: 'Leistung geändert',
+  ServiceDeactivated: 'Leistung deaktiviert',
+  DataChanged: 'Daten geändert',
+};
+
+const AUDIT_ACTION_LABELS_EN: Readonly<Record<string, string>> = {
+  LoginSucceeded: 'Login succeeded',
+  LoginFailed: 'Login failed',
+  AccountLocked: 'Account locked',
+  RoleChanged: 'Role changed',
+  PasswordChanged: 'Password changed',
+  MfaEnabled: 'MFA enabled',
+  MfaDisabled: 'MFA disabled',
+  PasskeyRegistered: 'Passkey registered',
+  PasskeyRemoved: 'Passkey removed',
+  DeviceConfirmationRequested: 'Device confirmation requested',
+  DeviceApproved: 'Device approved',
+  DeviceRevoked: 'Device revoked',
+  SecurityPolicyChanged: 'Security policy changed',
+  ApiKeyRotated: 'API key rotated',
+  CustomerCreated: 'Customer created',
+  CustomerUpdated: 'Customer updated',
+  CustomerDeactivated: 'Customer deactivated',
+  EmployeeCreated: 'Employee created',
+  EmployeeUpdated: 'Employee updated',
+  EmployeeDeactivated: 'Employee deactivated',
+  WorkingHoursUpdated: 'Working hours updated',
+  AbsenceCreated: 'Absence created',
+  AbsenceApproved: 'Absence approved',
+  AbsenceRejected: 'Absence rejected',
+  AbsenceDeleted: 'Absence deleted',
+  AppointmentCreated: 'Appointment created',
+  AppointmentRescheduled: 'Appointment rescheduled',
+  AppointmentCancelled: 'Appointment cancelled',
+  ServiceCreated: 'Service created',
+  ServiceUpdated: 'Service updated',
+  ServiceDeactivated: 'Service deactivated',
+  DataChanged: 'Data changed',
+};
 
 /**
  * Smart/Container-Component: Sicherheits-Einstellungen (Passwort-Richtlinie, MFA-Pflicht,
@@ -18,6 +88,7 @@ import { SecuritySettingsState } from '../../application/security-settings.state
 })
 export class SecuritySettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
+  protected readonly localeFormat = inject(LocaleFormatService);
   protected readonly state = inject(SecuritySettingsState);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -57,5 +128,33 @@ export class SecuritySettingsComponent implements OnInit {
     link.download = 'audit-log.csv';
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  formatAction(action: string): string {
+    const dict = this.localeFormat.lang() === 'en' ? AUDIT_ACTION_LABELS_EN : AUDIT_ACTION_LABELS_DE;
+    return dict[action] ?? action;
+  }
+
+  actionBadgeClass(action: string): string {
+    if (action.endsWith('Created') || action === 'AbsenceApproved') {
+      return 'badge-primary badge-soft';
+    }
+    if (action.endsWith('Updated') || action.endsWith('Changed') || action === 'AppointmentRescheduled') {
+      return 'badge-info badge-soft';
+    }
+    if (
+      action.endsWith('Deleted') ||
+      action.endsWith('Deactivated') ||
+      action.endsWith('Cancelled') ||
+      action.endsWith('Revoked') ||
+      action === 'LoginFailed' ||
+      action === 'AccountLocked'
+    ) {
+      return 'badge-error badge-soft';
+    }
+    if (action === 'LoginSucceeded' || action === 'DeviceApproved' || action === 'MfaEnabled') {
+      return 'badge-success badge-soft';
+    }
+    return 'badge-ghost';
   }
 }
