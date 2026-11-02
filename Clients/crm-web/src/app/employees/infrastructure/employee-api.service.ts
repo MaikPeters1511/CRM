@@ -9,6 +9,7 @@ import {
   Employee,
   EmployeeSearchParams,
   EmployeeSearchResult,
+  PendingAbsence,
   SetWorkingHoursRequest,
   UpdateEmployeeRequest,
 } from '../domain/employee.model';
@@ -60,5 +61,23 @@ export class EmployeeApiService {
 
   addAbsence(id: string, request: AddAbsenceRequest): Observable<Absence> {
     return this.http.post<Absence>(`${this.baseUrl}/${id}/absences`, request);
+  }
+
+  /** Eigene Abwesenheitsanfragen inkl. Status (Mitarbeiter: nur eigene; Admin: beliebige). */
+  getAbsences(id: string): Observable<Absence[]> {
+    return this.http.get<Absence[]>(`${this.baseUrl}/${id}/absences`);
+  }
+
+  /** Alle ausstehenden Anfragen ueber alle Mitarbeiter (Rolle Admin). */
+  getPendingAbsences(): Observable<PendingAbsence[]> {
+    return this.http.get<PendingAbsence[]>(`${this.baseUrl}/absences/pending`);
+  }
+
+  approveAbsence(id: string, absenceId: string): Observable<Absence> {
+    return this.http.post<Absence>(`${this.baseUrl}/${id}/absences/${absenceId}/approve`, {});
+  }
+
+  rejectAbsence(id: string, absenceId: string): Observable<Absence> {
+    return this.http.post<Absence>(`${this.baseUrl}/${id}/absences/${absenceId}/reject`, {});
   }
 }

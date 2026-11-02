@@ -24,6 +24,13 @@ export const WEEKDAYS: Weekday[] = [
 /** Art einer Abwesenheit. Entspricht `AbsenceType`. */
 export type AbsenceType = 'Vacation' | 'Sick' | 'Other';
 
+/**
+ * Freigabestatus einer Abwesenheitsanfrage. Entspricht `AbsenceStatus`
+ * (`employee-service`, abwesenheit-workflow.openspec.md Abschnitt 5). Serialisiert als
+ * String (`JsonStringEnumConverter`, siehe `EmployeeService.Web/Program.cs`).
+ */
+export type AbsenceStatus = 'Pending' | 'Approved' | 'Rejected';
+
 /** Value Object: Zuordnung einer Leistung (Service) zu einem Mitarbeiter. */
 export interface EmployeeServiceAssignment {
   serviceId: string;
@@ -39,7 +46,7 @@ export interface WorkingHoursSlot {
   endTime: string;
 }
 
-/** Entity: eine erfasste Abwesenheit. */
+/** Entity: eine erfasste Abwesenheit, inkl. Freigabestatus (`AbsenceDto`). */
 export interface Absence {
   id: string;
   type: AbsenceType;
@@ -47,6 +54,26 @@ export interface Absence {
   from: string;
   /** Format `yyyy-MM-dd`, entspricht `DateOnly`. */
   to: string;
+  status: AbsenceStatus;
+  requestedBy: string;
+  requestedAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+}
+
+/** Ein ausstehender Abwesenheitsantrag in der Admin-Freigabe-Ansicht (`PendingAbsenceDto`). */
+export interface PendingAbsence {
+  employeeId: string;
+  employeeFirstName: string;
+  employeeLastName: string;
+  absenceId: string;
+  type: AbsenceType;
+  /** Format `yyyy-MM-dd`, entspricht `DateOnly`. */
+  from: string;
+  /** Format `yyyy-MM-dd`, entspricht `DateOnly`. */
+  to: string;
+  requestedBy: string;
+  requestedAt: string;
 }
 
 /**
