@@ -77,6 +77,7 @@ builder.Host.UseWolverine(opts =>
     opts.CodeGeneration.AlwaysUseServiceLocationFor<AiService.Application.Abstractions.ICustomerQueryClient>();
     opts.CodeGeneration.AlwaysUseServiceLocationFor<AiService.Application.Abstractions.IAvailabilityIndexClient>();
     opts.CodeGeneration.AlwaysUseServiceLocationFor<AiService.Application.Abstractions.ILlmClient>();
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<AiService.Application.Abstractions.IAssistantSettingsRepository>();
 
     var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
         ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");

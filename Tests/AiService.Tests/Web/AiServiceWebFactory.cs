@@ -1,4 +1,5 @@
 using AiService.Application.Abstractions;
+using AiService.Domain.Settings;
 using AiService.Tests.Support;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -16,6 +17,14 @@ public sealed class AiServiceWebFactory : WebApplicationFactory<Program>
     public FakeCustomerQueryClient CustomerClient { get; } = new();
     public FakeAvailabilityIndexClient IndexClient { get; } = new();
     public FakeLlmClient LlmClient { get; } = new();
+
+    // AssistantSettingsSeedHostedService faengt Fehler ab (keine echte Datenbank in Tests) - die
+    // Fake-Repository-Instanz wird daher hier bereits mit einer initialen Zeile vorbelegt, analog
+    // dem, was der echte Seed-Hosted-Service beim ersten Start anlegen wuerde.
+    public FakeAssistantSettingsRepository SettingsRepository { get; } =
+        new(AssistantSettings.SeedFromStartupConfig("OpenAi", "gpt-4o-mini", "http://qdrant:6333", DateTimeOffset.UtcNow));
+
+    public FakeAssistantApiKeyInspector ApiKeyInspector { get; } = new();
 
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
@@ -39,6 +48,8 @@ public sealed class AiServiceWebFactory : WebApplicationFactory<Program>
             services.AddSingleton<ICustomerQueryClient>(CustomerClient);
             services.AddSingleton<IAvailabilityIndexClient>(IndexClient);
             services.AddSingleton<ILlmClient>(LlmClient);
+            services.AddSingleton<IAssistantSettingsRepository>(SettingsRepository);
+            services.AddSingleton<IAssistantApiKeyInspector>(ApiKeyInspector);
 
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });

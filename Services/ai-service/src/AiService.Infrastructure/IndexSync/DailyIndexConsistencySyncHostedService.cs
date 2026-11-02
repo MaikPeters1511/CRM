@@ -29,9 +29,11 @@ public sealed class DailyIndexConsistencySyncHostedService(
                 var catalogClient = scope.ServiceProvider.GetRequiredService<ICatalogQueryClient>();
                 var employeeClient = scope.ServiceProvider.GetRequiredService<IEmployeeQueryClient>();
                 var indexClient = scope.ServiceProvider.GetRequiredService<IAvailabilityIndexClient>();
+                var settingsRepository = scope.ServiceProvider.GetRequiredService<IAssistantSettingsRepository>();
 
                 await IndexConsistencySyncHandler.Handle(
-                    new RunIndexConsistencySyncCommand(), catalogClient, employeeClient, indexClient, stoppingToken);
+                    new RunIndexConsistencySyncCommand(), catalogClient, employeeClient, indexClient,
+                    settingsRepository, timeProvider, stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

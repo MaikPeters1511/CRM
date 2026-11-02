@@ -3,6 +3,7 @@ using AiService.Infrastructure.Clients;
 using AiService.Infrastructure.Llm;
 using AiService.Infrastructure.Persistence;
 using AiService.Infrastructure.Qdrant;
+using AiService.Infrastructure.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -25,8 +26,18 @@ public static class DependencyInjection
         AddCrossServiceClients(services, configuration);
         AddQdrantClient(services, configuration);
         AddLlmClient(services, configuration);
+        AddAssistantSettings(services);
 
         return services;
+    }
+
+    // ki-einstellungen-backend.openspec.md / docs/adr/0004: Admin-Einstellungen-API. Persistenz in
+    // ai_db, API-Key-Maskierung ausschliesslich aus IConfiguration/Environment (niemals Klartext).
+    private static void AddAssistantSettings(IServiceCollection services)
+    {
+        services.AddScoped<IAssistantSettingsRepository, EfAssistantSettingsRepository>();
+        services.AddSingleton<IAssistantApiKeyInspector, AssistantApiKeyInspector>();
+        services.AddHostedService<AssistantSettingsSeedHostedService>();
     }
 
     // Technischer Service-Account fuer Hintergrundprozesse (Index-Sync). Zugangsdaten ausschliesslich
@@ -139,10 +150,7 @@ public static class DependencyInjection
 
     private static void AddQdrantClient(IServiceCollection services, IConfiguration configuration)
     {
-        var configuredUrl = configuration["Qdrant:BaseUrl"];
-        var qdrantUrl = !string.IsNullOrWhiteSpace(configuredUrl)
-            ? configuredUrl
-            : Environment.GetEnvironmentVariable("QDRANT_BASE_URL") ?? "http://qdrant:6333";
+        var qdrantUrl = AssistantRuntimeConfig.ResolveQdrantBaseUrl(configuration);
 
         services.AddHttpClient<IAvailabilityIndexClient, QdrantAvailabilityIndexClient>(client =>
         {
@@ -170,14 +178,14 @@ public static class DependencyInjection
     // Konfiguration, keine Codeaenderung in HandleChatMessageHandler (kennt nur ILlmClient).
     private static void AddLlmClient(IServiceCollection services, IConfiguration configuration)
     {
-        var provider = configuration["LlmProvider"] ?? Environment.GetEnvironmentVariable("LLM_PROVIDER") ?? "OpenAi";
+        var provider = AssistantRuntimeConfig.ResolveProvider(configuration);
 
-        if (string.Equals(provider, "LmStudio", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(provider, AssistantRuntimeConfig.LmStudioProviderName, StringComparison.OrdinalIgnoreCase))
         {
             var baseUrl = configuration["LmStudio:BaseUrl"]
                 ?? Environment.GetEnvironmentVariable("LMSTUDIO_BASE_URL")
                 ?? "http://localhost:1234";
-            var model = configuration["LmStudio:Model"] ?? Environment.GetEnvironmentVariable("LMSTUDIO_MODEL") ?? "local-model";
+            var model = AssistantRuntimeConfig.ResolveModel(configuration, provider);
 
             services.AddHttpClient("lmstudio-llm", client =>
             {
@@ -192,10 +200,10 @@ public static class DependencyInjection
         else
         {
             var baseUrl = configuration["OpenAi:BaseUrl"] ?? Environment.GetEnvironmentVariable("OPENAI_BASE_URL") ?? "https://api.openai.com";
-            var model = configuration["OpenAi:Model"] ?? Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-4o-mini";
+            var model = AssistantRuntimeConfig.ResolveModel(configuration, provider);
             // Keine Secrets im Code (CLAUDE.md): API-Key ausschliesslich ueber Environment
             // Variable/Secret Manager (Aspire-Parameter "openai-api-key", siehe AppHost.cs).
-            var apiKey = configuration["OpenAi:ApiKey"] ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+            var apiKey = AssistantRuntimeConfig.ResolveOpenAiApiKey(configuration);
 
             services.AddHttpClient("openai-llm", client =>
             {
