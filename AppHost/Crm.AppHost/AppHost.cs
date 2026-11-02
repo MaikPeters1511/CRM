@@ -38,6 +38,10 @@ var loginRateLimitPermitLimit = builder.Configuration["Parameters:login-rate-lim
 // Aspire-Ressourcennamen erlauben keine Unterstriche; die tatsaechliche Connection-String-
 // Konfiguration ("ConnectionStrings:customer_db"/"employee_db", siehe *.Infrastructure/DependencyInjection.cs)
 // wird ueber den connectionName-Parameter von WithReference erzwungen.
+// identity_db (docs/adr/0004, Abschnitt 1): Grundlage fuer MFA/Passkeys/Device-Trust/Audit-Log.
+var identityPostgres = builder.AddPostgres("identity-postgres");
+var identityDb = identityPostgres.AddDatabase("identity-db", databaseName: "identity_db");
+
 var customerPostgres = builder.AddPostgres("customer-postgres");
 var customerDb = customerPostgres.AddDatabase("customer-db", databaseName: "customer_db");
 
@@ -74,10 +78,11 @@ var openAiApiKey = builder.AddParameter("openai-api-key", secret: true);
 var lmStudioBaseUrl = builder.Configuration["Parameters:lmstudio-base-url"] ?? "";
 
 // identity-service: eigenstaendiger, selbst gehosteter JWT-Issuer (kein externer IdP,
-// siehe UserStories/authentifizierung.openspec.md). Kein identity_db in diesem Entwicklungsstand:
-// nur zwei Seed-Testnutzer (Admin/Employee), in-memory gehasht ueber PasswordHasher<T>
-// (siehe InMemorySeedUserRepository) - bewusste Vereinfachung, kein Gold-Plating.
+// siehe UserStories/specs/identity.openspec.md). Seit docs/adr/0004 mit eigener identity_db
+// (MFA/Passkeys/Device-Trust/Audit-Log) statt der frueheren reinen In-Memory-Testnutzer.
 var identityService = builder.AddProject<Projects.IdentityService_Web>("identity-service")
+    .WithReference(identityDb, connectionName: "identity_db")
+    .WaitFor(identityDb)
     .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
     .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)

@@ -1,8 +1,11 @@
+using System.Text;
 using System.Threading.RateLimiting;
 using IdentityService.Application;
 using IdentityService.Infrastructure;
 using IdentityService.Web.ErrorHandling;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +81,41 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Identity-mfa-totp.openspec.md u.a.: ab jetzt schuetzt identity-service auch eigene Endpunkte
+// (MFA-Setup, Passkeys, Geraete, Admin-Policy/Audit-Log) und muss daher selbst JWTs validieren -
+// bisher war AuthController die einzige Route und [AllowAnonymous]. Gleiches Muster wie
+// employee-service (Defense in Depth, ADR 0001 Abschnitt 4): kein OIDC-Discovery, symmetrischer
+// Signing-Key, Konfiguration bewusst lazy im AddJwtBearer-Options-Delegate gelesen (siehe dortigen
+// Kommentar) statt eager davor, damit WebApplicationFactory-Testueberschreibungen wirken.
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtSection = builder.Configuration.GetSection("Authentication:JwtBearer");
+        var jwtSigningKey = jwtSection["SigningKey"];
+
+        if (string.IsNullOrWhiteSpace(jwtSigningKey))
+        {
+            throw new InvalidOperationException(
+                "Authentication:JwtBearer:SigningKey ist nicht konfiguriert. Signing-Key muss per " +
+                "Environment-Variable/.NET User Secrets gesetzt werden (siehe AppHost.cs, Parameter 'jwt-signing-key').");
+        }
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSection["Audience"],
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -102,6 +140,8 @@ app.MapDefaultEndpoints();
 // (siehe Tests/E2E/README.md, Bug 3).
 app.UseCors("frontend");
 app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
