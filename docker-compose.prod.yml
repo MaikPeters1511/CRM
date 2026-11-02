@@ -88,9 +88,37 @@ services:
       retries: 10
     networks: [crm-network]
 
+  ai-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai_db
+      POSTGRES_USER: ${AI_DB_USER}
+      POSTGRES_PASSWORD: ${AI_DB_PASSWORD}
+    volumes:
+      - ai-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AI_DB_USER} -d ai_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [crm-network]
+
+  # ---------------------------------------------------------------------------------------------
+  # Qdrant: Vektorindex fuer ai-service (semantische Kandidaten-Vorauswahl, docs/adr/0003).
+  # Reine Ableitungsdaten ohne strenge Backup-Pflicht (ADR 0003, Abschnitt 5) - ein Volume-Verlust
+  # erfordert nur den naechsten Initial-/Konsistenz-Sync, keinen Datenverlust an Quelldaten.
+  # ---------------------------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.12.1
+    restart: unless-stopped
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks: [crm-network]
+
   # ---------------------------------------------------------------------------------------------
   # RabbitMQ: gemeinsamer Broker fuer Wolverine Integration Events (customer-/employee-/
-  # appointment-service; catalog-service und identity-service brauchen das nicht, ADR 0001).
+  # appointment-/catalog-service, ai-service; identity-service braucht das nicht, ADR 0001).
   # ---------------------------------------------------------------------------------------------
   rabbitmq:
     image: rabbitmq:4-management-alpine
@@ -206,6 +234,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__catalog_db: Host=catalog-postgres;Port=5432;Database=catalog_db;Username=${CATALOG_DB_USER};Password=${CATALOG_DB_PASSWORD}
+      # Seit docs/adr/0003-ai-service-qdrant-index-strategie.md: veroeffentlicht
+      # ServiceCatalogChangedIntegrationEvent fuer ai-service (Konsument).
+      ConnectionStrings__rabbitmq: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
       Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
       Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
@@ -213,6 +244,49 @@ services:
     depends_on:
       catalog-postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [crm-network]
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: Services/ai-service/src/AiService.Web/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ai_db: Host=ai-postgres;Port=5432;Database=ai_db;Username=${AI_DB_USER};Password=${AI_DB_PASSWORD}
+      ConnectionStrings__rabbitmq: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
+      Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
+      Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+      Qdrant__BaseUrl: http://qdrant:6333
+      LlmProvider: ${LLM_PROVIDER:-OpenAi}
+      OpenAi__ApiKey: ${OPENAI_API_KEY}
+      OpenAi__Model: ${OPENAI_MODEL:-gpt-4o-mini}
+      LmStudio__BaseUrl: ${LMSTUDIO_BASE_URL:-}
+      # Synchrone Live-Calls ai-service -> appointment-/employee-/catalog-/customer-service
+      # (ki-terminassistent.openspec.md Abschnitt 5); Container-Port ist immer 8080.
+      Services__AppointmentService__BaseUrl: http://appointment-service:8080
+      Services__EmployeeService__BaseUrl: http://employee-service:8080
+      Services__CatalogService__BaseUrl: http://catalog-service:8080
+      Services__CustomerService__BaseUrl: http://customer-service:8080
+    depends_on:
+      ai-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+      employee-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
     networks: [crm-network]
 
   # ---------------------------------------------------------------------------------------------
@@ -236,6 +310,7 @@ services:
       ReverseProxy__Clusters__employee-service-cluster__Destinations__destination1__Address: http://employee-service:8080
       ReverseProxy__Clusters__appointment-service-cluster__Destinations__destination1__Address: http://appointment-service:8080
       ReverseProxy__Clusters__catalog-service-cluster__Destinations__destination1__Address: http://catalog-service:8080
+      ReverseProxy__Clusters__ai-service-cluster__Destinations__destination1__Address: http://ai-service:8080
     depends_on:
       identity-service:
         condition: service_started
@@ -246,6 +321,8 @@ services:
       appointment-service:
         condition: service_started
       catalog-service:
+        condition: service_started
+      ai-service:
         condition: service_started
     networks: [crm-network]
 
@@ -279,4 +356,6 @@ volumes:
   employee-db-data:
   appointment-db-data:
   catalog-db-data:
+  ai-db-data:
+  qdrant-data:
   rabbitmq-data:
