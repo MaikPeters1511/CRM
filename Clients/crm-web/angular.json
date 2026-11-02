@@ -77,7 +77,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "include": ["/Users/maik/Desktop/projekte/crm/Tests/CrmWeb.Tests/**/*.spec.ts"]
+            "include": ["../../../Tests/CrmWeb.Tests/**/*.spec.ts"]
           }
         }
       }
