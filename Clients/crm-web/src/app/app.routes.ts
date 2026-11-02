@@ -13,8 +13,13 @@ import { authGuard } from './auth/presentation/auth.guard';
  * Abschnitt 5) - kein zusaetzliches rollenbasiertes Guard-Pattern im Projekt vorhanden.
  */
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'customers' },
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'login', component: LoginComponent },
+  {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadChildren: () => import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
+  },
   {
     path: 'customers',
     canActivate: [authGuard],
@@ -36,5 +41,5 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadChildren: () => import('./catalog/catalog.routes').then((m) => m.CATALOG_ROUTES),
   },
-  { path: '**', redirectTo: 'customers' },
+  { path: '**', redirectTo: 'dashboard' },
 ];

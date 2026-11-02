@@ -3,6 +3,7 @@ import { provideRouter, Router } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { App } from '../../../Clients/crm-web/src/app/app';
 import { AuthStateService } from '../../../Clients/crm-web/src/app/auth/application/auth-state.service';
+import { AssistantStateService } from '../../../Clients/crm-web/src/app/assistant/application/assistant-state.service';
 import { routes } from '../../../Clients/crm-web/src/app/app.routes';
 import type { AuthUser } from '../../../Clients/crm-web/src/app/auth/domain/auth-user.model';
 
@@ -35,7 +36,7 @@ describe('App (Shell/Navigation)', () => {
     return { fixture };
   }
 
-  it('shows navigation entries for customers, employees, appointments and catalog for an authenticated Admin', () => {
+  it('shows navigation entries for dashboard, customers, employees, appointments and catalog for an authenticated Admin', () => {
     const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
 
     const links = fixture.nativeElement.querySelectorAll('nav[aria-label="crm.nav.main"] a');
@@ -43,15 +44,15 @@ describe('App (Shell/Navigation)', () => {
       a.getAttribute('routerLink'),
     );
 
-    expect(hrefs).toEqual(['/customers', '/employees', '/appointments', '/catalog']);
+    expect(hrefs).toEqual(['/dashboard', '/customers', '/employees', '/appointments', '/catalog']);
   });
 
-  it('shows navigation entries for customers, employees and appointments for an authenticated Employee', () => {
+  it('shows navigation entries for dashboard, customers, employees and appointments for an authenticated Employee (without catalog)', () => {
     const { fixture } = setup({ userId: 'u2', role: 'Employee', displayName: 'Employee User' });
 
     const links = fixture.nativeElement.querySelectorAll('nav[aria-label="crm.nav.main"] a');
 
-    expect(links.length).toBe(3);
+    expect(links.length).toBe(4);
   });
 
   it('hides the module navigation for anonymous (not authenticated) users', () => {
@@ -60,6 +61,28 @@ describe('App (Shell/Navigation)', () => {
     const nav = fixture.nativeElement.querySelector('nav[aria-label="crm.nav.main"]');
 
     expect(nav).toBeNull();
+  });
+
+  it('shows an AI-assistant nav entry that opens the chat widget instead of navigating', () => {
+    const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
+    const assistantState = TestBed.inject(AssistantStateService);
+
+    const assistantButton = fixture.nativeElement.querySelector(
+      'nav[aria-label="crm.nav.main"] button[data-testid="nav-assistant"]',
+    ) as HTMLButtonElement;
+    expect(assistantButton).not.toBeNull();
+
+    assistantButton.click();
+
+    expect(assistantState.isOpen()).toBe(true);
+  });
+
+  it('shows a user card with the display name and role, linking to the profile', () => {
+    const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
+
+    const userCard = fixture.nativeElement.querySelector('[data-testid="sidebar-user-card"]');
+
+    expect(userCard?.textContent).toContain('Admin User');
   });
 
   it('keeps the same AuthStateService instance (session) when navigating between feature areas without re-login', async () => {

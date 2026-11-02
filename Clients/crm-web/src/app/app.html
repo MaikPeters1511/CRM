@@ -1,75 +1,123 @@
 <a class="skip-link sr-only focus:not-sr-only" href="#main-content">{{ 'crm.nav.title' | translate }}</a>
-<header class="navbar bg-base-200 shadow-sm px-4" role="banner">
-  <div class="navbar-start">
-    <span class="text-lg font-semibold">{{ 'crm.nav.title' | translate }}</span>
-  </div>
-  <div class="navbar-center">
-    @if (authState.isAuthenticated()) {
-      <nav aria-label="{{ 'crm.nav.main' | translate }}">
-        <ul class="menu menu-horizontal px-1">
-          <li>
-            <a routerLink="/customers" routerLinkActive="menu-active">
-              {{ 'crm.nav.customers' | translate }}
-            </a>
-          </li>
-          <li>
-            <a routerLink="/employees" routerLinkActive="menu-active">
-              {{ 'crm.nav.employees' | translate }}
-            </a>
-          </li>
-          <li>
-            <a routerLink="/appointments" routerLinkActive="menu-active">
-              {{ 'crm.nav.appointments' | translate }}
-            </a>
-          </li>
-          @if (authState.isAdmin()) {
-            <li>
-              <a routerLink="/catalog" routerLinkActive="menu-active">
-                {{ 'crm.nav.catalog' | translate }}
-              </a>
-            </li>
-          }
-        </ul>
-      </nav>
-    }
-  </div>
-  <div class="navbar-end gap-2">
-    <nav class="flex gap-1 items-center" aria-label="language switch">
-      @for (lang of languages; track lang) {
-        <button
-          type="button"
-          class="btn btn-sm btn-ghost"
-          [attr.aria-label]="lang"
-          (click)="useLanguage(lang)"
-        >
-          {{ lang.toUpperCase() }}
-        </button>
-      }
-    </nav>
-    @if (authState.isAuthenticated()) {
-      <div class="dropdown dropdown-end">
-        <button type="button" tabindex="0" class="btn btn-ghost btn-sm gap-2">
+
+@if (authState.isAuthenticated()) {
+  <div class="drawer lg:drawer-open">
+    <input id="app-sidebar-toggle" type="checkbox" class="drawer-toggle" />
+
+    <div class="drawer-content flex flex-col min-h-screen">
+      <header class="navbar bg-base-100 border-b border-base-300 px-4 lg:hidden" role="banner">
+        <div class="navbar-start">
+          <label
+            for="app-sidebar-toggle"
+            class="btn btn-ghost btn-square"
+            [attr.aria-label]="'crm.nav.main' | translate"
+          >
+            ☰
+          </label>
+        </div>
+        <div class="navbar-center font-semibold">{{ 'crm.nav.title' | translate }}</div>
+      </header>
+
+      <main id="main-content" class="flex-1 p-4 sm:p-6">
+        <router-outlet />
+      </main>
+    </div>
+
+    <div class="drawer-side z-20">
+      <label
+        for="app-sidebar-toggle"
+        [attr.aria-label]="'crm.nav.main' | translate"
+        class="drawer-overlay"
+      ></label>
+
+      <aside class="w-72 min-h-full bg-base-100 border-r border-base-300 flex flex-col">
+        <div class="flex items-center gap-3 px-5 py-5 border-b border-base-300">
           <div class="avatar avatar-placeholder">
-            <div class="bg-neutral text-neutral-content w-8 rounded-full">
-              <span class="text-xs">{{ authState.currentUser()?.displayName?.charAt(0) }}</span>
+            <div class="bg-primary text-primary-content w-10 rounded-lg">
+              <span class="text-sm font-bold">{{ 'crm.brand.shortName' | translate }}</span>
             </div>
           </div>
-          <span class="text-sm">{{ authState.currentUser()?.displayName }}</span>
-        </button>
-        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-10 w-40 p-2 shadow-sm">
-          <li>
-            <button type="button" (click)="logout()">
-              {{ 'auth.nav.logout' | translate }}
-            </button>
-          </li>
-        </ul>
-      </div>
-    }
+          <span class="text-lg font-semibold">{{ 'crm.nav.title' | translate }}</span>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-3 py-4" aria-label="{{ 'crm.nav.main' | translate }}">
+          <ul class="menu w-full gap-1">
+            <li>
+              <a routerLink="/dashboard" routerLinkActive="menu-active">
+                {{ 'crm.nav.dashboard' | translate }}
+              </a>
+            </li>
+            <li>
+              <a routerLink="/customers" routerLinkActive="menu-active">
+                {{ 'crm.nav.customers' | translate }}
+              </a>
+            </li>
+            <li>
+              <a routerLink="/employees" routerLinkActive="menu-active">
+                {{ 'crm.nav.employees' | translate }}
+              </a>
+            </li>
+            <li>
+              <a routerLink="/appointments" routerLinkActive="menu-active">
+                {{ 'crm.nav.appointments' | translate }}
+              </a>
+            </li>
+            @if (authState.isAdmin()) {
+              <li>
+                <a routerLink="/catalog" routerLinkActive="menu-active">
+                  {{ 'crm.nav.catalog' | translate }}
+                </a>
+              </li>
+            }
+            <li>
+              <button type="button" data-testid="nav-assistant" (click)="openAssistant()">
+                <span class="flex-1 text-left">{{ 'crm.nav.assistant' | translate }}</span>
+                <span class="badge badge-primary badge-sm">{{ 'crm.nav.assistantBadge' | translate }}</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="px-3 py-3 border-t border-base-300">
+          <nav class="flex gap-1 items-center justify-center mb-2" aria-label="language switch">
+            @for (lang of languages; track lang) {
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost"
+                [attr.aria-label]="lang"
+                (click)="useLanguage(lang)"
+              >
+                {{ lang.toUpperCase() }}
+              </button>
+            }
+          </nav>
+
+          <a
+            routerLink="/profile"
+            class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200"
+            data-testid="sidebar-user-card"
+            [attr.aria-label]="'crm.nav.profile' | translate"
+          >
+            <div class="avatar avatar-placeholder">
+              <div class="bg-neutral text-neutral-content w-9 rounded-full">
+                <span class="text-xs">{{ userInitial() }}</span>
+              </div>
+            </div>
+            <span class="flex flex-col flex-1 min-w-0">
+              <span class="text-sm font-medium truncate">{{ authState.currentUser()?.displayName }}</span>
+              <span class="text-xs text-base-content/60">{{ roleTranslationKey() | translate }}</span>
+            </span>
+          </a>
+          <button type="button" class="btn btn-ghost btn-sm w-full justify-start mt-1" (click)="logout()">
+            {{ 'auth.nav.logout' | translate }}
+          </button>
+        </div>
+      </aside>
+    </div>
   </div>
-</header>
-<main id="main-content" class="container mx-auto p-4">
-  <router-outlet />
-</main>
-@if (authState.isAuthenticated()) {
   <app-assistant-chat-widget />
+} @else {
+  <main id="main-content">
+    <router-outlet />
+  </main>
 }
