@@ -36,6 +36,8 @@ public sealed class AppointmentServiceRealInfrastructureWebFactory : WebApplicat
 
     public FakeEmployeeAvailabilityClient EmployeeAvailabilityClient { get; } = new();
 
+    public FakeEmployeeAbsenceClient EmployeeAbsenceClient { get; } = new();
+
     public AppointmentServiceRealInfrastructureWebFactory(string connectionString)
     {
         _previousConnectionStringEnvVar = Environment.GetEnvironmentVariable(ConnectionStringEnvVarName);
@@ -58,6 +60,7 @@ public sealed class AppointmentServiceRealInfrastructureWebFactory : WebApplicat
         {
             services.AddSingleton<ICustomerVerificationClient>(CustomerVerificationClient);
             services.AddSingleton<IEmployeeAvailabilityClient>(EmployeeAvailabilityClient);
+            services.AddSingleton<IEmployeeAbsenceClient>(EmployeeAbsenceClient);
 
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });

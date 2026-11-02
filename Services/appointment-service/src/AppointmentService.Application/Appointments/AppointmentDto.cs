@@ -32,15 +32,22 @@ public sealed record AppointmentDto(
 }
 
 /// <summary>
-/// Response shape for <c>GET /api/appointments</c> (calendar view). Deliberately includes
-/// <see cref="Date"/>/<see cref="StartTime"/>/<see cref="EndTime"/> as flat top-level properties
-/// IN ADDITION to the full appointment fields: employee-service's pre-existing
-/// <c>AppointmentAvailabilityHttpClient</c> (see Services/employee-service) deserializes this
-/// exact same list response into its own minimal DTO
-/// (<c>{ Date: DateOnly, StartTime: TimeOnly, EndTime: TimeOnly }</c>) via
-/// <c>GetFromJsonAsync&lt;List&lt;...&gt;&gt;</c>; System.Text.Json ignores the additional
-/// properties on that side, so the pre-existing contract keeps working unmodified while this
-/// service's own calendar view still gets the full appointment payload it needs.
+/// Item shape for the <c>appointments</c> array of the <c>GET /api/appointments</c> response
+/// (calendar view). Deliberately includes <see cref="Date"/>/<see cref="StartTime"/>/
+/// <see cref="EndTime"/> as flat top-level properties IN ADDITION to the full appointment
+/// fields: employee-service's <c>AppointmentAvailabilityHttpClient</c> (see
+/// Services/employee-service) deserializes this exact same <c>appointments</c> array into its
+/// own minimal DTO (<c>{ Date: DateOnly, StartTime: TimeOnly, EndTime: TimeOnly }</c>);
+/// System.Text.Json ignores the additional properties on that side, so that contract keeps
+/// working unmodified while this service's own calendar view still gets the full appointment
+/// payload it needs.
+///
+/// NOTE (abwesenheit-workflow.openspec.md, Abschnitt 5/7): the top-level response is now a
+/// wrapper object <c>{ appointments: [...], absenceEntries: [...] }</c> instead of a bare array -
+/// see <c>AppointmentsController.GetCalendar</c> and
+/// <c>AppointmentService.Application.Appointments.Calendar.GetCalendarResult</c>.
+/// employee-service's <c>AppointmentAvailabilityHttpClient</c> was updated accordingly to read
+/// the <c>appointments</c> property instead of expecting a bare array.
 /// </summary>
 public sealed record AppointmentListItemDto(
     Guid Id,

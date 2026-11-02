@@ -7,6 +7,7 @@ public static class GetCalendarHandler
     public static async Task<GetCalendarResult> Handle(
         GetCalendarQuery query,
         IAppointmentRepository repository,
+        IEmployeeAbsenceClient employeeAbsenceClient,
         CancellationToken cancellationToken)
     {
         // RBAC (terminverwaltung.openspec.md, Abschnitt 3): Employee-Rolle sieht ausschliesslich
@@ -14,7 +15,7 @@ public static class GetCalendarHandler
         if (!query.IsAdmin && query.CurrentEmployeeId is null)
         {
             // Kein eindeutiger NameIdentifier-Claim vorhanden -> fail-closed, keine Termine zurueckgeben.
-            return new GetCalendarResult([]);
+            return new GetCalendarResult([], []);
         }
 
         var effectiveEmployeeId = query.IsAdmin ? query.EmployeeId : query.CurrentEmployeeId;
@@ -27,6 +28,17 @@ public static class GetCalendarHandler
             .Select(AppointmentListItemDto.FromDomain)
             .ToList();
 
-        return new GetCalendarResult(items);
+        // abwesenheit-workflow.openspec.md, Scenario "Genehmigte Abwesenheit erscheint im Kalender":
+        // genehmigte Abwesenheiten werden synchron bei employee-service abgefragt und als separate,
+        // nicht-persistierte Ganztages-Eintraege zurueckgegeben (siehe GetCalendarResult).
+        var absences = await employeeAbsenceClient.GetApprovedAbsencesAsync(
+            effectiveEmployeeId, query.From, query.To, cancellationToken);
+
+        var absenceEntries = absences
+            .OrderBy(a => a.From)
+            .Select(a => new CalendarAbsenceEntryDto(a.EmployeeId, a.Type, a.From, a.To))
+            .ToList();
+
+        return new GetCalendarResult(items, absenceEntries);
     }
 }

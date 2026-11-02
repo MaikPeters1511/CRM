@@ -44,6 +44,7 @@ public static class DependencyInjection
 
         AddCustomerVerificationClient(services, configuration);
         AddEmployeeAvailabilityClient(services, configuration);
+        AddEmployeeAbsenceClient(services, configuration);
 
         return services;
     }
@@ -71,6 +72,49 @@ public static class DependencyInjection
         // [Authorize]-geschuetzte customer-service jeden Call mit 401 ab.
         .AddHttpMessageHandler<AuthHeaderForwardingHandler>()
         .AddResilienceHandler("customer-service-verification", builder =>
+        {
+            builder.AddTimeout(TimeSpan.FromSeconds(2));
+
+            builder.AddRetry(new Polly.Retry.RetryStrategyOptions<HttpResponseMessage>
+            {
+                MaxRetryAttempts = 2,
+                BackoffType = DelayBackoffType.Exponential,
+                UseJitter = true,
+                Delay = TimeSpan.FromMilliseconds(200),
+                ShouldHandle = args => ValueTask.FromResult(
+                    args.Outcome.Exception is not null ||
+                    (args.Outcome.Result is not null && (int)args.Outcome.Result.StatusCode >= 500)),
+            });
+
+            builder.AddCircuitBreaker(new Polly.CircuitBreaker.CircuitBreakerStrategyOptions<HttpResponseMessage>
+            {
+                FailureRatio = 0.5,
+                MinimumThroughput = 5,
+                SamplingDuration = TimeSpan.FromSeconds(30),
+                BreakDuration = TimeSpan.FromSeconds(15),
+                ShouldHandle = args => ValueTask.FromResult(
+                    args.Outcome.Exception is not null ||
+                    (args.Outcome.Result is not null && (int)args.Outcome.Result.StatusCode >= 500)),
+            });
+        });
+    }
+
+    private static void AddEmployeeAbsenceClient(IServiceCollection services, IConfiguration configuration)
+    {
+        // Identisches Base-Url-Aufloesungsmuster wie AddEmployeeAvailabilityClient - gleicher
+        // Zielservice (employee-service), nur anderer Pfad/Client (abwesenheit-workflow.openspec.md).
+        var configuredBaseUrl = configuration["Services:EmployeeService:BaseUrl"];
+        var employeeServiceBaseUrl = !string.IsNullOrWhiteSpace(configuredBaseUrl)
+            ? configuredBaseUrl
+            : Environment.GetEnvironmentVariable("EMPLOYEE_SERVICE_BASE_URL") ?? "http://employee-service";
+
+        services.AddHttpClient<IEmployeeAbsenceClient, EmployeeAbsenceHttpClient>(client =>
+        {
+            client.BaseAddress = new Uri(employeeServiceBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(3);
+        })
+        .AddHttpMessageHandler<AuthHeaderForwardingHandler>()
+        .AddResilienceHandler("employee-service-absences", builder =>
         {
             builder.AddTimeout(TimeSpan.FromSeconds(2));
 

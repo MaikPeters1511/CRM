@@ -80,7 +80,11 @@ public class ScheduleAndAbsenceRealInfrastructureApiTests(EmployeeDbContainerFix
         // jedem Call beim DI-Codegen auftrat) eine echte, erreichbare Gegenstelle findet.
         await using var appointmentServiceStub = WebApplication.CreateBuilder().Build();
         appointmentServiceStub.Urls.Add("http://127.0.0.1:0");
-        appointmentServiceStub.MapGet("/api/appointments", () => Results.Json(Array.Empty<object>()));
+        // abwesenheit-workflow.openspec.md, Abschnitt 5/7: appointment-service's GET /api/appointments
+        // liefert seit diesem Change ein Wrapper-Objekt { appointments: [...], absenceEntries: [...] }
+        // statt eines nackten Arrays - der Stub muss dieselbe Form liefern, da
+        // AppointmentAvailabilityHttpClient jetzt genau dieses Format erwartet.
+        appointmentServiceStub.MapGet("/api/appointments", () => Results.Json(new { appointments = Array.Empty<object>() }));
         await appointmentServiceStub.StartAsync();
         var stubBaseUrl = appointmentServiceStub.Services.GetRequiredService<IServer>()
             .Features.Get<IServerAddressesFeature>()!.Addresses.First();

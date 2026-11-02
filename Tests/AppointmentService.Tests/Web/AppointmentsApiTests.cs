@@ -237,10 +237,10 @@ public class AppointmentsApiTests
             $"/api/appointments?employeeId={employeeB}&from={Day:yyyy-MM-dd}&to={Day:yyyy-MM-dd}");
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
-        var appointments = await response.Content.ReadFromJsonAsync<List<AppointmentService.Application.Appointments.AppointmentListItemDto>>(JsonOptions);
+        var calendar = await response.Content.ReadFromJsonAsync<AppointmentService.Web.Controllers.CalendarResponse>(JsonOptions);
 
-        await Assert.That(appointments!).Count().IsEqualTo(1);
-        await Assert.That(appointments![0].EmployeeId).IsEqualTo(employeeA);
+        await Assert.That(calendar!.Appointments).Count().IsEqualTo(1);
+        await Assert.That(calendar.Appointments[0].EmployeeId).IsEqualTo(employeeA);
     }
 
     [Test]
@@ -265,9 +265,32 @@ public class AppointmentsApiTests
         var response = await adminClient.GetAsync($"/api/appointments?from={Day:yyyy-MM-dd}&to={Day:yyyy-MM-dd}");
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
-        var appointments = await response.Content.ReadFromJsonAsync<List<AppointmentService.Application.Appointments.AppointmentListItemDto>>(JsonOptions);
+        var calendar = await response.Content.ReadFromJsonAsync<AppointmentService.Web.Controllers.CalendarResponse>(JsonOptions);
 
-        await Assert.That(appointments!).Count().IsEqualTo(2);
+        await Assert.That(calendar!.Appointments).Count().IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task GetCalendar_WithApprovedAbsenceInPeriod_ReturnsItInAbsenceEntriesSeparateFromAppointments()
+    {
+        using var factory = new AppointmentServiceWebFactory();
+        var employeeId = Guid.NewGuid();
+        factory.EmployeeAbsenceClient.Seed(
+            new AppointmentService.Application.Abstractions.ApprovedAbsenceDto(employeeId, "Vacation", DateOnly.FromDateTime(Day.DateTime), DateOnly.FromDateTime(Day.DateTime)));
+
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+
+        var response = await client.GetAsync(
+            $"/api/appointments?employeeId={employeeId}&from={Day:yyyy-MM-dd}&to={Day:yyyy-MM-dd}");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var calendar = await response.Content.ReadFromJsonAsync<AppointmentService.Web.Controllers.CalendarResponse>(JsonOptions);
+
+        await Assert.That(calendar!.Appointments).IsEmpty();
+        await Assert.That(calendar.AbsenceEntries).Count().IsEqualTo(1);
+        await Assert.That(calendar.AbsenceEntries[0].EmployeeId).IsEqualTo(employeeId);
+        await Assert.That(calendar.AbsenceEntries[0].Type).IsEqualTo("Vacation");
     }
 
     [Test]
