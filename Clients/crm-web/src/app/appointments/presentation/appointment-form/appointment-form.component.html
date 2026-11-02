@@ -1,11 +1,15 @@
-<section aria-labelledby="appointment-form-heading" class="max-w-2xl card bg-base-100 border border-base-300 shadow-sm">
-  <div class="card-body">
-  <h1 id="appointment-form-heading" class="text-2xl font-bold mb-4">
-    {{ 'appointment.form.heading' | translate }}
-  </h1>
+<section aria-labelledby="appointment-form-heading" class="max-w-3xl mx-auto flex flex-col gap-5">
+  <div class="flex items-center justify-between gap-4">
+    <h1 id="appointment-form-heading" class="text-2xl font-bold tracking-tight">
+      {{ 'appointment.form.heading' | translate }}
+    </h1>
+    <button type="button" class="btn btn-sm btn-ghost" (click)="cancel()">
+      ← {{ 'appointment.form.cancel' | translate }}
+    </button>
+  </div>
 
   @if (state.hasErrors()) {
-    <div class="alert alert-error mb-4" role="alert">
+    <div class="alert alert-error" role="alert">
       @for (error of state.errors(); track error) {
         <p>{{ error | translate }}</p>
       }
@@ -15,118 +19,138 @@
     </div>
   }
 
-  <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
-    <div class="flex flex-col gap-1 relative">
-      <label class="label" for="customer-search">{{ 'appointment.form.customer' | translate }}</label>
-      <input
-        id="customer-search"
-        type="text"
-        class="input w-full"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-controls="customer-results"
-        [attr.aria-expanded]="customerResults().length > 0"
-        [value]="selectedCustomerLabel() ?? customerQuery()"
-        (input)="onCustomerQueryInput($any($event.target).value)"
-      />
-      @if (form.controls.customerId.invalid && form.controls.customerId.touched) {
-        <p class="text-error" role="alert">{{ 'appointment.form.errors.customerRequired' | translate }}</p>
-      }
-      @if (customerResults().length > 0) {
-        <ul id="customer-results" role="listbox" class="menu bg-base-200 rounded-box absolute z-10 w-full mt-16">
-          @for (customer of customerResults(); track customer.id) {
-            <li role="option">
-              <button type="button" (click)="selectCustomer(customer)">
-                {{ customer.firstName }} {{ customer.lastName }}
-              </button>
-            </li>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-5">
+    <!-- Karte 1: Kunde, Mitarbeiter & Leistung -->
+    <div class="card bg-base-100 border border-base-300 shadow-xs">
+      <div class="card-body gap-4">
+        <div class="form-control relative">
+          <label class="label-text" for="customer-search">{{ 'appointment.form.customer' | translate }}</label>
+          <input
+            id="customer-search"
+            type="text"
+            class="input w-full"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="customer-results"
+            [attr.aria-expanded]="customerResults().length > 0"
+            [value]="selectedCustomerLabel() ?? customerQuery()"
+            (input)="onCustomerQueryInput($any($event.target).value)"
+          />
+          @if (form.controls.customerId.invalid && form.controls.customerId.touched) {
+            <p class="text-error text-xs mt-1" role="alert">{{ 'appointment.form.errors.customerRequired' | translate }}</p>
           }
-        </ul>
-      }
-    </div>
+          @if (customerResults().length > 0) {
+            <ul id="customer-results" role="listbox" class="menu bg-base-100 border border-base-300 shadow-md rounded-box absolute z-20 w-full top-full mt-1">
+              @for (customer of customerResults(); track customer.id) {
+                <li role="option">
+                  <button type="button" (click)="selectCustomer(customer)">
+                    {{ customer.firstName }} {{ customer.lastName }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="label" for="employee-search">{{ 'appointment.form.employeeSearch' | translate }}</label>
-      <input
-        id="employee-search"
-        type="text"
-        class="input w-full"
-        aria-controls="employee-select"
-        [value]="employeeQuery()"
-        (input)="onEmployeeQueryInput($any($event.target).value)"
-      />
-    </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label-text" for="employee-search">{{ 'appointment.form.employeeSearch' | translate }}</label>
+            <input
+              id="employee-search"
+              type="text"
+              class="input w-full"
+              aria-controls="employee-select"
+              [value]="employeeQuery()"
+              (input)="onEmployeeQueryInput($any($event.target).value)"
+            />
+          </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="label" for="employee-select">{{ 'appointment.form.employee' | translate }}</label>
-      <select
-        id="employee-select"
-        class="select w-full"
-        formControlName="employeeId"
-        (change)="onEmployeeChange($any($event.target).value)"
-      >
-        <option value="" disabled>{{ 'appointment.form.employeePlaceholder' | translate }}</option>
-        @for (employee of employees(); track employee.id) {
-          <option [value]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>
-        }
-      </select>
-      @if (form.controls.employeeId.invalid && form.controls.employeeId.touched) {
-        <p class="text-error" role="alert">{{ 'appointment.form.errors.employeeRequired' | translate }}</p>
-      }
-    </div>
+          <div class="form-control">
+            <label class="label-text" for="employee-select">{{ 'appointment.form.employee' | translate }}</label>
+            <select
+              id="employee-select"
+              class="select w-full"
+              formControlName="employeeId"
+              (change)="onEmployeeChange($any($event.target).value)"
+            >
+              <option value="" disabled>{{ 'appointment.form.employeePlaceholder' | translate }}</option>
+              @for (employee of employees(); track employee.id) {
+                <option [value]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>
+              }
+            </select>
+            @if (form.controls.employeeId.invalid && form.controls.employeeId.touched) {
+              <p class="text-error text-xs mt-1" role="alert">{{ 'appointment.form.errors.employeeRequired' | translate }}</p>
+            }
+          </div>
+        </div>
 
-    <div class="flex flex-col gap-1">
-      <label class="label" for="service-select">{{ 'appointment.form.service' | translate }}</label>
-      <select id="service-select" class="select w-full" formControlName="serviceId">
-        <option value="" disabled>{{ 'appointment.form.servicePlaceholder' | translate }}</option>
-        @for (service of selectedEmployeeServices(); track service.serviceId) {
-          <option [value]="service.serviceId">{{ service.serviceName }}</option>
-        }
-      </select>
-      @if (form.controls.serviceId.invalid && form.controls.serviceId.touched) {
-        <p class="text-error" role="alert">{{ 'appointment.form.errors.serviceRequired' | translate }}</p>
-      }
-    </div>
-
-    <div class="flex flex-col gap-1">
-      <label class="label" for="date-input">{{ 'appointment.form.date' | translate }}</label>
-      <input
-        id="date-input"
-        type="date"
-        class="input w-full"
-        formControlName="date"
-        (change)="onDateChange($any($event.target).value)"
-      />
-    </div>
-
-    @if (availableSlots().length > 0) {
-      <div>
-        <p class="font-semibold mb-1">{{ 'appointment.form.availableSlots' | translate }}</p>
-        <div class="flex flex-wrap gap-2">
-          @for (slot of availableSlots(); track slot.startTime) {
-            <button type="button" class="btn btn-xs btn-outline" (click)="applySlot(slot)">
-              {{ slot.startTime.slice(0, 5) }} - {{ slot.endTime.slice(0, 5) }}
-            </button>
+        <div class="form-control">
+          <label class="label-text" for="service-select">{{ 'appointment.form.service' | translate }}</label>
+          <select id="service-select" class="select w-full" formControlName="serviceId">
+            <option value="" disabled>{{ 'appointment.form.servicePlaceholder' | translate }}</option>
+            @for (service of selectedEmployeeServices(); track service.serviceId) {
+              <option [value]="service.serviceId">{{ service.serviceName }}</option>
+            }
+          </select>
+          @if (form.controls.serviceId.invalid && form.controls.serviceId.touched) {
+            <p class="text-error text-xs mt-1" role="alert">{{ 'appointment.form.errors.serviceRequired' | translate }}</p>
           }
         </div>
       </div>
-    }
-
-    <div class="flex gap-4">
-      <div class="flex flex-col gap-1 flex-1">
-        <label class="label" for="start-time">{{ 'appointment.form.startTime' | translate }}</label>
-        <input id="start-time" type="time" class="input w-full" formControlName="startTime" />
-      </div>
-      <div class="flex flex-col gap-1 flex-1">
-        <label class="label" for="end-time">{{ 'appointment.form.endTime' | translate }}</label>
-        <input id="end-time" type="time" class="input w-full" formControlName="endTime" />
-      </div>
     </div>
 
-    <div class="flex gap-2">
-      <button type="submit" class="btn btn-primary">{{ 'appointment.form.save' | translate }}</button>
-      <button type="button" class="btn" (click)="cancel()">{{ 'appointment.form.cancel' | translate }}</button>
+    <!-- Karte 2: Datum, freie Zeitslots & Uhrzeit -->
+    <div class="card bg-base-100 border border-base-300 shadow-xs">
+      <div class="card-body gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="form-control">
+            <label class="label-text" for="date-input">{{ 'appointment.form.date' | translate }}</label>
+            <input
+              id="date-input"
+              type="date"
+              class="input w-full"
+              formControlName="date"
+              (change)="onDateChange($any($event.target).value)"
+            />
+          </div>
+          <div class="form-control">
+            <label class="label-text" for="start-time">{{ 'appointment.form.startTime' | translate }}</label>
+            <input id="start-time" type="time" class="input w-full font-mono" formControlName="startTime" />
+          </div>
+          <div class="form-control">
+            <label class="label-text" for="end-time">{{ 'appointment.form.endTime' | translate }}</label>
+            <input id="end-time" type="time" class="input w-full font-mono" formControlName="endTime" />
+          </div>
+        </div>
+
+        @if (availableSlots().length > 0) {
+          <div class="rounded-box bg-base-200/50 border border-base-300 p-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/60 mb-2">
+              {{ 'appointment.form.availableSlots' | translate }}
+            </p>
+            <div class="flex flex-wrap gap-2">
+              @for (slot of availableSlots(); track slot.startTime) {
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline btn-primary font-mono"
+                  (click)="applySlot(slot)"
+                >
+                  {{ slot.startTime.slice(0, 5) }} – {{ slot.endTime.slice(0, 5) }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-base-300">
+          <button type="button" class="btn btn-ghost" (click)="cancel()">
+            {{ 'appointment.form.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn btn-primary px-6">
+            {{ 'appointment.form.save' | translate }}
+          </button>
+        </div>
+      </div>
     </div>
   </form>
-  </div>
 </section>

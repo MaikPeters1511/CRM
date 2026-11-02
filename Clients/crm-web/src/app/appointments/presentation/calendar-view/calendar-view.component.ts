@@ -76,6 +76,45 @@ export class CalendarViewComponent implements OnInit {
     return result;
   });
 
+  readonly headerDays = computed(() => {
+    const allDays = this.days();
+    return this.state.viewMode() === 'month' ? allDays.slice(0, 7) : allDays;
+  });
+
+  readonly rangeLabel = computed(() => {
+    const { from, to } = this.state.range();
+    if (from === to) {
+      return formatDateShort(from, true);
+    }
+    return `${formatDateShort(from, true)} – ${formatDateShort(to, true)}`;
+  });
+
+  readonly stats = computed(() => {
+    const list = this.state.appointments();
+    return {
+      total: list.length,
+      confirmed: list.filter((a) => a.status === 'Confirmed').length,
+      completed: list.filter((a) => a.status === 'Completed').length,
+      cancelled: list.filter((a) => a.status === 'Cancelled').length,
+    };
+  });
+
+  private readonly todayIso = new Date().toISOString().slice(0, 10);
+
+  isToday(dateIso: string): boolean {
+    return dateIso === this.todayIso;
+  }
+
+  dayWeekday(dateIso: string): string {
+    const date = new Date(`${dateIso}T00:00:00Z`);
+    const names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    return names[date.getUTCDay()] ?? '';
+  }
+
+  dayNumberAndMonth(dateIso: string): string {
+    return formatDateShort(dateIso, false);
+  }
+
   /**
    * Genehmigte Abwesenheiten je Tag der aktuellen Ansicht (`CalendarResponse.absenceEntries`,
    * abwesenheit-workflow.openspec.md Abschnitt 4/5). Ganztages-Eintraege, optisch getrennt
@@ -252,4 +291,12 @@ function addOneDay(dateIso: string): string {
   const date = new Date(`${dateIso}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + 1);
   return date.toISOString().slice(0, 10);
+}
+
+function formatDateShort(dateIso: string, withYear: boolean): string {
+  const [year, month, day] = dateIso.split('-');
+  if (!year || !month || !day) {
+    return dateIso;
+  }
+  return withYear ? `${day}.${month}.${year}` : `${day}.${month}.`;
 }

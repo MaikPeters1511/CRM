@@ -9,19 +9,30 @@
 } @else {
   @let appointment = state.selectedAppointment()!;
 
-  <section aria-labelledby="appointment-detail-heading" class="max-w-2xl card bg-base-100 card-border">
-    <div class="card-body">
-      <div class="flex items-center justify-between mb-2">
-        <h1 id="appointment-detail-heading" class="card-title">
-          {{ 'appointment.detail.heading' | translate }}
-        </h1>
+  <section aria-labelledby="appointment-detail-heading" class="max-w-2xl mx-auto card bg-base-100 border border-base-300 shadow-xs">
+    <div class="card-body gap-5">
+      <div class="flex items-center justify-between border-b border-base-300 pb-4">
+        <div class="flex items-center gap-3">
+          <h1 id="appointment-detail-heading" class="card-title text-xl">
+            {{ 'appointment.detail.heading' | translate }}
+          </h1>
+          <span
+            class="badge"
+            [class.badge-success]="appointment.status === 'Confirmed'"
+            [class.badge-error]="appointment.status === 'Cancelled'"
+            [class.badge-neutral]="appointment.status === 'Completed'"
+            [class.badge-warning]="appointment.status === 'RequiresReview'"
+          >
+            {{ ('appointment.status.' + appointment.status) | translate }}
+          </span>
+        </div>
         <button type="button" class="btn btn-sm btn-ghost" (click)="goBackToCalendar()">
-          {{ 'appointment.detail.back' | translate }}
+          ← {{ 'appointment.detail.back' | translate }}
         </button>
       </div>
 
       @if (state.hasErrors()) {
-        <div class="alert alert-error mb-4" role="alert">
+        <div class="alert alert-error" role="alert">
           @for (error of state.errors(); track error) {
             <p>{{ error | translate }}</p>
           }
@@ -31,60 +42,68 @@
         </div>
       }
 
-      <span
-        class="badge mb-4 w-fit"
-        [class.badge-success]="appointment.status === 'Confirmed'"
-        [class.badge-error]="appointment.status === 'Cancelled'"
-        [class.badge-neutral]="appointment.status === 'Completed'"
-        [class.badge-warning]="appointment.status === 'RequiresReview'"
-      >
-        {{ ('appointment.status.' + appointment.status) | translate }}
-      </span>
-
-      <dl class="grid grid-cols-2 gap-2 mb-6">
-        <dt class="font-semibold">{{ 'appointment.detail.status' | translate }}</dt>
-        <dd>
-          <span aria-hidden="true">
-            @switch (appointment.status) {
-              @case ('Confirmed') { ✔ }
-              @case ('Cancelled') { ✕ }
-              @case ('Completed') { ★ }
-              @default { ⚠ }
-            }
-          </span>
-          {{ ('appointment.status.' + appointment.status) | translate }}
-        </dd>
-        <dt class="font-semibold">{{ 'appointment.detail.start' | translate }}</dt>
-        <dd>{{ appointment.start }}</dd>
-        <dt class="font-semibold">{{ 'appointment.detail.end' | translate }}</dt>
-        <dd>{{ appointment.end }}</dd>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-box bg-base-200/40 border border-base-300 p-4 text-sm">
+        <div class="flex flex-col gap-0.5">
+          <dt class="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+            {{ 'appointment.detail.status' | translate }}
+          </dt>
+          <dd class="font-medium">
+            <span aria-hidden="true">
+              @switch (appointment.status) {
+                @case ('Confirmed') { ✔ }
+                @case ('Cancelled') { ✕ }
+                @case ('Completed') { ★ }
+                @default { ⚠ }
+              }
+            </span>
+            {{ ('appointment.status.' + appointment.status) | translate }}
+          </dd>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <dt class="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+            {{ 'appointment.detail.start' | translate }}
+          </dt>
+          <dd class="font-mono font-medium">{{ appointment.start }}</dd>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <dt class="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+            {{ 'appointment.detail.end' | translate }}
+          </dt>
+          <dd class="font-mono font-medium">{{ appointment.end }}</dd>
+        </div>
         @if (appointment.cancellationReason) {
-          <dt class="font-semibold">{{ 'appointment.detail.cancellationReason' | translate }}</dt>
-          <dd>{{ appointment.cancellationReason }}</dd>
+          <div class="flex flex-col gap-0.5 sm:col-span-2">
+            <dt class="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+              {{ 'appointment.detail.cancellationReason' | translate }}
+            </dt>
+            <dd class="text-error font-medium">{{ appointment.cancellationReason }}</dd>
+          </div>
         }
       </dl>
 
       @if (appointment.status === 'Confirmed') {
-        <form [formGroup]="rescheduleForm" (ngSubmit)="reschedule()" class="flex flex-col gap-4 mb-6">
-          <h2 class="text-lg font-semibold">{{ 'appointment.detail.rescheduleHeading' | translate }}</h2>
-          <div class="flex gap-4">
-            <div class="flex flex-col gap-1 flex-1">
-              <label class="label" for="reschedule-date">{{ 'appointment.form.date' | translate }}</label>
+        <form [formGroup]="rescheduleForm" (ngSubmit)="reschedule()" class="flex flex-col gap-4 pt-2 border-t border-base-300">
+          <h2 class="text-base font-semibold">{{ 'appointment.detail.rescheduleHeading' | translate }}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="form-control">
+              <label class="label-text" for="reschedule-date">{{ 'appointment.form.date' | translate }}</label>
               <input id="reschedule-date" type="date" class="input w-full" formControlName="date" />
             </div>
-            <div class="flex flex-col gap-1 flex-1">
-              <label class="label" for="reschedule-start">{{ 'appointment.form.startTime' | translate }}</label>
-              <input id="reschedule-start" type="time" class="input w-full" formControlName="startTime" />
+            <div class="form-control">
+              <label class="label-text" for="reschedule-start">{{ 'appointment.form.startTime' | translate }}</label>
+              <input id="reschedule-start" type="time" class="input w-full font-mono" formControlName="startTime" />
             </div>
-            <div class="flex flex-col gap-1 flex-1">
-              <label class="label" for="reschedule-end">{{ 'appointment.form.endTime' | translate }}</label>
-              <input id="reschedule-end" type="time" class="input w-full" formControlName="endTime" />
+            <div class="form-control">
+              <label class="label-text" for="reschedule-end">{{ 'appointment.form.endTime' | translate }}</label>
+              <input id="reschedule-end" type="time" class="input w-full font-mono" formControlName="endTime" />
             </div>
           </div>
-          <div class="flex gap-2">
-            <button type="submit" class="btn btn-primary">{{ 'appointment.detail.reschedule' | translate }}</button>
-            <button type="button" class="btn btn-error" (click)="openCancelModal()">
+          <div class="flex items-center justify-between gap-2 pt-2">
+            <button type="button" class="btn btn-error btn-outline" (click)="openCancelModal()">
               {{ 'appointment.detail.cancel' | translate }}
+            </button>
+            <button type="submit" class="btn btn-primary">
+              {{ 'appointment.detail.reschedule' | translate }}
             </button>
           </div>
         </form>
