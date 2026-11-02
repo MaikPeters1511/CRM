@@ -224,25 +224,29 @@
                   @for (appointment of cell.appointments; track appointment.id) {
                     <button
                       type="button"
-                      class="btn btn-xs h-auto py-1 px-2 w-full justify-start text-left gap-1.5 rounded-md shadow-2xs"
+                      class="btn btn-xs h-auto min-h-0 py-1 px-2 w-full items-start text-left gap-0.5 rounded-md shadow-2xs flex-col"
                       [class.btn-success]="appointment.status === 'Confirmed'"
                       [class.btn-error]="appointment.status === 'Cancelled'"
                       [class.btn-neutral]="appointment.status === 'Completed'"
                       [class.btn-warning]="appointment.status === 'RequiresReview'"
+                      [title]="appointmentTooltip(appointment)"
+                      [attr.aria-label]="appointmentTooltip(appointment)"
                       (click)="openCell(cell)"
                     >
-                      <span aria-hidden="true" class="text-[11px]">
-                        @switch (appointment.status) {
-                          @case ('Confirmed') { ✔ }
-                          @case ('Cancelled') { ✕ }
-                          @case ('Completed') { ★ }
-                          @default { ⚠ }
-                        }
+                      <span class="flex items-center gap-1.5 w-full">
+                        <span aria-hidden="true" class="text-[11px]">
+                          @switch (appointment.status) {
+                            @case ('Confirmed') { ✔ }
+                            @case ('Cancelled') { ✕ }
+                            @case ('Completed') { ★ }
+                            @default { ⚠ }
+                          }
+                        </span>
+                        <span class="font-mono font-semibold text-[11px] whitespace-nowrap">
+                          {{ appointment.startTime | localTime }}–{{ appointment.endTime | localTime }}
+                        </span>
                       </span>
-                      <span class="font-mono font-semibold text-[11px]">
-                        {{ appointment.startTime | localTime }}–{{ appointment.endTime | localTime }}
-                      </span>
-                      <span class="truncate text-[11px] opacity-90">
+                      <span class="text-[11px] opacity-90 whitespace-nowrap">
                         {{ statusLabelKey(appointment.status) | translate }}
                       </span>
                     </button>
