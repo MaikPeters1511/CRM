@@ -68,6 +68,15 @@ export class CalendarViewComponent implements OnInit {
   readonly focusedRow = this._focusedRow.asReadonly();
   readonly focusedCol = this._focusedCol.asReadonly();
 
+  /**
+   * Drag-und-Drop-Verschieben (zusaetzlich zum bestehenden Verschieben-Formular in der
+   * Detailansicht, das als Tastatur-/Screenreader-Alternative erhalten bleibt, da HTML5-DnD
+   * selbst nicht tastaturbedienbar ist). `_draggedAppointment` haelt den Termin waehrend des
+   * Ziehens; `_dropTargetKey` nur fuer die visuelle Hervorhebung der Zielzelle.
+   */
+  private readonly _draggedAppointment = signal<AppointmentListItem | null>(null);
+  private readonly _dropTargetKey = signal<string | null>(null);
+
   readonly days = computed(() => {
     const { from, to } = this.state.range();
     const result: string[] = [];
@@ -291,11 +300,121 @@ export class CalendarViewComponent implements OnInit {
     }
   }
 
+  /**
+   * Macht leere Zellen klick-/Enter-bar statt wirkungslos: ein bestehender Termin oeffnet die
+   * Detailansicht wie bisher; eine leere Monatszelle wechselt in die Tagesansicht dieses Tages
+   * (Drill-down); eine leere Stunden-Zelle fuehrt direkt zum vorausgefuellten Terminformular
+   * (Datum/Uhrzeit, plus Mitarbeiter, falls ein Mitarbeiterfilter aktiv ist) - spart das erneute
+   * Eintippen von Datum/Uhrzeit, die der Nutzer durch den Klick ja bereits ausgewaehlt hat.
+   */
   openCell(cell: CalendarCell): void {
     const [first] = cell.appointments;
     if (first) {
       void this.router.navigate(['/appointments', first.id]);
+      return;
     }
+    if (cell.hour === null) {
+      this.selectViewMode('day');
+      this.state.setAnchorDate(cell.dateIso);
+      return;
+    }
+    const queryParams: Record<string, string> = {
+      date: cell.dateIso,
+      startTime: `${cell.hour.toString().padStart(2, '0')}:00`,
+    };
+    const employeeId = this.state.employeeFilter();
+    if (employeeId) {
+      queryParams['employeeId'] = employeeId;
+    }
+    void this.router.navigate(['/appointments/new'], { queryParams });
+  }
+
+  /** Beschriftung des Interaktions-Hinweises, der beim Hover/Fokus einer leeren Zelle erscheint. */
+  emptyCellHintKey(cell: CalendarCell): string {
+    return cell.hour === null ? 'appointment.calendar.openDay' : 'appointment.calendar.createHere';
+  }
+
+  private cellKey(cell: CalendarCell): string {
+    return `${cell.dateIso}-${cell.hour}`;
+  }
+
+  /** Visuelle Hervorhebung der aktuellen Drop-Zielzelle waehrend des Ziehens. */
+  isDropTarget(cell: CalendarCell): boolean {
+    return this._dropTargetKey() === this.cellKey(cell);
+  }
+
+  onAppointmentDragStart(event: DragEvent, appointment: AppointmentListItem): void {
+    this._draggedAppointment.set(appointment);
+    event.dataTransfer?.setData('text/plain', appointment.id);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  }
+
+  onAppointmentDragEnd(): void {
+    this._draggedAppointment.set(null);
+    this._dropTargetKey.set(null);
+  }
+
+  onCellDragOver(event: DragEvent, cell: CalendarCell): void {
+    if (!this._draggedAppointment()) {
+      return;
+    }
+    event.preventDefault();
+    this._dropTargetKey.set(this.cellKey(cell));
+  }
+
+  onCellDragLeave(cell: CalendarCell): void {
+    if (this._dropTargetKey() === this.cellKey(cell)) {
+      this._dropTargetKey.set(null);
+    }
+  }
+
+  /**
+   * Verschiebt den gezogenen Termin auf die Zielzelle: in der Stunden-/Wochenansicht wird auf
+   * die volle Stunde der Zielzelle "eingerastet" (Datum + Stunde:00), in der Monatsansicht bleibt
+   * die Uhrzeit unveraendert und nur das Datum wechselt. Die urspruengliche Dauer bleibt in
+   * beiden Faellen erhalten. Kein API-Aufruf, wenn Datum/Uhrzeit dadurch unveraendert blieben.
+   */
+  onCellDrop(event: DragEvent, cell: CalendarCell): void {
+    event.preventDefault();
+    const appointment = this._draggedAppointment();
+    this._draggedAppointment.set(null);
+    this._dropTargetKey.set(null);
+    if (!appointment) {
+      return;
+    }
+
+    const target = this.computeRescheduleTarget(appointment, cell);
+    if (!target) {
+      return;
+    }
+    this.state.rescheduleAppointment(appointment.id, target, () => {});
+  }
+
+  private computeRescheduleTarget(
+    appointment: AppointmentListItem,
+    cell: CalendarCell,
+  ): { newStart: string; newEnd: string } | null {
+    const [startHour, startMinute] = appointment.startTime.split(':').map(Number);
+    const [endHour, endMinute] = appointment.endTime.split(':').map(Number);
+    const durationMinutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
+
+    const newStartHour = cell.hour ?? startHour;
+    const newStartMinute = cell.hour === null ? startMinute : 0;
+    const newStartTotal = newStartHour * 60 + newStartMinute;
+    const newEndTotal = newStartTotal + durationMinutes;
+
+    const unchanged =
+      cell.dateIso === appointment.date && newStartHour === startHour && newStartMinute === startMinute;
+    if (unchanged) {
+      return null;
+    }
+
+    return {
+      newStart: `${cell.dateIso}T${formatHoursMinutes(newStartTotal)}:00`,
+      newEnd: `${cell.dateIso}T${formatHoursMinutes(newEndTotal)}:00`,
+    };
   }
 
   moveFocus(row: number, col: number): void {
@@ -305,6 +424,12 @@ export class CalendarViewComponent implements OnInit {
       document.getElementById(`calendar-cell-${row}-${col}`)?.focus();
     });
   }
+}
+
+function formatHoursMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
 function addOneDay(dateIso: string): string {
