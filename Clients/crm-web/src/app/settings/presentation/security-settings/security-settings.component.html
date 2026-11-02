@@ -74,10 +74,10 @@
         @if (state.auditLog().length === 0) {
           <p>{{ 'settings.security.auditEmpty' | translate }}</p>
         } @else {
-          <div class="overflow-x-auto">
-            <table class="table">
+          <div class="overflow-x-auto rounded-box border border-base-300">
+            <table class="table table-zebra">
               <thead>
-                <tr>
+                <tr class="text-xs uppercase tracking-wide text-base-content/60">
                   <th>{{ 'settings.security.auditColumns.occurredAt' | translate }}</th>
                   <th>{{ 'settings.security.auditColumns.actor' | translate }}</th>
                   <th>{{ 'settings.security.auditColumns.action' | translate }}</th>
@@ -87,14 +87,14 @@
               <tbody>
                 @for (entry of state.auditLog(); track entry.id) {
                   <tr>
-                    <td class="whitespace-nowrap font-mono text-xs">{{ entry.occurredAt | localDateTime }}</td>
-                    <td class="font-medium">{{ entry.actor }}</td>
-                    <td>
-                      <span class="badge badge-sm font-medium" [class]="actionBadgeClass(entry.action)">
+                    <td class="whitespace-nowrap font-mono text-xs text-base-content/70 align-middle">{{ entry.occurredAt | localDateTime }}</td>
+                    <td class="font-medium align-middle">{{ entry.actor }}</td>
+                    <td class="align-middle">
+                      <span class="badge badge-sm whitespace-nowrap font-medium" [class]="actionBadgeClass(entry.action)">
                         {{ formatAction(entry.action) }}
                       </span>
                     </td>
-                    <td class="text-sm text-base-content/80">{{ entry.details }}</td>
+                    <td class="text-sm text-base-content/80 align-middle">{{ entry.details }}</td>
                   </tr>
                 }
               </tbody>

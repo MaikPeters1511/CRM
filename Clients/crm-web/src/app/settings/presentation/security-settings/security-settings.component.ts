@@ -136,10 +136,16 @@ export class SecuritySettingsComponent implements OnInit {
   }
 
   actionBadgeClass(action: string): string {
-    if (action.endsWith('Created') || action === 'AbsenceApproved') {
-      return 'badge-primary badge-soft';
+    if (
+      action.endsWith('Created') ||
+      action.endsWith('Registered') ||
+      action.endsWith('Approved') ||
+      action === 'LoginSucceeded' ||
+      action === 'MfaEnabled'
+    ) {
+      return 'badge-success badge-soft';
     }
-    if (action.endsWith('Updated') || action.endsWith('Changed') || action === 'AppointmentRescheduled') {
+    if (action.endsWith('Updated') || action.endsWith('Changed') || action === 'AppointmentRescheduled' || action === 'ApiKeyRotated') {
       return 'badge-info badge-soft';
     }
     if (
@@ -147,14 +153,16 @@ export class SecuritySettingsComponent implements OnInit {
       action.endsWith('Deactivated') ||
       action.endsWith('Cancelled') ||
       action.endsWith('Revoked') ||
+      action.endsWith('Rejected') ||
       action === 'LoginFailed' ||
-      action === 'AccountLocked'
+      action === 'AccountLocked' ||
+      action === 'MfaDisabled'
     ) {
       return 'badge-error badge-soft';
     }
-    if (action === 'LoginSucceeded' || action === 'DeviceApproved' || action === 'MfaEnabled') {
-      return 'badge-success badge-soft';
+    if (action === 'DeviceConfirmationRequested') {
+      return 'badge-warning badge-soft';
     }
-    return 'badge-ghost';
+    return 'badge-ghost badge-soft';
   }
 }

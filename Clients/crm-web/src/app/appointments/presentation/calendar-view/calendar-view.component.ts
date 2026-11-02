@@ -1,7 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { AuthStateService } from '../../../auth/application/auth-state.service';
 import { LocalTimePipe, LocaleFormatService } from '../../../shared/formatting/locale-format.service';
@@ -43,6 +43,7 @@ export class CalendarViewComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly translate = inject(TranslateService);
   protected readonly localeFormat = inject(LocaleFormatService);
   readonly state = inject(CalendarStateService);
 
@@ -225,6 +226,23 @@ export class CalendarViewComponent implements OnInit {
 
   statusLabelKey(status: AppointmentStatus): string {
     return `appointment.status.${status}`;
+  }
+
+  /**
+   * Vollstaendige Termindetails als Tooltip (`title`/`aria-label`) auf dem Kalender-Block, damit
+   * Zeitraum/Status/Mitarbeiter auch dann vollstaendig erkennbar sind, wenn der schmale
+   * Tagesspalten-Block selbst dafuer keinen Platz hat (Bugfix: Block zeigte den vollen
+   * Zeitraum nicht lesbar an und hatte keinen Hover-Hinweis).
+   */
+  appointmentTooltip(appointment: AppointmentListItem): string {
+    const start = this.localeFormat.formatTime(appointment.startTime);
+    const end = this.localeFormat.formatTime(appointment.endTime);
+    const status = this.translate.instant(this.statusLabelKey(appointment.status));
+    const parts = [`${start}–${end}`, status];
+    if (this.isAdmin()) {
+      parts.push(this.employeeName(appointment.employeeId));
+    }
+    return parts.join(' · ');
   }
 
   /**
