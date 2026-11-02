@@ -6,44 +6,64 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace IdentityService.Web.Controllers;
 
 /// <summary>
-/// Authentifizierung (authentifizierung.openspec.md): schlanker, selbst gehosteter JWT-Issuer,
-/// kein OIDC-Discovery/externer IdP. Alle Endpoints sind <c>[AllowAnonymous]</c>.
+/// Authentifizierung (identity.openspec.md, identity-mfa-totp.openspec.md,
+/// identity-device-trust.openspec.md): zweistufiger Login-Handshake (Passwort -> ggf.
+/// Device-Trust/MFA-Zwischenstatus), kein Access-Token vor Abschluss aller Gates
+/// (docs/adr/0004, Abschnitt 5). Alle Endpoints hier sind <c>[AllowAnonymous]</c>, da sie Teil des
+/// (noch) unauthentifizierten Login-Vorgangs sind.
 /// </summary>
 [ApiController]
 [Route("api/auth")]
 [AllowAnonymous]
-public sealed class AuthController(LoginHandler loginHandler) : ControllerBase
+public sealed class AuthController(LoginHandler loginHandler, CompleteMfaLoginHandler completeMfaLoginHandler) : ControllerBase
 {
     /// <summary>
-    /// Prueft E-Mail/Passwort gegen die geseedeten Nutzer und liefert bei Erfolg ein signiertes JWT
-    /// (Claims <c>NameIdentifier</c>/<c>Role</c>). Liefert <c>401</c> bei falschem Passwort oder
-    /// unbekannter E-Mail (identisches Verhalten, verhindert User-Enumeration). Rate-Limited auf
-    /// 5 Versuche/Minute/IP (<c>429</c> bei Ueberschreitung).
+    /// Prueft E-Mail/Passwort. Liefert bei Erfolg (keine Device-Bestaetigung/MFA erforderlich) ein
+    /// signiertes JWT; andernfalls einen Zwischenstatus (<c>DeviceConfirmationRequired</c>/
+    /// <c>MfaRequired</c>) ohne Token. Rate-Limited auf 5 Versuche/Minute/IP (<c>429</c>).
     /// </summary>
     [HttpPost("login")]
     [EnableRateLimiting("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         var result = await loginHandler.HandleAsync(
-            new LoginCommand(request.Email, request.Password), cancellationToken);
+            new LoginCommand(request.Email, request.Password, UserAgent(), ClientIp()), cancellationToken);
 
-        if (result.Status == LoginStatus.InvalidCredentials)
-        {
-            // Bewusst generische Fehlermeldung (kein "User nicht gefunden" vs. "Passwort falsch"),
-            // um User-Enumeration zu vermeiden (OWASP A07: Identification and Authentication Failures).
-            return Unauthorized(new { error = "invalid_credentials" });
-        }
-
-        return Ok(new LoginResponse(
-            result.AccessToken!,
-            result.ExpiresAtUtc!.Value,
-            result.UserId!,
-            result.Role!,
-            result.DisplayName!));
+        return ToActionResult(result);
     }
+
+    /// <summary>Zweiter Schritt des zweistufigen Logins bei aktiver MFA-Pflicht.</summary>
+    [HttpPost("login/mfa")]
+    [EnableRateLimiting("login")]
+    public async Task<IActionResult> LoginMfa([FromBody] LoginMfaRequest request, CancellationToken cancellationToken)
+    {
+        var result = await completeMfaLoginHandler.HandleAsync(
+            new CompleteMfaLoginCommand(request.MfaChallengeToken, request.Code, ClientIp()), cancellationToken);
+
+        return ToActionResult(result);
+    }
+
+    private IActionResult ToActionResult(LoginResult result) => result.Status switch
+    {
+        // Bewusst identisches Verhalten (kein Unterschied in Timing/Antwort) fuer
+        // "Nutzer nicht gefunden" und "Passwort falsch", um User-Enumeration (OWASP A07) zu vermeiden.
+        LoginStatus.InvalidCredentials => Unauthorized(new { error = "invalid_credentials" }),
+        LoginStatus.Locked => StatusCode(StatusCodes.Status423Locked, new { error = "account_locked" }),
+        LoginStatus.DeviceConfirmationRequired => Ok(new LoginChallengeResponse(
+            "device_confirmation_required", null, result.PendingDeviceConfirmationId)),
+        LoginStatus.MfaRequired => Ok(new LoginChallengeResponse("mfa_required", result.MfaChallengeToken, null)),
+        _ => Ok(new LoginResponse(
+            result.AccessToken!, result.ExpiresAtUtc!.Value, result.UserId!, result.Role!, result.DisplayName!)),
+    };
+
+    private string UserAgent() => Request.Headers.UserAgent.ToString();
+
+    private string ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 }
 
 public sealed record LoginRequest(string Email, string Password);
+
+public sealed record LoginMfaRequest(string MfaChallengeToken, string Code);
 
 public sealed record LoginResponse(
     string AccessToken,
@@ -51,3 +71,6 @@ public sealed record LoginResponse(
     string UserId,
     string Role,
     string DisplayName);
+
+/// <summary>Zwischenstatus-Antwort fuer <c>DeviceConfirmationRequired</c>/<c>MfaRequired</c> - niemals ein Access-Token.</summary>
+public sealed record LoginChallengeResponse(string Status, string? MfaChallengeToken, Guid? PendingDeviceConfirmationId);

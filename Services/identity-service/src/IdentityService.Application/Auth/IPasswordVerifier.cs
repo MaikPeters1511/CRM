@@ -9,4 +9,6 @@ namespace IdentityService.Application.Auth;
 public interface IPasswordVerifier
 {
     bool Verify(User user, string providedPassword);
+
+    string Hash(User user, string password);
 }
