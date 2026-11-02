@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   AddAbsenceRequest,
   Absence,
+  ApprovedAbsence,
   CreateEmployeeRequest,
   Employee,
   EmployeeSearchParams,
@@ -79,5 +80,13 @@ export class EmployeeApiService {
 
   rejectAbsence(id: string, absenceId: string): Observable<Absence> {
     return this.http.post<Absence>(`${this.baseUrl}/${id}/absences/${absenceId}/reject`, {});
+  }
+
+  getApprovedAbsences(): Observable<ApprovedAbsence[]> {
+    return this.http.get<ApprovedAbsence[]>(`${this.baseUrl}/absences/approved`);
+  }
+
+  deleteAbsence(id: string, absenceId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}/absences/${absenceId}`);
   }
 }

@@ -15,7 +15,14 @@ public static class GetApprovedAbsencesHandler
 
         var items = records
             .OrderBy(r => r.Absence.From)
-            .Select(r => new ApprovedAbsenceDto(r.EmployeeId, r.Absence.Type, r.Absence.From, r.Absence.To))
+            .Select(r => new ApprovedAbsenceDto(
+                r.EmployeeId,
+                r.Absence.Type,
+                r.Absence.From,
+                r.Absence.To,
+                r.Absence.Id,
+                r.EmployeeFirstName,
+                r.EmployeeLastName))
             .ToList();
 
         return new GetApprovedAbsencesResult(items);

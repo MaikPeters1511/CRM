@@ -253,6 +253,20 @@ public sealed class Employee : AggregateRoot
         return AbsenceDecisionResult.Success(absence);
     }
 
+    public bool RemoveAbsence(Guid absenceId, string removedBy, DateTimeOffset removedAt)
+    {
+        var absence = _absences.FirstOrDefault(a => a.Id == absenceId);
+        if (absence is null)
+        {
+            return false;
+        }
+
+        _absences.Remove(absence);
+        ModifiedBy = removedBy;
+        ModifiedAt = removedAt;
+        return true;
+    }
+
     public void Deactivate(string deactivatedBy, DateTimeOffset deactivatedAt)
     {
         if (!IsActive)

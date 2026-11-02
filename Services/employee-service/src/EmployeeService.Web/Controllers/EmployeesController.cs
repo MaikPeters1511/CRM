@@ -6,6 +6,7 @@ using EmployeeService.Application.Employees.ApproveAbsence;
 using EmployeeService.Application.Employees.Availability;
 using EmployeeService.Application.Employees.Create;
 using EmployeeService.Application.Employees.Deactivate;
+using EmployeeService.Application.Employees.DeleteAbsence;
 using EmployeeService.Application.Employees.GetById;
 using EmployeeService.Application.Employees.RejectAbsence;
 using EmployeeService.Application.Employees.Search;
@@ -219,8 +220,8 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
     [HttpGet("absences/approved")]
     [Authorize(Roles = "Employee,Admin")]
     public async Task<IActionResult> GetApprovedAbsences(
-        [FromQuery] DateOnly from,
-        [FromQuery] DateOnly to,
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
         [FromQuery] Guid? employeeId,
         CancellationToken cancellationToken)
     {
@@ -267,6 +268,29 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
             RejectAbsenceStatus.Success => Ok(result.Absence),
             RejectAbsenceStatus.NotFound => NotFound(),
             _ => Conflict(BuildProblem(result.Errors)),
+        };
+    }
+
+    /// <summary>
+    /// Loescht eine (auch bereits genehmigte) Abwesenheit eines Mitarbeiters. Rolle <c>Admin</c>
+    /// fuer beliebige Mitarbeiter, Rolle <c>Employee</c> fuer eigene Abwesenheiten.
+    /// </summary>
+    [HttpDelete("{id:guid}/absences/{absenceId:guid}")]
+    [Authorize(Roles = "Employee,Admin")]
+    public async Task<IActionResult> DeleteAbsence(Guid id, Guid absenceId, CancellationToken cancellationToken)
+    {
+        if (!IsAdmin() && !IsOwnEmployeeRecord(id))
+        {
+            return Forbid();
+        }
+
+        var result = await messageBus.InvokeAsync<DeleteAbsenceResult>(
+            new DeleteAbsenceCommand(id, absenceId, GetActorId()), cancellationToken);
+
+        return result.Status switch
+        {
+            DeleteAbsenceStatus.Success => NoContent(),
+            _ => NotFound(),
         };
     }
 

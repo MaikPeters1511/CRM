@@ -62,6 +62,7 @@
       "country": "Country",
       "save": "Save",
       "cancel": "Cancel",
+      "delete": "Delete",
       "errors": {
         "firstNameRequired": "First name is required.",
         "lastNameRequired": "Last name is required.",
@@ -178,6 +179,7 @@
       "removeService": "Remove {{name}}",
       "save": "Save",
       "cancel": "Cancel",
+      "delete": "Delete",
       "errors": {
         "firstNameRequired": "First name is required.",
         "lastNameRequired": "Last name is required.",
@@ -204,6 +206,7 @@
       "to": "To",
       "save": "Save",
       "cancel": "Cancel",
+      "delete": "Delete",
       "confirmOverride": "Confirm despite conflict",
       "cancelConflict": "Cancel",
       "errors": {
@@ -224,6 +227,9 @@
     },
     "absenceApprovals": {
       "heading": "Absence approvals",
+      "pendingHeading": "Pending requests",
+      "approvedHeading": "Approved absences",
+      "approvedEmpty": "No approved absences.",
       "employee": "Employee",
       "type": "Type",
       "period": "Period",
@@ -302,6 +308,7 @@
       "availableSlots": "Available time slots",
       "save": "Save",
       "cancel": "Cancel",
+      "delete": "Delete",
       "errors": {
         "customerRequired": "Please select a customer.",
         "employeeRequired": "Please select an employee.",
@@ -414,6 +421,7 @@
       "defaultDurationMinutes": "Default duration (minutes)",
       "save": "Save",
       "cancel": "Cancel",
+      "delete": "Delete",
       "errors": {
         "nameRequired": "Name is required."
       }

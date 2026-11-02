@@ -91,19 +91,29 @@
     } @else {
       <ul class="flex flex-col gap-2">
         @for (absence of absenceState.myAbsences(); track absence.id) {
-          <li class="flex items-center justify-between gap-2 border border-base-300 rounded-box p-2">
+          <li class="flex items-center justify-between gap-2 border border-base-300 rounded-box p-2.5">
             <span>
               {{ ('employee.absence.type' + absence.type) | translate }}
               {{ absence.from }} – {{ absence.to }}
             </span>
-            <span
-              class="absence-status-badge badge"
-              [class.badge-warning]="absence.status === 'Pending'"
-              [class.badge-success]="absence.status === 'Approved'"
-              [class.badge-error]="absence.status === 'Rejected'"
-            >
-              {{ statusLabelKey(absence.status) | translate }}
-            </span>
+            <div class="flex items-center gap-2">
+              <span
+                class="absence-status-badge badge"
+                [class.badge-warning]="absence.status === 'Pending'"
+                [class.badge-success]="absence.status === 'Approved'"
+                [class.badge-error]="absence.status === 'Rejected'"
+              >
+                {{ statusLabelKey(absence.status) | translate }}
+              </span>
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost text-error"
+                [attr.data-testid]="'delete-absence-' + absence.id"
+                (click)="deleteAbsence(absence.id)"
+              >
+                {{ 'employee.absence.delete' | translate }}
+              </button>
+            </div>
           </li>
         }
       </ul>

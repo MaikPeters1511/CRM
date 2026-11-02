@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AbsenceStateService } from '../../application/absence-state.service';
-import { PendingAbsence } from '../../domain/employee.model';
+import { ApprovedAbsence, PendingAbsence } from '../../domain/employee.model';
 
 type DecisionKind = 'approve' | 'reject';
 
@@ -31,6 +31,15 @@ export class AbsenceApprovalsComponent implements OnInit {
 
   ngOnInit(): void {
     this.state.loadPendingAbsences();
+    this.state.loadApprovedAbsences?.();
+  }
+
+  approvedAbsences(): ApprovedAbsence[] {
+    return this.state.approvedAbsences?.() ?? [];
+  }
+
+  deleteApprovedAbsence(entry: ApprovedAbsence): void {
+    this.state.deleteAbsence?.(entry.employeeId, entry.absenceId);
   }
 
   isConfirming(entry: PendingAbsence): boolean {

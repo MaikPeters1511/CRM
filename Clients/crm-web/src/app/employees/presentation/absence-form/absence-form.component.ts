@@ -74,4 +74,8 @@ export class AbsenceFormComponent implements OnInit {
   statusLabelKey(status: string): string {
     return `employee.absence.myRequests.status.${status}`;
   }
+
+  deleteAbsence(absenceId: string): void {
+    this.absenceState.deleteAbsence?.(this.employeeId, absenceId);
+  }
 }

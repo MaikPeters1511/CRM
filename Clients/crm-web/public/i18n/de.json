@@ -62,6 +62,7 @@
       "country": "Land",
       "save": "Speichern",
       "cancel": "Abbrechen",
+      "delete": "Löschen",
       "errors": {
         "firstNameRequired": "Vorname ist ein Pflichtfeld.",
         "lastNameRequired": "Nachname ist ein Pflichtfeld.",
@@ -178,6 +179,7 @@
       "removeService": "{{name}} entfernen",
       "save": "Speichern",
       "cancel": "Abbrechen",
+      "delete": "Löschen",
       "errors": {
         "firstNameRequired": "Vorname ist ein Pflichtfeld.",
         "lastNameRequired": "Nachname ist ein Pflichtfeld.",
@@ -204,6 +206,7 @@
       "to": "Bis",
       "save": "Speichern",
       "cancel": "Abbrechen",
+      "delete": "Löschen",
       "confirmOverride": "Trotz Konflikt bestätigen",
       "cancelConflict": "Abbrechen",
       "errors": {
@@ -224,6 +227,9 @@
     },
     "absenceApprovals": {
       "heading": "Abwesenheits-Freigaben",
+      "pendingHeading": "Ausstehende Anfragen",
+      "approvedHeading": "Genehmigte Abwesenheiten",
+      "approvedEmpty": "Keine genehmigten Abwesenheiten vorhanden.",
       "employee": "Mitarbeiter",
       "type": "Art",
       "period": "Zeitraum",
@@ -302,6 +308,7 @@
       "availableSlots": "Verfügbare Zeitfenster",
       "save": "Speichern",
       "cancel": "Abbrechen",
+      "delete": "Löschen",
       "errors": {
         "customerRequired": "Bitte einen Kunden auswählen.",
         "employeeRequired": "Bitte einen Mitarbeiter auswählen.",
@@ -414,6 +421,7 @@
       "defaultDurationMinutes": "Standarddauer (Minuten)",
       "save": "Speichern",
       "cancel": "Abbrechen",
+      "delete": "Löschen",
       "errors": {
         "nameRequired": "Name ist ein Pflichtfeld."
       }

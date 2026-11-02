@@ -76,6 +76,17 @@ export interface PendingAbsence {
   requestedAt: string;
 }
 
+/** Eine genehmigte Abwesenheit (`ApprovedAbsenceDto`). */
+export interface ApprovedAbsence {
+  employeeId: string;
+  employeeFirstName: string;
+  employeeLastName: string;
+  absenceId: string;
+  type: AbsenceType;
+  from: string;
+  to: string;
+}
+
 /**
  * Domain-Entity: Mitarbeiter (Aggregate Root im Backend).
  * Zustandslose, unveraenderliche Repraesentation fuer das Frontend.
