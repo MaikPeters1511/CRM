@@ -71,6 +71,44 @@ namespace AiService.Infrastructure.Persistence.Migrations
                     b.ToTable("chat_sessions", (string)null);
                 });
 
+            modelBuilder.Entity("AiService.Domain.Settings.AssistantSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("LastIndexSyncAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("QdrantBaseUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("RestartRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("assistant_settings", (string)null);
+                });
+
             modelBuilder.Entity("AiService.Domain.Chat.ChatMessage", b =>
                 {
                     b.HasOne("AiService.Domain.Chat.ChatSession", null)

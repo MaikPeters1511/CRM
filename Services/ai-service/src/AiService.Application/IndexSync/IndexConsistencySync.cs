@@ -17,6 +17,8 @@ public static class IndexConsistencySyncHandler
         ICatalogQueryClient catalogClient,
         IEmployeeQueryClient employeeClient,
         IAvailabilityIndexClient indexClient,
+        IAssistantSettingsRepository settingsRepository,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         foreach (var service in await catalogClient.SearchActiveServicesAsync(string.Empty, cancellationToken))
@@ -36,6 +38,15 @@ public static class IndexConsistencySyncHandler
             {
                 await indexClient.RemoveEmployeeAsync(employee.EmployeeId, cancellationToken);
             }
+        }
+
+        // ki-einstellungen-backend.openspec.md: "zuletzt synchronisiert" muss sowohl fuer den
+        // taeglichen Lauf als auch fuer einen per Admin-API angestossenen Sofort-Sync aktuell sein.
+        var settings = await settingsRepository.GetAsync(cancellationToken);
+        if (settings is not null)
+        {
+            settings.RecordIndexSync(timeProvider.GetUtcNow());
+            await settingsRepository.SaveChangesAsync(cancellationToken);
         }
     }
 }
