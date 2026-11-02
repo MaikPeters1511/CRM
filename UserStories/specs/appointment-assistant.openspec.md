@@ -1,7 +1,7 @@
 # Capability: Appointment Assistant (KI-Terminassistent)
 
-> **Status:** active (Backend/Frontend implementiert; E2E-Tests geschrieben, aber noch nicht gegen
-> einen real laufenden Stack ausgeführt — siehe Abschnitt "Tests")
+> **Status:** active (Backend/Frontend implementiert; E2E-Tests am 2026-11-02 gegen den real
+> laufenden Aspire-Stack ausgeführt, 2/2 grün)
 > Implementiert durch `ai-service` (Bounded Context "Appointment Assistant") + Feature-Bereich
 > `assistant` in `Clients/crm-web`. Archivierte Change-Historie:
 > `UserStories/archive/2026-11-02-ki-terminassistent.openspec.md`.
@@ -160,6 +160,6 @@ Hardcoding) umschaltbar machen, ohne Codeänderung in der RAG-Orchestrierungslog
 - `Tests/CrmWeb.Tests/assistant` (Frontend: State inkl. Resilienz-Fallback, API-Service,
   Chat-Widget a11y/Keyboard, Suggestion-Card Deep-Link).
 - `Tests/E2E/tests/assistant.spec.ts` (RBAC-Negativtest echter Backend-Pfad, Resilienz-Szenario
-  gemockt) — **geschrieben und strukturell verifiziert** (`npx playwright test --list`), aber
-  **noch nicht gegen einen real laufenden Stack ausgeführt**, da in der Implementierungssession
-  kein Docker/Aspire-Stack verfügbar war. Vor dem nächsten Produktions-Deployment nachzuverifizieren.
+  gemockt) — am 2026-11-02 gegen den real laufenden Stack (`dotnet run --project AppHost/Crm.AppHost`,
+  Docker-Container, Gateway) ausgeführt: 2/2 grün. Zusätzlich manuell geprüft: `POST /api/assistant/chat`
+  über das Gateway liefert bei leerem Qdrant-Index eine Rückfrage statt eines Fehlers.

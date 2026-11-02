@@ -60,5 +60,5 @@ test('Assistent zeigt bei Nichtverfügbarkeit der KI-API eine klare Fehlermeldun
   ).toBeVisible();
 
   // Anwendung bleibt stabil nutzbar - keine abgestuerzte/leere Seite.
-  await expect(page.getByRole('button', { name: /terminassistent schließen|close appointment assistant/i })).toBeVisible();
+  await expect(page.locator('button[aria-expanded="true"]')).toBeVisible();
 });

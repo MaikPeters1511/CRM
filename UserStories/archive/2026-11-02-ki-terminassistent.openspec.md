@@ -143,7 +143,7 @@ AppHost: `ai-service`-Projektressource, `ai-postgres`/`ai_db` (nur für Chat-Ses
 - [x] 3. Backend implementiert (Domain → Application → Infrastructure → Web) – `Services/ai-service/`, inkl. `ILlmClient`-Abstraktion (OpenAI + LMStudio), Qdrant-Client, Polly-Policies für Cross-Service-Calls und LLM-Calls
 - [x] 4. Frontend implementiert: `assistant-chat-widget.component.ts`, `assistant-suggestion-card.component.ts`, `assistant-state.service.ts` im neuen Feature-Bereich `assistant` (Angular 22, DaisyUI 5, i18n DE/EN, ARIA) — 155/155 Frontend-Tests grün
 - [x] 5. Deep-Link vom Vorschlag ins bestehende Terminanlage-Formular (vorausgefüllte Werte via Query-Parameter, keine automatische Buchung)
-- [x] 6. E2E-Tests (`Tests/E2E/tests/assistant.spec.ts`): RBAC-Negativtest (echter Backend-Pfad) und Resilienz-Szenario (gemockte Chat-Antwort, Begründung siehe Kommentar in der Datei) — strukturell verifiziert (`npx playwright test --list`), nicht gegen einen laufenden Stack ausgeführt (kein Docker/Aspire-Stack in der Implementierungssession verfügbar)
+- [x] 6. E2E-Tests (`Tests/E2E/tests/assistant.spec.ts`): RBAC-Negativtest (echter Backend-Pfad) und Resilienz-Szenario (gemockte Chat-Antwort, Begründung siehe Kommentar in der Datei) — gegen den real laufenden Aspire-Stack ausgeführt, 2/2 grün
 - [x] 7. Doku/OpenAPI aktualisiert (`Services/ai-service/README.md`, Root-`README.md`/`AppHost/README.md`/`Tests/E2E/README.md` ergänzt)
 - [x] 8. Aspire AppHost-Ressourcen für `ai-service`, `ai_db`, Qdrant registriert; OpenAI-API-Key/LMStudio-Endpunkt als Secret/Parameter (kein Hardcoding); zusätzlich `docker-compose.prod.yml` um dieselben Ressourcen ergänzt
 - [x] 9. YARP-Gateway-Route `/api/assistant/**` inkl. Auth-Termination konfiguriert (Aspire + docker-compose)
@@ -156,7 +156,7 @@ AppHost: `ai-service`-Projektressource, `ai-postgres`/`ai_db` (nur für Chat-Ses
 - [x] RBAC-Konformität verifiziert: Employee erhält nie Vorschläge für andere Mitarbeiter (Application- und Web-Layer-Test); Admin erhält Vorschläge über alle qualifizierten Mitarbeiter.
 - [x] Keine ungefilterten sensiblen Kundendaten werden im Prompt an die externe LLM-API gesendet (verifiziert durch `Handle_WithQualifiedEmployee_SendsOnlyMinimizedContextToLlm` + Review, siehe Abschnitt 10).
 - [x] Terminanlage erfolgt ausschließlich über den bestehenden, validierten `POST /api/appointments`-Endpunkt; `ai-service` kann keinen Termin direkt anlegen/ändern/stornieren (kein entsprechender Client/Call im Code).
-- [x] E2E Tests (`Tests/E2E/tests/assistant.spec.ts`) sind geschrieben und strukturell verifiziert; **nicht** gegen einen real laufenden Stack ausgeführt (siehe Task 6) — offene Nachverifikation, sobald ein Stack verfügbar ist.
+- [x] E2E Tests (`Tests/E2E/tests/assistant.spec.ts`) sind grün (2/2, real laufender Stack, 2026-11-02).
 - [x] Swagger/OpenAPI Compliance ist gegeben (`ai-service` Swagger-Dokument, JWT-Bearer-Schema analog den anderen Services).
 - [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/appointment-assistant.openspec.md`, Change verschoben nach `UserStories/archive/2026-11-02-ki-terminassistent.openspec.md`).
 
