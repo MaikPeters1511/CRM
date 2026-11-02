@@ -201,10 +201,12 @@
                   [id]="'calendar-cell-' + rowIndex + '-' + colIndex"
                   role="gridcell"
                   tabindex="0"
-                  class="min-h-20 p-1.5 border-r border-base-200 last:border-r-0 hover:bg-base-200/40 focus:outline-2 focus:-outline-offset-2 focus:outline-primary transition-colors flex flex-col gap-1 min-w-28"
+                  class="group relative min-h-20 p-1.5 border-r border-base-200 last:border-r-0 hover:bg-base-200/40 focus:outline-2 focus:-outline-offset-2 focus:outline-primary transition-colors flex flex-col gap-1 min-w-28"
                   [class.bg-primary/5]="isToday(cell.dateIso)"
-                  [attr.aria-label]="cell.label + ' ' + cell.dateIso"
+                  [class.cursor-pointer]="cell.appointments.length === 0"
+                  [attr.aria-label]="cell.appointments.length === 0 ? cell.label + ' ' + cell.dateIso + ' – ' + (emptyCellHintKey(cell) | translate) : cell.label + ' ' + cell.dateIso"
                   (keydown)="onGridKeydown($event, rowIndex, colIndex, cell)"
+                  (click)="cell.appointments.length === 0 && openCell(cell)"
                   (dblclick)="openCell(cell)"
                 >
                   <div class="flex items-center justify-between">
@@ -220,6 +222,17 @@
                       <span class="badge badge-xs badge-ghost">{{ cell.appointments.length }}</span>
                     }
                   </div>
+
+                  @if (cell.appointments.length === 0) {
+                    <span
+                      aria-hidden="true"
+                      class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity"
+                    >
+                      <span class="badge badge-sm badge-primary badge-soft gap-1">
+                        <span aria-hidden="true">+</span>{{ emptyCellHintKey(cell) | translate }}
+                      </span>
+                    </span>
+                  }
 
                   @for (appointment of cell.appointments; track appointment.id) {
                     <button

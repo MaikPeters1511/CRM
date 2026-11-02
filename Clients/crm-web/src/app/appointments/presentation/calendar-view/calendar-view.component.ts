@@ -291,11 +291,38 @@ export class CalendarViewComponent implements OnInit {
     }
   }
 
+  /**
+   * Macht leere Zellen klick-/Enter-bar statt wirkungslos: ein bestehender Termin oeffnet die
+   * Detailansicht wie bisher; eine leere Monatszelle wechselt in die Tagesansicht dieses Tages
+   * (Drill-down); eine leere Stunden-Zelle fuehrt direkt zum vorausgefuellten Terminformular
+   * (Datum/Uhrzeit, plus Mitarbeiter, falls ein Mitarbeiterfilter aktiv ist) - spart das erneute
+   * Eintippen von Datum/Uhrzeit, die der Nutzer durch den Klick ja bereits ausgewaehlt hat.
+   */
   openCell(cell: CalendarCell): void {
     const [first] = cell.appointments;
     if (first) {
       void this.router.navigate(['/appointments', first.id]);
+      return;
     }
+    if (cell.hour === null) {
+      this.selectViewMode('day');
+      this.state.setAnchorDate(cell.dateIso);
+      return;
+    }
+    const queryParams: Record<string, string> = {
+      date: cell.dateIso,
+      startTime: `${cell.hour.toString().padStart(2, '0')}:00`,
+    };
+    const employeeId = this.state.employeeFilter();
+    if (employeeId) {
+      queryParams['employeeId'] = employeeId;
+    }
+    void this.router.navigate(['/appointments/new'], { queryParams });
+  }
+
+  /** Beschriftung des Interaktions-Hinweises, der beim Hover/Fokus einer leeren Zelle erscheint. */
+  emptyCellHintKey(cell: CalendarCell): string {
+    return cell.hour === null ? 'appointment.calendar.openDay' : 'appointment.calendar.createHere';
   }
 
   moveFocus(row: number, col: number): void {

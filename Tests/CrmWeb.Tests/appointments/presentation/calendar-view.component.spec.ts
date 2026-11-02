@@ -27,7 +27,7 @@ describe('CalendarViewComponent', () => {
     const stateMock = {
       viewMode: () => 'week' as const,
       anchorDate: () => '2024-05-15',
-      employeeFilter: () => null,
+      employeeFilter: () => null as string | null,
       appointments: () => [appointment],
       absenceEntries: () => absenceEntries,
       loading: () => false,
@@ -36,6 +36,7 @@ describe('CalendarViewComponent', () => {
       conflict: () => false,
       range: () => ({ from: '2024-05-13', to: '2024-05-19' }),
       setViewMode: vi.fn(),
+      setAnchorDate: vi.fn(),
       setEmployeeFilter: vi.fn(),
       shift: vi.fn(),
       goToToday: vi.fn(),
@@ -92,6 +93,48 @@ describe('CalendarViewComponent', () => {
     component.openCell(cell);
 
     expect(routerMock.navigate).toHaveBeenCalledWith(['/appointments', 'a1']);
+  });
+
+  it('navigates to the prefilled appointment form when an empty hour cell is opened (Bug: leere Zellen waren wirkungslos)', () => {
+    const { component, routerMock } = setup();
+    const cell = { label: '14:00', dateIso: '2024-05-16', hour: 14, appointments: [] };
+
+    component.openCell(cell);
+
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/appointments/new'], {
+      queryParams: { date: '2024-05-16', startTime: '14:00' },
+    });
+  });
+
+  it('includes the active employee filter as employeeId query param when opening an empty cell', () => {
+    const { component, stateMock, routerMock } = setup();
+    stateMock.employeeFilter = () => 'e2';
+    const cell = { label: '14:00', dateIso: '2024-05-16', hour: 14, appointments: [] };
+
+    component.openCell(cell);
+
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/appointments/new'], {
+      queryParams: { date: '2024-05-16', startTime: '14:00', employeeId: 'e2' },
+    });
+  });
+
+  it('drills into the day view instead of navigating when an empty month-view day cell is opened', () => {
+    const { component, stateMock, routerMock } = setup();
+    const cell = { label: '16', dateIso: '2024-05-16', hour: null, appointments: [] };
+
+    component.openCell(cell);
+
+    expect(stateMock.setViewMode).toHaveBeenCalledWith('day');
+    expect(stateMock.setAnchorDate).toHaveBeenCalledWith('2024-05-16');
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+  });
+
+  it('shows a hover/focus hint on empty cells inviting the user to create an appointment there', () => {
+    const { fixture } = setup();
+    const hints = fixture.nativeElement.querySelectorAll('.badge-primary.badge-soft');
+    expect(
+      Array.from(hints).some((hint) => (hint as HTMLElement).textContent?.includes('appointment.calendar.createHere')),
+    ).toBe(true);
   });
 
   it('moves focus between cells on arrow key navigation', () => {

@@ -284,6 +284,8 @@
       "allEmployees": "All employees",
       "loading": "Loading appointments…",
       "gridLabel": "Appointment calendar",
+      "createHere": "Create appointment",
+      "openDay": "Open day",
       "absences": {
         "heading": "Approved absences"
       }
