@@ -42,6 +42,6 @@ public static class AddAbsenceHandler
 
         await repository.SaveChangesAsync(cancellationToken);
 
-        return AddAbsenceResult.Success(new AbsenceDto(result.Absence!.Id, result.Absence.Type, result.Absence.From, result.Absence.To));
+        return AddAbsenceResult.Success(AbsenceDto.FromDomain(result.Absence!));
     }
 }

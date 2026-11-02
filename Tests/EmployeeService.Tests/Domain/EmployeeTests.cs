@@ -149,6 +149,106 @@ public class EmployeeTests
     }
 
     [Test]
+    public async Task AddAbsence_ForTermFreeVacationPeriod_IsCreatedWithPendingStatusAndRequester()
+    {
+        var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;
+
+        var result = employee.AddAbsence(
+            AbsenceType.Vacation,
+            new DateOnly(2026, 10, 20),
+            new DateOnly(2026, 10, 24),
+            "employee-1",
+            Now);
+
+        await Assert.That(result.Absence!.Status).IsEqualTo(AbsenceStatus.Pending);
+        await Assert.That(result.Absence.RequestedBy).IsEqualTo("employee-1");
+        await Assert.That(result.Absence.RequestedAt).IsEqualTo(Now);
+        await Assert.That(result.Absence.DecidedBy).IsNull();
+        await Assert.That(result.Absence.DecidedAt).IsNull();
+    }
+
+    [Test]
+    public async Task ApproveAbsence_OnPendingRequest_SetsApprovedStatusDeciderAndRaisesAbsenceApprovedEvent()
+    {
+        var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;
+        var absence = employee.AddAbsence(AbsenceType.Vacation, new DateOnly(2026, 10, 20), new DateOnly(2026, 10, 24), "employee-1", Now).Absence!;
+        var decidedAt = Now.AddHours(2);
+
+        var result = employee.ApproveAbsence(absence.Id, "admin-2", decidedAt);
+
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(absence.Status).IsEqualTo(AbsenceStatus.Approved);
+        await Assert.That(absence.DecidedBy).IsEqualTo("admin-2");
+        await Assert.That(absence.DecidedAt).IsEqualTo(decidedAt);
+        await Assert.That(employee.DomainEvents).Count().IsEqualTo(1);
+        var evt = (AbsenceApproved)employee.DomainEvents.Single();
+        await Assert.That(evt.EmployeeId).IsEqualTo(employee.Id);
+        await Assert.That(evt.AbsenceId).IsEqualTo(absence.Id);
+        await Assert.That(evt.RequestedBy).IsEqualTo("employee-1");
+        await Assert.That(evt.ApprovedBy).IsEqualTo("admin-2");
+    }
+
+    [Test]
+    public async Task RejectAbsence_OnPendingRequest_SetsRejectedStatusDeciderAndRaisesAbsenceRejectedEvent()
+    {
+        var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;
+        var absence = employee.AddAbsence(AbsenceType.Vacation, new DateOnly(2026, 10, 20), new DateOnly(2026, 10, 24), "employee-1", Now).Absence!;
+        var decidedAt = Now.AddHours(2);
+
+        var result = employee.RejectAbsence(absence.Id, "admin-2", decidedAt);
+
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(absence.Status).IsEqualTo(AbsenceStatus.Rejected);
+        await Assert.That(absence.DecidedBy).IsEqualTo("admin-2");
+        await Assert.That(employee.DomainEvents).Count().IsEqualTo(1);
+        var evt = (AbsenceRejected)employee.DomainEvents.Single();
+        await Assert.That(evt.AbsenceId).IsEqualTo(absence.Id);
+        await Assert.That(evt.RejectedBy).IsEqualTo("admin-2");
+    }
+
+    [Test]
+    public async Task ApproveAbsence_WithUnknownAbsenceId_ReturnsNotFoundAndRaisesNoEvent()
+    {
+        var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;
+
+        var result = employee.ApproveAbsence(Guid.NewGuid(), "admin-2", Now);
+
+        await Assert.That(result.Status).IsEqualTo(AbsenceDecisionStatus.NotFound);
+        await Assert.That(employee.DomainEvents).IsEmpty();
+    }
+
+    [Test]
+    public async Task ApproveAbsence_OnAlreadyApprovedRequest_ReturnsConflictAndDoesNotChangeStatus()
+    {
+        var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;
+        var absence = employee.AddAbsence(AbsenceType.Vacation, new DateOnly(2026, 10, 20), new DateOnly(2026, 10, 24), "employee-1", Now).Absence!;
+        employee.ApproveAbsence(absence.Id, "admin-2", Now.AddHours(1));
+        employee.ClearDomainEvents();
+
+        var result = employee.ApproveAbsence(absence.Id, "admin-3", Now.AddHours(2));
+
+        await Assert.That(result.Status).IsEqualTo(AbsenceDecisionStatus.Conflict);
+        await Assert.That(absence.Status).IsEqualTo(AbsenceStatus.Approved);
+        await Assert.That(absence.DecidedBy).IsEqualTo("admin-2");
+        await Assert.That(employee.DomainEvents).IsEmpty();
+    }
+
+    [Test]
+    public async Task RejectAbsence_OnAlreadyRejectedRequest_ReturnsConflictAndDoesNotChangeStatus()
+    {
+        var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;
+        var absence = employee.AddAbsence(AbsenceType.Vacation, new DateOnly(2026, 10, 20), new DateOnly(2026, 10, 24), "employee-1", Now).Absence!;
+        employee.RejectAbsence(absence.Id, "admin-2", Now.AddHours(1));
+        employee.ClearDomainEvents();
+
+        var result = employee.RejectAbsence(absence.Id, "admin-3", Now.AddHours(2));
+
+        await Assert.That(result.Status).IsEqualTo(AbsenceDecisionStatus.Conflict);
+        await Assert.That(absence.Status).IsEqualTo(AbsenceStatus.Rejected);
+        await Assert.That(employee.DomainEvents).IsEmpty();
+    }
+
+    [Test]
     public async Task AddAbsence_WithFromAfterTo_ReturnsValidationError()
     {
         var employee = Employee.Create("Max", "Mustermann", "max@example.com", EmployeeRole.Employee, "admin-1", Now).Employee!;

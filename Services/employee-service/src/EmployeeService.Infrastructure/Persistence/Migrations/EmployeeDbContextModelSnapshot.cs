@@ -78,19 +78,68 @@ namespace EmployeeService.Infrastructure.Persistence.Migrations
                     b.ToTable("employees", (string)null);
                 });
 
+            modelBuilder.Entity("EmployeeService.Domain.Notifications.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("RecipientEmployeeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientEmployeeId");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
             modelBuilder.Entity("EmployeeService.Domain.Employees.Employee", b =>
                 {
                     b.OwnsMany("EmployeeService.Domain.Employees.Absence", "Absences", b1 =>
                         {
                             b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("uuid");
+
+                            b1.Property<DateTimeOffset?>("DecidedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("DecidedBy")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)");
 
                             b1.Property<Guid>("EmployeeId")
                                 .HasColumnType("uuid");
 
                             b1.Property<DateOnly>("From")
                                 .HasColumnType("date");
+
+                            b1.Property<DateTimeOffset>("RequestedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("RequestedBy")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)");
+
+                            b1.Property<string>("Status")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)");
 
                             b1.Property<DateOnly>("To")
                                 .HasColumnType("date");
@@ -102,7 +151,7 @@ namespace EmployeeService.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("Id");
 
-                            b1.HasIndex("EmployeeId");
+                            b1.HasIndex("EmployeeId", "Status");
 
                             b1.ToTable("employee_absences", (string)null);
 
@@ -137,7 +186,6 @@ namespace EmployeeService.Infrastructure.Persistence.Migrations
                     b.OwnsMany("EmployeeService.Domain.Employees.WorkingHours", "WorkingHours", b1 =>
                         {
                             b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("uuid");
 
                             b1.Property<Guid>("EmployeeId")
