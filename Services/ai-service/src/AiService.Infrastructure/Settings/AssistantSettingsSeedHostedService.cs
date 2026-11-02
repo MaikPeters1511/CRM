@@ -1,5 +1,7 @@
 using AiService.Application.Abstractions;
 using AiService.Domain.Settings;
+using AiService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,6 +26,12 @@ public sealed class AssistantSettingsSeedHostedService(
         try
         {
             using var scope = scopeFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetService<AiDbContext>();
+            if (dbContext is not null)
+            {
+                await dbContext.Database.MigrateAsync(cancellationToken);
+            }
+
             var repository = scope.ServiceProvider.GetRequiredService<IAssistantSettingsRepository>();
 
             var provider = AssistantRuntimeConfig.ResolveProvider(configuration);

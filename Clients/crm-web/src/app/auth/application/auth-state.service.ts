@@ -34,6 +34,10 @@ export class AuthStateService {
       .login(request)
       .pipe(
         tap((response) => {
+          if (!response?.accessToken) {
+            this._error.set('auth.login.errors.invalidCredentials');
+            return;
+          }
           const user: AuthUser = {
             userId: response.userId,
             role: response.role,

@@ -24,6 +24,22 @@ services:
   # ---------------------------------------------------------------------------------------------
   # PostgreSQL: eine Instanz pro DB-tragendem Service (Database-per-Service, ADR 0001).
   # ---------------------------------------------------------------------------------------------
+  identity-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: identity_db
+      POSTGRES_USER: ${IDENTITY_DB_USER}
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD}
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${IDENTITY_DB_USER} -d identity_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [crm-network]
+
   customer-postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -146,6 +162,7 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__identity_db: Host=identity-postgres;Port=5432;Database=identity_db;Username=${IDENTITY_DB_USER};Password=${IDENTITY_DB_PASSWORD}
       Authentication__JwtBearer__Issuer: ${JWT_ISSUER}
       Authentication__JwtBearer__Audience: ${JWT_AUDIENCE}
       Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
@@ -154,6 +171,9 @@ services:
       IdentitySeed__ServiceAccountPassword: ${AI_SERVICE_ACCOUNT_PASSWORD}
       RateLimiting__Login__PermitLimit: ${LOGIN_RATE_LIMIT_PERMIT_LIMIT:-5}
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+    depends_on:
+      identity-postgres:
+        condition: service_healthy
     networks: [crm-network]
 
   customer-service:
@@ -357,6 +377,7 @@ networks:
     driver: bridge
 
 volumes:
+  identity-db-data:
   customer-db-data:
   employee-db-data:
   appointment-db-data:

@@ -31,6 +31,7 @@ public sealed class IdentityDevUserSeedHostedService(
         {
             using var scope = scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+            await dbContext.Database.MigrateAsync(cancellationToken);
 
             var seed = seedOptions.Value;
             var hasher = new PasswordHasher<User>();
