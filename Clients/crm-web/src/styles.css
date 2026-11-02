@@ -1,2 +1,49 @@
 @import 'tailwindcss';
-@plugin 'daisyui';
+@plugin 'daisyui' {
+  themes: mpcrm --default;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'mpcrm';
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #ffffff;
+  --color-base-200: #f6f4ef;
+  --color-base-300: #e6e2d8;
+  --color-base-content: #1c2b29;
+  --color-primary: #0f6b63;
+  --color-primary-content: #ffffff;
+  --color-secondary: #0b4f49;
+  --color-secondary-content: #ffffff;
+  --color-accent: #0f6b63;
+  --color-accent-content: #ffffff;
+  --color-neutral: #0b4f49;
+  --color-neutral-content: #ffffff;
+  --color-info: #2c7a9c;
+  --color-info-content: #ffffff;
+  --color-success: #1f8a5f;
+  --color-success-content: #ffffff;
+  --color-warning: #b8860b;
+  --color-warning-content: #ffffff;
+  --color-error: #b3261e;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+
+  --depth: 1;
+  --noise: 0;
+}
+
+body {
+  background-color: var(--color-base-200);
+  color: var(--color-base-content);
+}

@@ -285,13 +285,27 @@
     }
   },
   "crm": {
+    "brand": {
+      "shortName": "MP"
+    },
     "nav": {
-      "title": "CRM",
+      "title": "MP CRM",
       "main": "Main navigation",
+      "dashboard": "Dashboard",
       "customers": "Customers",
       "employees": "Employees",
       "appointments": "Appointments",
-      "catalog": "Services"
+      "catalog": "Services",
+      "assistant": "AI Assistant",
+      "assistantBadge": "NEW",
+      "profile": "Profile"
+    },
+    "userCard": {
+      "role": {
+        "Admin": "Administrator",
+        "Employee": "Employee"
+      },
+      "profileLinkLabel": "Open profile"
     }
   },
   "catalog": {
@@ -364,6 +378,35 @@
     },
     "errors": {
       "unavailable": "The assistant is currently unavailable, please use the calendar view instead."
+    }
+  },
+  "dashboard": {
+    "heading": "Dashboard",
+    "metrics": {
+      "appointmentsToday": "Appointments today",
+      "openRequests": "Open requests",
+      "activeCustomers": "Active customers",
+      "totalEmployees": "Total employees"
+    },
+    "upcoming": {
+      "heading": "Upcoming appointments",
+      "loading": "Loading appointments…",
+      "empty": "No upcoming appointments.",
+      "columns": {
+        "time": "Time",
+        "customer": "Customer",
+        "employee": "Employee",
+        "status": "Status"
+      },
+      "viewAll": "View all appointments"
+    },
+    "assistantPreview": {
+      "heading": "AI Appointment Assistant",
+      "description": "Get matching free slots suggested and apply them directly.",
+      "openCta": "Open assistant"
+    },
+    "errors": {
+      "generic": "Dashboard data could not be loaded."
     }
   }
 }

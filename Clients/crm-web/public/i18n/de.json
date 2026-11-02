@@ -285,13 +285,27 @@
     }
   },
   "crm": {
+    "brand": {
+      "shortName": "MP"
+    },
     "nav": {
-      "title": "CRM",
+      "title": "MP CRM",
       "main": "Hauptnavigation",
+      "dashboard": "Dashboard",
       "customers": "Kunden",
       "employees": "Mitarbeiter",
       "appointments": "Termine",
-      "catalog": "Leistungen"
+      "catalog": "Leistungen",
+      "assistant": "KI-Assistent",
+      "assistantBadge": "NEU",
+      "profile": "Profil"
+    },
+    "userCard": {
+      "role": {
+        "Admin": "Administrator",
+        "Employee": "Mitarbeiter"
+      },
+      "profileLinkLabel": "Profil öffnen"
     }
   },
   "catalog": {
@@ -364,6 +378,35 @@
     },
     "errors": {
       "unavailable": "Der Assistent ist aktuell nicht verfügbar, bitte nutzen Sie die Kalenderansicht."
+    }
+  },
+  "dashboard": {
+    "heading": "Dashboard",
+    "metrics": {
+      "appointmentsToday": "Termine heute",
+      "openRequests": "Offene Anfragen",
+      "activeCustomers": "Aktive Kunden",
+      "totalEmployees": "Mitarbeiter gesamt"
+    },
+    "upcoming": {
+      "heading": "Anstehende Termine",
+      "loading": "Termine werden geladen…",
+      "empty": "Keine anstehenden Termine.",
+      "columns": {
+        "time": "Zeit",
+        "customer": "Kunde",
+        "employee": "Mitarbeiter",
+        "status": "Status"
+      },
+      "viewAll": "Alle Termine ansehen"
+    },
+    "assistantPreview": {
+      "heading": "KI-Terminassistent",
+      "description": "Lassen Sie sich passende freie Termine vorschlagen und direkt übernehmen.",
+      "openCta": "Assistent öffnen"
+    },
+    "errors": {
+      "generic": "Dashboard-Daten konnten nicht geladen werden."
     }
   }
 }
