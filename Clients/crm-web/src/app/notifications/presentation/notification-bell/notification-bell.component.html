@@ -1,0 +1,59 @@
+<div class="relative">
+  <button
+    type="button"
+    class="btn btn-ghost btn-sm w-full justify-between"
+    data-testid="notification-bell-toggle"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="true"
+    [attr.aria-label]="'notifications.bell.label' | translate"
+    (click)="toggle()"
+  >
+    <span>🔔 {{ 'notifications.bell.label' | translate }}</span>
+    @if (state.unreadCount() > 0) {
+      <span class="badge badge-primary badge-sm" data-testid="notification-unread-count">{{ state.unreadCount() }}</span>
+    }
+  </button>
+
+  @if (open()) {
+    <div
+      class="absolute bottom-full left-0 mb-2 w-72 bg-base-100 border border-base-300 rounded-box shadow-lg z-30 max-h-96 overflow-y-auto"
+      role="dialog"
+      aria-label="{{ 'notifications.bell.label' | translate }}"
+    >
+      <div class="flex items-center justify-between p-3 border-b border-base-300">
+        <span class="font-semibold text-sm">{{ 'notifications.bell.heading' | translate }}</span>
+        @if (state.unreadCount() > 0) {
+          <button type="button" class="btn btn-xs btn-ghost" (click)="markAllAsRead()">
+            {{ 'notifications.bell.markAllRead' | translate }}
+          </button>
+        }
+      </div>
+
+      @if (state.loading()) {
+        <p role="status" class="p-3 text-sm flex items-center gap-2">
+          <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>{{ 'notifications.bell.loading' | translate }}
+        </p>
+      } @else if (state.backendUnavailable()) {
+        <p class="p-3 text-sm text-base-content/60" role="status">{{ 'notifications.bell.backendUnavailable' | translate }}</p>
+      } @else if (state.notifications().length === 0) {
+        <p class="p-3 text-sm text-base-content/60">{{ 'notifications.bell.empty' | translate }}</p>
+      } @else {
+        <ul>
+          @for (notification of state.notifications(); track notification.id) {
+            <li class="border-b border-base-300 last:border-0">
+              <button
+                type="button"
+                class="w-full text-left p-3 text-sm hover:bg-base-200"
+                [class.font-semibold]="!notification.read"
+                (click)="markAsRead(notification.id)"
+              >
+                <span class="block">{{ notification.message }}</span>
+                <span class="block text-xs text-base-content/60">{{ notification.occurredAt }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</div>

@@ -4,6 +4,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { App } from '../../../Clients/crm-web/src/app/app';
 import { AuthStateService } from '../../../Clients/crm-web/src/app/auth/application/auth-state.service';
 import { AssistantStateService } from '../../../Clients/crm-web/src/app/assistant/application/assistant-state.service';
+import { NotificationState } from '../../../Clients/crm-web/src/app/notifications/application/notification.state';
 import { routes } from '../../../Clients/crm-web/src/app/app.routes';
 import type { AuthUser } from '../../../Clients/crm-web/src/app/auth/domain/auth-user.model';
 
@@ -22,12 +23,23 @@ describe('App (Shell/Navigation)', () => {
       logout: vi.fn(),
     };
 
+    const notificationStateMock = {
+      loading: () => false,
+      backendUnavailable: () => true,
+      notifications: () => [],
+      unreadCount: () => 0,
+      load: vi.fn(),
+      markAsRead: vi.fn(),
+      markAllAsRead: vi.fn(),
+    };
+
     TestBed.configureTestingModule({
       imports: [App],
       providers: [
         provideRouter(routes),
         provideTranslateService({ lang: 'de', fallbackLang: 'de' }),
         { provide: AuthStateService, useValue: authStateMock },
+        { provide: NotificationState, useValue: notificationStateMock },
       ],
     });
 
@@ -44,15 +56,22 @@ describe('App (Shell/Navigation)', () => {
       a.getAttribute('routerLink'),
     );
 
-    expect(hrefs).toEqual(['/dashboard', '/customers', '/employees', '/appointments', '/catalog']);
+    expect(hrefs).toEqual([
+      '/dashboard',
+      '/customers',
+      '/employees',
+      '/appointments',
+      '/catalog',
+      '/settings',
+    ]);
   });
 
-  it('shows navigation entries for dashboard, customers, employees and appointments for an authenticated Employee (without catalog)', () => {
+  it('shows navigation entries for dashboard, customers, employees, appointments and settings for an authenticated Employee (without catalog)', () => {
     const { fixture } = setup({ userId: 'u2', role: 'Employee', displayName: 'Employee User' });
 
     const links = fixture.nativeElement.querySelectorAll('nav[aria-label="crm.nav.main"] a');
 
-    expect(links.length).toBe(4);
+    expect(links.length).toBe(5);
   });
 
   it('hides the module navigation for anonymous (not authenticated) users', () => {
