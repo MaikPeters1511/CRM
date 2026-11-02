@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AppointmentHistoryEntry } from '../domain/appointment-history.model';
 
@@ -17,6 +17,8 @@ export class AppointmentHistoryApiService {
 
   getForCustomer(customerId: string, from: string, to: string): Observable<AppointmentHistoryEntry[]> {
     const params = new HttpParams().set('customerId', customerId).set('from', from).set('to', to);
-    return this.http.get<AppointmentHistoryEntry[]>(this.baseUrl, { params });
+    return this.http
+      .get<AppointmentHistoryEntry[] | { appointments: AppointmentHistoryEntry[] }>(this.baseUrl, { params })
+      .pipe(map((res) => (Array.isArray(res) ? res : res.appointments)));
   }
 }

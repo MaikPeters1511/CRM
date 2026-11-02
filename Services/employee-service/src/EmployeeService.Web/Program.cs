@@ -90,6 +90,11 @@ builder.Host.UseWolverine(opts =>
     // (AddAbsenceHandler). Der Bug-4-Fix oben deckte nur IEmployeeRepository ab.
     opts.CodeGeneration.AlwaysUseServiceLocationFor<EmployeeService.Application.Abstractions.IAppointmentAvailabilityClient>();
 
+    // Gleiche Begruendung wie bei IEmployeeRepository oben: INotificationRepository ist (wie
+    // IEmployeeRepository) ueber EfNotificationRepository(EmployeeDbContext) an die per
+    // AddDbContext opaque-lambda-registrierte DbContextOptions<EmployeeDbContext> gekoppelt.
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<EmployeeService.Application.Abstractions.INotificationRepository>();
+
     var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
         ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");
 
@@ -98,6 +103,10 @@ builder.Host.UseWolverine(opts =>
         opts.UseRabbitMq(new Uri(rabbitMqConnectionString)).AutoProvision();
         opts.PublishMessage<EmployeeService.Application.Employees.Deactivate.EmployeeDeactivatedIntegrationEvent>()
             .ToRabbitExchange("employee-deactivated");
+        opts.PublishMessage<EmployeeService.Application.Employees.ApproveAbsence.AbsenceApprovedIntegrationEvent>()
+            .ToRabbitExchange("absence-approved");
+        opts.PublishMessage<EmployeeService.Application.Employees.RejectAbsence.AbsenceRejectedIntegrationEvent>()
+            .ToRabbitExchange("absence-rejected");
     }
 });
 

@@ -1,4 +1,5 @@
 using EmployeeService.Domain.Employees;
+using EmployeeService.Domain.Notifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeService.Infrastructure.Persistence;
@@ -6,6 +7,10 @@ namespace EmployeeService.Infrastructure.Persistence;
 public sealed class EmployeeDbContext(DbContextOptions<EmployeeDbContext> options) : DbContext(options)
 {
     public DbSet<Employee> Employees => Set<Employee>();
+
+    // Eigenstaendiges Aggregate (abwesenheit-workflow.openspec.md, Abschnitt 7) - eigene Tabelle,
+    // nicht als OwnsMany am Employee-Aggregat haengend.
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,9 +78,29 @@ public sealed class EmployeeDbContext(DbContextOptions<EmployeeDbContext> option
                 absencesBuilder.Property(a => a.Type).IsRequired().HasConversion<string>().HasMaxLength(20);
                 absencesBuilder.Property(a => a.From).IsRequired();
                 absencesBuilder.Property(a => a.To).IsRequired();
+                absencesBuilder.Property(a => a.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
+                absencesBuilder.Property(a => a.RequestedBy).IsRequired().HasMaxLength(200);
+                absencesBuilder.Property(a => a.RequestedAt).IsRequired();
+                absencesBuilder.Property(a => a.DecidedBy).HasMaxLength(200);
+                absencesBuilder.Property(a => a.DecidedAt);
+                absencesBuilder.HasIndex("EmployeeId", nameof(Absence.Status));
             });
 
             builder.Navigation(e => e.Absences).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<Notification>(builder =>
+        {
+            builder.ToTable("notifications");
+            builder.HasKey(n => n.Id);
+            builder.Property(n => n.Id).ValueGeneratedNever();
+            builder.Property(n => n.RecipientEmployeeId).IsRequired();
+            builder.Property(n => n.Text).IsRequired().HasMaxLength(500);
+            builder.Property(n => n.Link).HasMaxLength(500);
+            builder.Property(n => n.IsRead).IsRequired();
+            builder.Property(n => n.CreatedAt).IsRequired();
+
+            builder.HasIndex(n => n.RecipientEmployeeId);
         });
     }
 }

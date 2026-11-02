@@ -6,8 +6,14 @@ import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { AuthStateService } from '../../../auth/application/auth-state.service';
 import { CalendarStateService } from '../../application/calendar-state.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
-import { AppointmentListItem, AppointmentStatus, CalendarViewMode } from '../../domain/appointment.model';
+import { AppointmentListItem, AppointmentStatus, CalendarAbsenceEntry, CalendarViewMode } from '../../domain/appointment.model';
 import { EmployeeLookupItem } from '../../domain/employee.model';
+
+/** Eine genehmigte Abwesenheit, positioniert auf einen einzelnen Kalendertag. */
+export interface DayAbsenceEntry {
+  entry: CalendarAbsenceEntry;
+  employeeName: string;
+}
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 08:00 - 19:00
 
@@ -68,6 +74,21 @@ export class CalendarViewComponent implements OnInit {
       cursor = addOneDay(cursor);
     }
     return result;
+  });
+
+  /**
+   * Genehmigte Abwesenheiten je Tag der aktuellen Ansicht (`CalendarResponse.absenceEntries`,
+   * abwesenheit-workflow.openspec.md Abschnitt 4/5). Ganztages-Eintraege, optisch getrennt
+   * von den stundenbasierten Terminen gerendert (eigene Zeile oberhalb des Grids).
+   */
+  readonly dailyAbsences = computed<{ dateIso: string; entries: DayAbsenceEntry[] }[]>(() => {
+    const absenceEntries = this.state.absenceEntries();
+    return this.days().map((date) => ({
+      dateIso: date,
+      entries: absenceEntries
+        .filter((entry) => entry.from <= date && date <= entry.to)
+        .map((entry) => ({ entry, employeeName: this.employeeName(entry.employeeId) })),
+    }));
   });
 
   /** Einheitliche Grid-Struktur fuer alle drei Ansichten (Tag/Woche => Stunden x Tage, Monat => Wochen x Tage). */
@@ -163,6 +184,23 @@ export class CalendarViewComponent implements OnInit {
 
   statusLabelKey(status: AppointmentStatus): string {
     return `appointment.status.${status}`;
+  }
+
+  /**
+   * Mitarbeitername fuer das Abwesenheits-Tooltip. Nutzt die (Admin-only) geladene
+   * Mitarbeiterliste; fuer den eigenen Eintrag (auch ohne geladene Liste, z.B. Rolle
+   * `Employee`) wird der eigene Anzeigename aus dem Auth-State verwendet.
+   */
+  employeeName(employeeId: string): string {
+    const found = this._employees().find((e) => e.id === employeeId);
+    if (found) {
+      return `${found.firstName} ${found.lastName}`;
+    }
+    const currentUser = this.auth.currentUser();
+    if (currentUser?.userId === employeeId) {
+      return currentUser.displayName;
+    }
+    return employeeId;
   }
 
   onGridKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: CalendarCell): void {

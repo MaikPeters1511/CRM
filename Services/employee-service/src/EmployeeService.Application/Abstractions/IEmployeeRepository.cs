@@ -18,7 +18,22 @@ public interface IEmployeeRepository
         int pageSize,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Flache Projektion aller Abwesenheiten (ueber alle Mitarbeiter hinweg, optional gefiltert)
+    /// fuer die Admin-Freigabe-Ansicht (GET .../absences/pending) und den internen Lesezugriff des
+    /// appointment-service (GET .../absences/approved?from=&amp;to=&amp;employeeId=,
+    /// abwesenheit-workflow.openspec.md Abschnitt 5).
+    /// </summary>
+    Task<IReadOnlyList<EmployeeAbsenceRecord>> SearchAbsencesAsync(
+        AbsenceStatus? status,
+        DateOnly? from,
+        DateOnly? to,
+        Guid? employeeId,
+        CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
 
 public sealed record EmployeeSearchResult(IReadOnlyList<Employee> Items, int TotalCount);
+
+public sealed record EmployeeAbsenceRecord(Guid EmployeeId, string EmployeeFirstName, string EmployeeLastName, Absence Absence);

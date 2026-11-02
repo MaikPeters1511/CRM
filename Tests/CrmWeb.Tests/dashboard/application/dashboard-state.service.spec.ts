@@ -42,7 +42,12 @@ describe('DashboardStateService', () => {
 
   function createAppointmentApiMock() {
     return {
-      getCalendar: vi.fn().mockReturnValue(of([todayAppointment, openRequestAppointment, cancelledAppointment])),
+      getCalendar: vi.fn().mockReturnValue(
+        of({
+          appointments: [todayAppointment, openRequestAppointment, cancelledAppointment],
+          absenceEntries: [],
+        }),
+      ),
     };
   }
 

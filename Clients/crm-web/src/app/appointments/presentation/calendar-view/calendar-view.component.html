@@ -71,6 +71,25 @@
     </div>
   }
 
+  @if (!state.loading() && dailyAbsences().some((day) => day.entries.length > 0)) {
+    <div class="flex gap-1 mb-2 overflow-x-auto" role="list" [attr.aria-label]="'appointment.calendar.absences.heading' | translate">
+      @for (day of dailyAbsences(); track day.dateIso) {
+        <div class="flex flex-col gap-1 min-w-16">
+          @for (dayEntry of day.entries; track dayEntry.entry.employeeId + dayEntry.entry.type) {
+            <span
+              role="listitem"
+              class="absence-entry badge badge-warning badge-sm whitespace-nowrap"
+              [title]="dayEntry.employeeName + ' – ' + (('employee.absence.type' + dayEntry.entry.type) | translate)"
+              [attr.aria-label]="dayEntry.employeeName + ' – ' + (('employee.absence.type' + dayEntry.entry.type) | translate)"
+            >
+              {{ dayEntry.employeeName }}
+            </span>
+          }
+        </div>
+      }
+    </div>
+  }
+
   @if (state.loading()) {
     <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'appointment.calendar.loading' | translate }}</p>
   } @else {

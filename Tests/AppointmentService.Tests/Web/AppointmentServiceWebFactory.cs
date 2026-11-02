@@ -13,6 +13,7 @@ public sealed class AppointmentServiceWebFactory : WebApplicationFactory<Program
     public FakeAppointmentRepository Repository { get; } = new();
     public FakeCustomerVerificationClient CustomerVerificationClient { get; } = new();
     public FakeEmployeeAvailabilityClient EmployeeAvailabilityClient { get; } = new();
+    public FakeEmployeeAbsenceClient EmployeeAbsenceClient { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -34,6 +35,7 @@ public sealed class AppointmentServiceWebFactory : WebApplicationFactory<Program
             services.AddSingleton<IAppointmentRepository>(Repository);
             services.AddSingleton<ICustomerVerificationClient>(CustomerVerificationClient);
             services.AddSingleton<IEmployeeAvailabilityClient>(EmployeeAvailabilityClient);
+            services.AddSingleton<IEmployeeAbsenceClient>(EmployeeAbsenceClient);
 
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });

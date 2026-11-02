@@ -4,7 +4,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { App } from '../../../Clients/crm-web/src/app/app';
 import { AuthStateService } from '../../../Clients/crm-web/src/app/auth/application/auth-state.service';
 import { AssistantStateService } from '../../../Clients/crm-web/src/app/assistant/application/assistant-state.service';
-import { NotificationState } from '../../../Clients/crm-web/src/app/notifications/application/notification.state';
+import { NotificationStateService } from '../../../Clients/crm-web/src/app/employees/application/notification-state.service';
 import { routes } from '../../../Clients/crm-web/src/app/app.routes';
 import type { AuthUser } from '../../../Clients/crm-web/src/app/auth/domain/auth-user.model';
 
@@ -24,13 +24,11 @@ describe('App (Shell/Navigation)', () => {
     };
 
     const notificationStateMock = {
-      loading: () => false,
-      backendUnavailable: () => true,
       notifications: () => [],
       unreadCount: () => 0,
-      load: vi.fn(),
+      loading: () => false,
+      loadNotifications: vi.fn(),
       markAsRead: vi.fn(),
-      markAllAsRead: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -39,7 +37,7 @@ describe('App (Shell/Navigation)', () => {
         provideRouter(routes),
         provideTranslateService({ lang: 'de', fallbackLang: 'de' }),
         { provide: AuthStateService, useValue: authStateMock },
-        { provide: NotificationState, useValue: notificationStateMock },
+        { provide: NotificationStateService, useValue: notificationStateMock },
       ],
     });
 
@@ -48,7 +46,7 @@ describe('App (Shell/Navigation)', () => {
     return { fixture };
   }
 
-  it('shows navigation entries for dashboard, customers, employees, appointments and catalog for an authenticated Admin', () => {
+  it('shows navigation entries for dashboard, customers, employees, appointments, catalog, absence approvals and settings for an authenticated Admin', () => {
     const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
 
     const links = fixture.nativeElement.querySelectorAll('nav[aria-label="crm.nav.main"] a');
@@ -62,6 +60,7 @@ describe('App (Shell/Navigation)', () => {
       '/employees',
       '/appointments',
       '/catalog',
+      '/employees/absence-approvals',
       '/settings',
     ]);
   });

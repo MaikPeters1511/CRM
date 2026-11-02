@@ -55,6 +55,33 @@ export interface CalendarQueryParams {
   to: string;
 }
 
+/** Art einer Abwesenheit, entspricht `AbsenceType` (`employee-service`). */
+export type CalendarAbsenceType = 'Vacation' | 'Sick' | 'Other';
+
+/**
+ * Genehmigte Abwesenheit als zusaetzlicher, nicht-persistierter Ganztages-Eintrag der
+ * Kalenderantwort (`CalendarAbsenceEntryDto`, abwesenheit-workflow.openspec.md Abschnitt 5).
+ * Getrennt von `AppointmentListItem` gehalten - optisch abgesetzt, kein Termin.
+ */
+export interface CalendarAbsenceEntry {
+  employeeId: string;
+  type: CalendarAbsenceType;
+  /** Format `yyyy-MM-dd`, entspricht `DateOnly`. */
+  from: string;
+  /** Format `yyyy-MM-dd`, entspricht `DateOnly`. */
+  to: string;
+}
+
+/**
+ * Response-Shape von `GET /api/appointments` (`CalendarResponse`, Breaking Change ggue.
+ * dem vorherigen nackten `AppointmentListItem[]` - siehe `AppointmentsController.GetCalendar`
+ * im `appointment-service`).
+ */
+export interface CalendarResponse {
+  appointments: AppointmentListItem[];
+  absenceEntries: CalendarAbsenceEntry[];
+}
+
 /** Request-Shape fuer `POST /api/appointments`. */
 export interface CreateAppointmentRequest {
   customerId: string;

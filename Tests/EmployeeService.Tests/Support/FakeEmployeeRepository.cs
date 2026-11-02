@@ -63,6 +63,37 @@ public sealed class FakeEmployeeRepository : IEmployeeRepository
         return Task.FromResult(new EmployeeSearchResult(page_, all.Count));
     }
 
+    public Task<IReadOnlyList<EmployeeAbsenceRecord>> SearchAbsencesAsync(
+        AbsenceStatus? status,
+        DateOnly? from,
+        DateOnly? to,
+        Guid? employeeId,
+        CancellationToken cancellationToken)
+    {
+        var flattened = _employees
+            .Where(e => !employeeId.HasValue || e.Id == employeeId.Value)
+            .SelectMany(e => e.Absences, (e, a) => new EmployeeAbsenceRecord(e.Id, e.FirstName, e.LastName, a));
+
+        if (status.HasValue)
+        {
+            flattened = flattened.Where(r => r.Absence.Status == status.Value);
+        }
+
+        if (from.HasValue)
+        {
+            flattened = flattened.Where(r => r.Absence.To >= from.Value);
+        }
+
+        if (to.HasValue)
+        {
+            flattened = flattened.Where(r => r.Absence.From <= to.Value);
+        }
+
+        IReadOnlyList<EmployeeAbsenceRecord> result = flattened.OrderBy(r => r.Absence.From).ToList();
+
+        return Task.FromResult(result);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         SaveChangesCallCount++;

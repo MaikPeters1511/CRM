@@ -4,7 +4,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthStateService } from './auth/application/auth-state.service';
 import { AssistantStateService } from './assistant/application/assistant-state.service';
 import { AssistantChatWidgetComponent } from './assistant/presentation/assistant-chat-widget/assistant-chat-widget.component';
-import { NotificationBellComponent } from './notifications/presentation/notification-bell/notification-bell.component';
+import { NotificationBellComponent } from './employees/presentation/notification-bell/notification-bell.component';
 
 /**
  * Shell-Komponente: Sidebar-Navigation/Router-Outlet fuer die konsolidierte Anwendung

@@ -95,6 +95,7 @@ builder.Host.UseWolverine(opts =>
     // eines Fakes) real registriert sind; vorsorglich im selben Zug behoben.
     opts.CodeGeneration.AlwaysUseServiceLocationFor<AppointmentService.Application.Abstractions.ICustomerVerificationClient>();
     opts.CodeGeneration.AlwaysUseServiceLocationFor<AppointmentService.Application.Abstractions.IEmployeeAvailabilityClient>();
+    opts.CodeGeneration.AlwaysUseServiceLocationFor<AppointmentService.Application.Abstractions.IEmployeeAbsenceClient>();
 
     var rabbitMqConnectionString = builder.Configuration.GetConnectionString("rabbitmq")
         ?? Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION_STRING");

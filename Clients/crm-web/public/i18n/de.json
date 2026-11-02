@@ -210,6 +210,38 @@
         "fromRequired": "Startdatum ist ein Pflichtfeld.",
         "toRequired": "Enddatum ist ein Pflichtfeld.",
         "conflict": "Die Abwesenheit kollidiert mit bestehenden Terminen. Bitte explizit bestätigen oder die Termine verschieben."
+      },
+      "myRequests": {
+        "heading": "Meine Anträge",
+        "empty": "Noch keine Abwesenheitsanträge vorhanden.",
+        "period": "{{from}} – {{to}}",
+        "status": {
+          "Pending": "Ausstehend",
+          "Approved": "Genehmigt",
+          "Rejected": "Abgelehnt"
+        }
+      }
+    },
+    "absenceApprovals": {
+      "heading": "Abwesenheits-Freigaben",
+      "employee": "Mitarbeiter",
+      "type": "Art",
+      "period": "Zeitraum",
+      "requestedAt": "Beantragt am",
+      "empty": "Keine ausstehenden Abwesenheitsanfragen.",
+      "loading": "Anfragen werden geladen…",
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "approveLabel": "Antrag von {{name}} genehmigen",
+      "rejectLabel": "Antrag von {{name}} ablehnen",
+      "confirmApprove": "Antrag von {{name}} ({{from}} – {{to}}) wirklich genehmigen?",
+      "confirmReject": "Antrag von {{name}} ({{from}} – {{to}}) wirklich ablehnen?",
+      "confirm": "Bestätigen",
+      "cancel": "Abbrechen",
+      "errors": {
+        "loadFailed": "Die ausstehenden Anfragen konnten nicht geladen werden.",
+        "decideFailed": "Die Entscheidung konnte nicht gespeichert werden.",
+        "alreadyDecided": "Diese Anfrage wurde bereits entschieden."
       }
     },
     "deactivateModal": {
@@ -245,7 +277,10 @@
       "employeeFilterSearch": "Mitarbeiter suchen",
       "allEmployees": "Alle Mitarbeiter",
       "loading": "Termine werden geladen…",
-      "gridLabel": "Terminkalender"
+      "gridLabel": "Terminkalender",
+      "absences": {
+        "heading": "Genehmigte Abwesenheiten"
+      }
     },
     "status": {
       "Confirmed": "Bestätigt",
@@ -314,6 +349,7 @@
       "employees": "Mitarbeiter",
       "appointments": "Termine",
       "catalog": "Leistungen",
+      "absenceApprovals": "Abwesenheits-Freigaben",
       "assistant": "KI-Assistent",
       "assistantBadge": "NEU",
       "profile": "Profil",
@@ -325,6 +361,21 @@
         "Employee": "Mitarbeiter"
       },
       "profileLinkLabel": "Profil öffnen"
+    }
+  },
+  "notification": {
+    "bell": {
+      "label": "Benachrichtigungen",
+      "unreadCountLabel": "{{count}} ungelesene Benachrichtigungen",
+      "dropdownHeading": "Benachrichtigungen",
+      "empty": "Keine Benachrichtigungen vorhanden.",
+      "markRead": "Als gelesen markieren"
+    },
+    "time": {
+      "justNow": "Gerade jetzt",
+      "minutes": "vor {{value}} Min.",
+      "hours": "vor {{value}} Std.",
+      "days": "vor {{value}} Tagen"
     }
   },
   "catalog": {

@@ -21,4 +21,17 @@ public sealed record GetCalendarQuery(
     bool IsAdmin,
     Guid? CurrentEmployeeId);
 
-public sealed record GetCalendarResult(IReadOnlyList<AppointmentListItemDto> Appointments);
+/// <summary>
+/// Design-Entscheidung (abwesenheit-workflow.openspec.md, Abschnitt 5/7): genehmigte Abwesenheiten
+/// werden als eigenes, nicht-persistiertes Feld <see cref="AbsenceEntries"/> zurueckgegeben statt
+/// sie in <see cref="Appointments"/> zu mischen. Grund: employee-service's bestehender
+/// <c>AppointmentAvailabilityHttpClient</c> (Konfliktpruefung bei neuen Abwesenheiten/Terminen)
+/// konsumiert exakt dieselbe Appointments-Liste und wuerde eine beigemischte Abwesenheit
+/// faelschlich als blockierenden Termin interpretieren.
+/// </summary>
+public sealed record GetCalendarResult(
+    IReadOnlyList<AppointmentListItemDto> Appointments,
+    IReadOnlyList<CalendarAbsenceEntryDto> AbsenceEntries);
+
+/// <summary>Ganztages-"Abwesend"-Eintrag fuer den Kalender (nicht persistiert, siehe <see cref="GetCalendarResult"/>).</summary>
+public sealed record CalendarAbsenceEntryDto(Guid EmployeeId, string Type, DateOnly From, DateOnly To);

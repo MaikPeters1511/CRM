@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AppointmentService.Application.Appointments;
 using AppointmentService.Application.Appointments.Calendar;
 using AppointmentService.Application.Appointments.Cancel;
 using AppointmentService.Application.Appointments.Create;
@@ -23,9 +24,13 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
 {
     /// <summary>
     /// terminverwaltung.openspec.md, Abschnitt 5: <c>GET /api/appointments?employeeId=&amp;customerId=&amp;from=&amp;to=</c>.
-    /// This is also the exact contract consumed synchronously by employee-service's
-    /// <c>IAppointmentAvailabilityClient</c> (ADR 0001, Abschnitt 2) - do not change the response
-    /// shape without updating employee-service's <c>AppointmentAvailabilityHttpClient</c> as well.
+    /// The <c>appointments</c> field of the response is also the exact contract consumed
+    /// synchronously by employee-service's <c>IAppointmentAvailabilityClient</c> (ADR 0001,
+    /// Abschnitt 2) - do not change that shape without updating employee-service's
+    /// <c>AppointmentAvailabilityHttpClient</c> as well. <c>absenceEntries</c> is new
+    /// (abwesenheit-workflow.openspec.md, Abschnitt 5/7): genehmigte Abwesenheiten als separate,
+    /// nicht-persistierte Ganztages-Eintraege, getrennt von <c>appointments</c> gehalten, damit
+    /// employee-service's Konfliktpruefung sie nicht faelschlich als blockierenden Termin liest.
     /// </summary>
     [HttpGet]
     [Authorize(Roles = "Employee,Admin")]
@@ -39,7 +44,7 @@ public sealed class AppointmentsController(IMessageBus messageBus) : ControllerB
         var result = await messageBus.InvokeAsync<GetCalendarResult>(
             new GetCalendarQuery(employeeId, customerId, from, to, IsAdmin(), GetCurrentEmployeeId()), cancellationToken);
 
-        return Ok(result.Appointments);
+        return Ok(new CalendarResponse(result.Appointments, result.AbsenceEntries));
     }
 
     /// <summary>Termindetails. Liefert nur Termine, auf die der Aufrufer laut Ownership-Regel zugreifen darf.</summary>
@@ -156,3 +161,8 @@ public sealed record CreateAppointmentRequest(
 public sealed record RescheduleAppointmentRequest(DateTimeOffset NewStart, DateTimeOffset NewEnd);
 
 public sealed record CancelAppointmentRequest(string Reason);
+
+/// <summary>Response shape of <c>GET /api/appointments</c> - siehe <see cref="AppointmentsController.GetCalendar"/>.</summary>
+public sealed record CalendarResponse(
+    IReadOnlyList<AppointmentListItemDto> Appointments,
+    IReadOnlyList<CalendarAbsenceEntryDto> AbsenceEntries);

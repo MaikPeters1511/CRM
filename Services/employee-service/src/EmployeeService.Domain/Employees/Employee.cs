@@ -192,7 +192,7 @@ public sealed class Employee : AggregateRoot
             return AbsenceMutationResult.Failure(["From must be on or before To."]);
         }
 
-        var absence = new Absence(Guid.NewGuid(), type, from, to);
+        var absence = new Absence(Guid.NewGuid(), type, from, to, addedBy, addedAt);
         _absences.Add(absence);
         ModifiedBy = addedBy;
         ModifiedAt = addedAt;
@@ -201,6 +201,57 @@ public sealed class Employee : AggregateRoot
     }
 
     public bool HasAbsenceOverlap(DateOnly from, DateOnly to) => _absences.Any(a => a.Overlaps(from, to));
+
+    /// <summary>
+    /// Genehmigt eine ausstehende Abwesenheitsanfrage (Rolle <c>Admin</c>, serverseitig in der
+    /// Web-Schicht erzwungen). Loest bei Erfolg <see cref="AbsenceApproved"/> aus, damit die
+    /// Application-Schicht eine Benachrichtigung anlegen und das Integration Event publizieren kann.
+    /// </summary>
+    public AbsenceDecisionResult ApproveAbsence(Guid absenceId, string decidedBy, DateTimeOffset decidedAt)
+    {
+        var absence = _absences.FirstOrDefault(a => a.Id == absenceId);
+        if (absence is null)
+        {
+            return AbsenceDecisionResult.NotFound();
+        }
+
+        var mutation = absence.Approve(decidedBy, decidedAt);
+        if (!mutation.IsSuccess)
+        {
+            return AbsenceDecisionResult.Conflict(mutation.Errors);
+        }
+
+        ModifiedBy = decidedBy;
+        ModifiedAt = decidedAt;
+
+        AddDomainEvent(new AbsenceApproved(
+            Id, absence.Id, absence.Type, absence.From, absence.To, absence.RequestedBy, decidedBy, decidedAt));
+
+        return AbsenceDecisionResult.Success(absence);
+    }
+
+    /// <summary>Lehnt eine ausstehende Abwesenheitsanfrage ab. Loest bei Erfolg <see cref="AbsenceRejected"/> aus.</summary>
+    public AbsenceDecisionResult RejectAbsence(Guid absenceId, string decidedBy, DateTimeOffset decidedAt)
+    {
+        var absence = _absences.FirstOrDefault(a => a.Id == absenceId);
+        if (absence is null)
+        {
+            return AbsenceDecisionResult.NotFound();
+        }
+
+        var mutation = absence.Reject(decidedBy, decidedAt);
+        if (!mutation.IsSuccess)
+        {
+            return AbsenceDecisionResult.Conflict(mutation.Errors);
+        }
+
+        ModifiedBy = decidedBy;
+        ModifiedAt = decidedAt;
+
+        AddDomainEvent(new AbsenceRejected(Id, absence.Id, absence.RequestedBy, decidedBy, decidedAt));
+
+        return AbsenceDecisionResult.Success(absence);
+    }
 
     public void Deactivate(string deactivatedBy, DateTimeOffset deactivatedAt)
     {

@@ -1,0 +1,48 @@
+<div class="dropdown dropdown-end">
+  <button
+    type="button"
+    class="btn btn-ghost btn-sm relative"
+    aria-haspopup="true"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="'notification.bell.label' | translate"
+    (click)="toggle()"
+  >
+    <span aria-hidden="true">🔔</span>
+    @if (unreadCount() > 0) {
+      <span class="badge badge-error badge-xs absolute -top-1 -right-1" aria-live="polite">
+        {{ unreadCount() }}
+      </span>
+    } @else {
+      <span class="sr-only" aria-live="polite">0</span>
+    }
+  </button>
+
+  @if (open()) {
+    <ul
+      role="menu"
+      [attr.aria-label]="'notification.bell.dropdownHeading' | translate"
+      class="dropdown-content menu bg-base-100 rounded-box z-10 w-80 p-2 shadow-sm"
+    >
+      <li class="menu-title">{{ 'notification.bell.dropdownHeading' | translate }}</li>
+      @if (notifications().length === 0) {
+        <li><span>{{ 'notification.bell.empty' | translate }}</span></li>
+      } @else {
+        @for (notification of notifications(); track notification.id) {
+          <li role="menuitem">
+            <button
+              type="button"
+              class="flex flex-col items-start gap-0.5"
+              [class.font-semibold]="!notification.isRead"
+              (click)="select(notification)"
+            >
+              <span>{{ notification.text }}</span>
+              <span class="text-xs opacity-60">
+                {{ relativeTimeKey(notification) | translate: relativeTimeValue(notification) }}
+              </span>
+            </button>
+          </li>
+        }
+      }
+    </ul>
+  }
+</div>

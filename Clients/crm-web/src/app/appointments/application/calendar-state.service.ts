@@ -3,6 +3,7 @@ import { catchError, finalize, of, tap } from 'rxjs';
 import {
   Appointment,
   AppointmentListItem,
+  CalendarAbsenceEntry,
   CalendarViewMode,
   CancelAppointmentRequest,
   CreateAppointmentRequest,
@@ -31,6 +32,8 @@ export class CalendarStateService {
   private readonly _anchorDate = signal<string>(todayDateOnly());
   private readonly _employeeFilter = signal<string | null>(null);
   private readonly _appointments = signal<AppointmentListItem[]>([]);
+  /** Genehmigte Abwesenheiten der aktuellen Kalenderantwort (`CalendarResponse.absenceEntries`). */
+  private readonly _absenceEntries = signal<CalendarAbsenceEntry[]>([]);
   private readonly _loading = signal(false);
   private readonly _errors = signal<string[]>([]);
   private readonly _conflict = signal(false);
@@ -41,6 +44,7 @@ export class CalendarStateService {
   readonly anchorDate = this._anchorDate.asReadonly();
   readonly employeeFilter = this._employeeFilter.asReadonly();
   readonly appointments = this._appointments.asReadonly();
+  readonly absenceEntries = this._absenceEntries.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly errors = this._errors.asReadonly();
   readonly hasErrors = computed(() => this._errors().length > 0);
@@ -79,7 +83,10 @@ export class CalendarStateService {
     this.api
       .getCalendar({ employeeId: this._employeeFilter(), customerId: null, from, to })
       .pipe(
-        tap((items) => this._appointments.set(items)),
+        tap((response) => {
+          this._appointments.set(response.appointments);
+          this._absenceEntries.set(response.absenceEntries);
+        }),
         catchError(() => {
           this._errors.set(['appointment.errors.loadFailed']);
           return of(null);

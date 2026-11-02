@@ -61,6 +61,46 @@ public sealed class EfEmployeeRepository(EmployeeDbContext dbContext) : IEmploye
         return new EmployeeSearchResult(items, totalCount);
     }
 
+    public async Task<IReadOnlyList<EmployeeAbsenceRecord>> SearchAbsencesAsync(
+        AbsenceStatus? status,
+        DateOnly? from,
+        DateOnly? to,
+        Guid? employeeId,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<Employee> employeeQuery = dbContext.Employees.AsNoTracking();
+
+        if (employeeId.HasValue)
+        {
+            employeeQuery = employeeQuery.Where(e => e.Id == employeeId.Value);
+        }
+
+        var flattened = employeeQuery.SelectMany(e => e.Absences, (e, a) => new { Employee = e, Absence = a });
+
+        if (status.HasValue)
+        {
+            flattened = flattened.Where(x => x.Absence.Status == status.Value);
+        }
+
+        if (from.HasValue)
+        {
+            flattened = flattened.Where(x => x.Absence.To >= from.Value);
+        }
+
+        if (to.HasValue)
+        {
+            flattened = flattened.Where(x => x.Absence.From <= to.Value);
+        }
+
+        var items = await flattened
+            .OrderBy(x => x.Absence.From)
+            .ToListAsync(cancellationToken);
+
+        return items
+            .Select(x => new EmployeeAbsenceRecord(x.Employee.Id, x.Employee.FirstName, x.Employee.LastName, x.Absence))
+            .ToList();
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return dbContext.SaveChangesAsync(cancellationToken);

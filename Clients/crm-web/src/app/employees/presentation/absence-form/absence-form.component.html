@@ -80,5 +80,34 @@
       </button>
     </div>
   </form>
+
+  <section aria-labelledby="my-absence-requests-heading" class="mt-8 max-w-lg">
+    <h2 id="my-absence-requests-heading" class="text-xl font-semibold mb-2">
+      {{ 'employee.absence.myRequests.heading' | translate }}
+    </h2>
+
+    @if (absenceState.myAbsences().length === 0) {
+      <p>{{ 'employee.absence.myRequests.empty' | translate }}</p>
+    } @else {
+      <ul class="flex flex-col gap-2">
+        @for (absence of absenceState.myAbsences(); track absence.id) {
+          <li class="flex items-center justify-between gap-2 border border-base-300 rounded-box p-2">
+            <span>
+              {{ ('employee.absence.type' + absence.type) | translate }}
+              {{ absence.from }} – {{ absence.to }}
+            </span>
+            <span
+              class="absence-status-badge badge"
+              [class.badge-warning]="absence.status === 'Pending'"
+              [class.badge-success]="absence.status === 'Approved'"
+              [class.badge-error]="absence.status === 'Rejected'"
+            >
+              {{ statusLabelKey(absence.status) | translate }}
+            </span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
   </div>
 </section>

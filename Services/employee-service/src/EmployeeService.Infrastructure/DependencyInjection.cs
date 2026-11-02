@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddDbContext<EmployeeDbContext>(options => options.UseNpgsql(connectionString));
 
         services.AddScoped<IEmployeeRepository, EfEmployeeRepository>();
+        services.AddScoped<INotificationRepository, EfNotificationRepository>();
         services.AddSingleton(TimeProvider.System);
 
         // Tests/E2E/README.md, Bug 8: AuthHeaderForwardingHandler liest den eingehenden

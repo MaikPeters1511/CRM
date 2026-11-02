@@ -98,4 +98,32 @@ describe('EmployeeApiService', () => {
     expect(req.request.body).toEqual(request);
     req.flush({});
   });
+
+  it('sends GET to /employees/{id}/absences for own absences including status', () => {
+    service.getAbsences('e1').subscribe();
+    const req = httpMock.expectOne(`${baseUrl}/e1/absences`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('sends GET to /employees/absences/pending for the admin approval view', () => {
+    service.getPendingAbsences().subscribe();
+    const req = httpMock.expectOne(`${baseUrl}/absences/pending`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('sends POST to approve a pending absence', () => {
+    service.approveAbsence('e1', 'a1').subscribe();
+    const req = httpMock.expectOne(`${baseUrl}/e1/absences/a1/approve`);
+    expect(req.request.method).toBe('POST');
+    req.flush({});
+  });
+
+  it('sends POST to reject a pending absence', () => {
+    service.rejectAbsence('e1', 'a1').subscribe();
+    const req = httpMock.expectOne(`${baseUrl}/e1/absences/a1/reject`);
+    expect(req.request.method).toBe('POST');
+    req.flush({});
+  });
 });

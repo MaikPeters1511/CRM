@@ -1,10 +1,13 @@
 using System.Security.Claims;
 using EmployeeService.Application.Employees;
+using EmployeeService.Application.Employees.Absences;
 using EmployeeService.Application.Employees.AddAbsence;
+using EmployeeService.Application.Employees.ApproveAbsence;
 using EmployeeService.Application.Employees.Availability;
 using EmployeeService.Application.Employees.Create;
 using EmployeeService.Application.Employees.Deactivate;
 using EmployeeService.Application.Employees.GetById;
+using EmployeeService.Application.Employees.RejectAbsence;
 using EmployeeService.Application.Employees.Search;
 using EmployeeService.Application.Employees.SetWorkingHours;
 using EmployeeService.Application.Employees.Update;
@@ -174,6 +177,96 @@ public sealed class EmployeesController(IMessageBus messageBus) : ControllerBase
                 conflictingAppointments = result.ConflictingAppointments,
             }),
             _ => ValidationProblem(BuildValidationProblem(result.Errors)),
+        };
+    }
+
+    /// <summary>
+    /// Eigene Abwesenheitsanfragen inkl. Status (Rolle <c>Employee</c> nur eigener Datensatz,
+    /// Rolle <c>Admin</c> beliebig). abwesenheit-workflow.openspec.md, Scenario
+    /// "Mitarbeiter sieht eigene Anträge".
+    /// </summary>
+    [HttpGet("{id:guid}/absences")]
+    [Authorize(Roles = "Employee,Admin")]
+    public async Task<IActionResult> GetAbsences(Guid id, CancellationToken cancellationToken)
+    {
+        if (!IsAdmin() && !IsOwnEmployeeRecord(id))
+        {
+            return Forbid();
+        }
+
+        var result = await messageBus.InvokeAsync<GetEmployeeAbsencesResult>(
+            new GetEmployeeAbsencesQuery(id), cancellationToken);
+
+        return result.Found ? Ok(result.Absences) : NotFound();
+    }
+
+    /// <summary>Alle ausstehenden Abwesenheitsanfragen ueber alle Mitarbeiter (Rolle <c>Admin</c>, Freigabe-Ansicht).</summary>
+    [HttpGet("absences/pending")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetPendingAbsences(CancellationToken cancellationToken)
+    {
+        var result = await messageBus.InvokeAsync<GetPendingAbsencesResult>(
+            new GetPendingAbsencesQuery(), cancellationToken);
+
+        return Ok(result.Absences);
+    }
+
+    /// <summary>
+    /// Genehmigte Abwesenheiten im Zeitraum, optional nach Mitarbeiter gefiltert. Interner
+    /// Lesezugriff fuer appointment-service (<c>IEmployeeAbsenceClient</c>, ADR 0001 Abschnitt 2/5),
+    /// aber auch direkt fuer Endnutzer erreichbar (analog Availability-Endpoint).
+    /// </summary>
+    [HttpGet("absences/approved")]
+    [Authorize(Roles = "Employee,Admin")]
+    public async Task<IActionResult> GetApprovedAbsences(
+        [FromQuery] DateOnly from,
+        [FromQuery] DateOnly to,
+        [FromQuery] Guid? employeeId,
+        CancellationToken cancellationToken)
+    {
+        var result = await messageBus.InvokeAsync<GetApprovedAbsencesResult>(
+            new GetApprovedAbsencesQuery(from, to, employeeId), cancellationToken);
+
+        return Ok(result.Absences);
+    }
+
+    /// <summary>
+    /// Genehmigt eine ausstehende Abwesenheitsanfrage (ausschliesslich Rolle <c>Admin</c>).
+    /// Liefert <c>409</c>, wenn die Anfrage bereits entschieden wurde.
+    /// </summary>
+    [HttpPost("{id:guid}/absences/{absenceId:guid}/approve")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ApproveAbsence(Guid id, Guid absenceId, CancellationToken cancellationToken)
+    {
+        var command = new ApproveAbsenceCommand(id, absenceId, GetActorId());
+
+        var result = await messageBus.InvokeAsync<ApproveAbsenceResult>(command, cancellationToken);
+
+        return result.Status switch
+        {
+            ApproveAbsenceStatus.Success => Ok(result.Absence),
+            ApproveAbsenceStatus.NotFound => NotFound(),
+            _ => Conflict(BuildProblem(result.Errors)),
+        };
+    }
+
+    /// <summary>
+    /// Lehnt eine ausstehende Abwesenheitsanfrage ab (ausschliesslich Rolle <c>Admin</c>).
+    /// Liefert <c>409</c>, wenn die Anfrage bereits entschieden wurde.
+    /// </summary>
+    [HttpPost("{id:guid}/absences/{absenceId:guid}/reject")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RejectAbsence(Guid id, Guid absenceId, CancellationToken cancellationToken)
+    {
+        var command = new RejectAbsenceCommand(id, absenceId, GetActorId());
+
+        var result = await messageBus.InvokeAsync<RejectAbsenceResult>(command, cancellationToken);
+
+        return result.Status switch
+        {
+            RejectAbsenceStatus.Success => Ok(result.Absence),
+            RejectAbsenceStatus.NotFound => NotFound(),
+            _ => Conflict(BuildProblem(result.Errors)),
         };
     }
 

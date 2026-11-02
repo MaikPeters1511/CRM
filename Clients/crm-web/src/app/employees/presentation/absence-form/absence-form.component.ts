@@ -3,12 +3,15 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { EmployeeStateService } from '../../application/employee-state.service';
+import { AbsenceStateService } from '../../application/absence-state.service';
 import { AbsenceType } from '../../domain/employee.model';
 
 /**
  * Smart/Container-Component: Abwesenheit (Urlaub/Krankheit/Sonstige) anlegen.
  * Bildet die Konfliktwarnung des Backends ab (Terminkollision) und erfordert
- * bei Konflikt eine explizite Override-Bestaetigung (`confirmOverride`).
+ * bei Konflikt eine explizite Override-Bestaetigung (`confirmOverride`). Zeigt
+ * zusaetzlich die eigenen Abwesenheitsanfragen inkl. Status unterhalb des Formulars
+ * (Requirement "Eigene Abwesenheitsanfragen mit Status einsehen").
  */
 @Component({
   selector: 'app-absence-form',
@@ -21,6 +24,7 @@ export class AbsenceFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly state = inject(EmployeeStateService);
+  protected readonly absenceState = inject(AbsenceStateService);
 
   private employeeId = '';
 
@@ -33,6 +37,7 @@ export class AbsenceFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.employeeId = this.route.snapshot.paramMap.get('id') ?? '';
+    this.absenceState.loadMyAbsences(this.employeeId);
   }
 
   save(): void {
@@ -45,7 +50,10 @@ export class AbsenceFormComponent implements OnInit {
     this.state.addAbsence(
       this.employeeId,
       { type: raw.type, from: raw.from, to: raw.to, confirmOverride: raw.confirmOverride },
-      () => this.router.navigate(['/employees']),
+      () => {
+        this.form.reset({ type: 'Vacation', from: '', to: '', confirmOverride: false });
+        this.absenceState.loadMyAbsences(this.employeeId);
+      },
     );
   }
 
@@ -61,5 +69,9 @@ export class AbsenceFormComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/employees']);
+  }
+
+  statusLabelKey(status: string): string {
+    return `employee.absence.myRequests.status.${status}`;
   }
 }

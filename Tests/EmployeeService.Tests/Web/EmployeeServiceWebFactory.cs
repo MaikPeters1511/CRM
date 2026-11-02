@@ -14,6 +14,8 @@ public sealed class EmployeeServiceWebFactory : WebApplicationFactory<Program>
 
     public FakeAppointmentAvailabilityClient AppointmentAvailabilityClient { get; } = new();
 
+    public FakeNotificationRepository NotificationRepository { get; } = new();
+
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
         // Bewusst NICHT "Development": Integrationstests ersetzen IEmployeeRepository durch
@@ -41,6 +43,7 @@ public sealed class EmployeeServiceWebFactory : WebApplicationFactory<Program>
         {
             services.AddSingleton<IEmployeeRepository>(Repository);
             services.AddSingleton<IAppointmentAvailabilityClient>(AppointmentAvailabilityClient);
+            services.AddSingleton<INotificationRepository>(NotificationRepository);
 
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });

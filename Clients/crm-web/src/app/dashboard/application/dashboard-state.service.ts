@@ -41,7 +41,7 @@ export class DashboardStateService {
     const today = todayDateOnly();
 
     forkJoin({
-      appointments: this.appointmentApi.getCalendar({
+      calendar: this.appointmentApi.getCalendar({
         employeeId: null,
         customerId: null,
         from: today,
@@ -51,7 +51,8 @@ export class DashboardStateService {
       employees: this.employeeApi.search({ search: null, role: null, serviceId: null, page: 1 }),
     })
       .pipe(
-        tap(({ appointments, customers, employees }) => {
+        tap(({ calendar, customers, employees }) => {
+          const appointments = calendar.appointments;
           const active = appointments.filter((appointment) => appointment.status !== 'Cancelled');
 
           this._metrics.set({
