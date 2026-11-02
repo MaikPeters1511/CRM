@@ -39,22 +39,46 @@
             </div>
           }
 
-          <a
-            routerLink="/profile"
-            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-base-200 transition-colors"
-            data-testid="sidebar-user-card"
-            [attr.aria-label]="'crm.nav.profile' | translate"
-          >
-            <div class="avatar avatar-placeholder">
-              <div class="bg-neutral text-neutral-content w-8 rounded-full">
-                <span class="text-xs">{{ userInitial() }}</span>
+          <div class="dropdown dropdown-end" data-testid="sidebar-user-card">
+            <div
+              tabindex="0"
+              role="button"
+              class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-base-200 transition-colors cursor-pointer"
+              [attr.aria-label]="'crm.nav.profile' | translate"
+            >
+              <div class="avatar avatar-placeholder">
+                <div class="bg-neutral text-neutral-content w-8 rounded-full">
+                  <span class="text-xs">{{ userInitial() }}</span>
+                </div>
               </div>
+              <span class="hidden sm:flex flex-col min-w-0 text-left leading-tight">
+                <span class="text-sm font-medium truncate">{{ authState.currentUser()?.displayName }}</span>
+                <span class="text-xs text-base-content/60">{{ roleTranslationKey() | translate }}</span>
+              </span>
             </div>
-            <span class="hidden sm:flex flex-col min-w-0 text-left leading-tight">
-              <span class="text-sm font-medium truncate">{{ authState.currentUser()?.displayName }}</span>
-              <span class="text-xs text-base-content/60">{{ roleTranslationKey() | translate }}</span>
-            </span>
-          </a>
+
+            <ul
+              tabindex="0"
+              role="menu"
+              class="dropdown-content menu bg-base-100 rounded-box z-20 mt-2 w-56 p-2 shadow-md border border-base-300"
+            >
+              <li class="menu-title px-3 py-1.5">
+                <span class="font-semibold text-base-content truncate">{{ authState.currentUser()?.displayName }}</span>
+                <span class="text-xs font-normal text-base-content/60">{{ roleTranslationKey() | translate }}</span>
+              </li>
+              <li role="menuitem">
+                <a routerLink="/profile" (click)="closeDropdown($event)">
+                  {{ 'crm.nav.profile' | translate }}
+                </a>
+              </li>
+              <div class="divider my-1"></div>
+              <li role="menuitem">
+                <button type="button" class="text-error" (click)="logout()">
+                  {{ 'auth.nav.logout' | translate }}
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
       </header>
 
@@ -127,12 +151,6 @@
             </li>
           </ul>
         </nav>
-
-        <div class="px-3 py-3 border-t border-base-300">
-          <button type="button" class="btn btn-ghost btn-sm w-full justify-start" (click)="logout()">
-            {{ 'auth.nav.logout' | translate }}
-          </button>
-        </div>
       </aside>
     </div>
   </div>

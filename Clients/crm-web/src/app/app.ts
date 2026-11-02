@@ -49,6 +49,10 @@ export class App {
     void this.router.navigateByUrl('/login');
   }
 
+  closeDropdown(event: Event): void {
+    (event.currentTarget as HTMLElement | null)?.blur();
+  }
+
   userInitial(): string {
     return this.authState.currentUser()?.displayName?.charAt(0)?.toUpperCase() ?? '';
   }
