@@ -23,3 +23,6 @@ TestResults/
 node_modules
 dist/
 .angular/
+
+# JetBrains Junie
+.junie/
