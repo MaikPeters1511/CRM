@@ -1,0 +1,58 @@
+<section aria-labelledby="theme-editor-heading" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body">
+    <h2 id="theme-editor-heading" class="card-title">{{ 'profile.themeEditor.heading' | translate }}</h2>
+    <p class="text-sm text-base-content/60 mb-4">{{ 'profile.themeEditor.hint' | translate }}</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="flex flex-col gap-3">
+        <label class="form-control">
+          <span class="label-text">{{ 'profile.themeEditor.name' | translate }}</span>
+          <input type="text" class="input input-bordered w-full" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+        </label>
+        <label class="form-control">
+          <span class="label-text">{{ 'profile.themeEditor.primary' | translate }}</span>
+          <input type="color" class="w-full h-10" [ngModel]="primary()" (ngModelChange)="primary.set($event)" />
+        </label>
+        <label class="form-control">
+          <span class="label-text">{{ 'profile.themeEditor.accent' | translate }}</span>
+          <input type="color" class="w-full h-10" [ngModel]="accent()" (ngModelChange)="accent.set($event)" />
+        </label>
+        <label class="form-control">
+          <span class="label-text">{{ 'profile.themeEditor.background' | translate }}</span>
+          <input type="color" class="w-full h-10" [ngModel]="background()" (ngModelChange)="background.set($event)" />
+        </label>
+        <label class="form-control">
+          <span class="label-text">{{ 'profile.themeEditor.text' | translate }}</span>
+          <input type="color" class="w-full h-10" [ngModel]="text()" (ngModelChange)="text.set($event)" />
+        </label>
+        <button type="button" class="btn btn-primary mt-2" (click)="save()">
+          {{ 'profile.themeEditor.save' | translate }}
+        </button>
+      </div>
+
+      <div data-testid="theme-preview" class="rounded-box border border-base-300 p-6" [ngStyle]="previewStyle()">
+        <h3 class="text-lg font-bold mb-2">{{ 'profile.themeEditor.previewHeading' | translate }}</h3>
+        <p class="mb-4">{{ 'profile.themeEditor.previewText' | translate }}</p>
+        <button type="button" class="btn" [ngStyle]="{ backgroundColor: primary(), color: '#ffffff' }">
+          {{ 'profile.themeEditor.previewPrimaryButton' | translate }}
+        </button>
+        <button type="button" class="btn ml-2" [ngStyle]="{ backgroundColor: accent(), color: '#ffffff' }">
+          {{ 'profile.themeEditor.previewAccentButton' | translate }}
+        </button>
+      </div>
+    </div>
+
+    @if (state.customThemes().length > 0) {
+      <div class="mt-6">
+        <h3 class="font-semibold mb-2">{{ 'profile.themeEditor.savedHeading' | translate }}</h3>
+        <ul class="flex flex-wrap gap-2">
+          @for (theme of state.customThemes(); track theme.id) {
+            <li class="badge badge-lg gap-2" [style.backgroundColor]="theme.primary" [style.color]="'#ffffff'">
+              {{ theme.name }}
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+</section>
