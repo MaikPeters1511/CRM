@@ -1,10 +1,10 @@
 <div class="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
   @if (state.isOpen()) {
     <section
-      class="card bg-base-100 shadow-xl w-80 sm:w-96 max-h-[32rem] flex flex-col"
+      class="card bg-base-100 border border-base-300 shadow-xl w-80 sm:w-96 max-h-[32rem] flex flex-col"
       aria-label="{{ 'assistant.panel.heading' | translate }}"
     >
-      <header class="flex items-center justify-between px-4 py-2 border-b border-base-200">
+      <header class="flex items-center justify-between px-4 py-2 border-b border-base-300">
         <h2 class="font-semibold text-base">{{ 'assistant.panel.heading' | translate }}</h2>
         <button
           type="button"
@@ -22,7 +22,7 @@
         }
         @for (message of state.messages(); track $index) {
           <div class="chat" [class.chat-end]="message.role === 'user'" [class.chat-start]="message.role === 'assistant'">
-            <div class="chat-bubble">{{ message.content }}</div>
+            <div class="chat-bubble" [class.chat-bubble-primary]="message.role === 'user'">{{ message.content }}</div>
           </div>
           @if (message.suggestions.length > 0) {
             <div class="flex flex-col gap-2 ml-2">
@@ -42,7 +42,7 @@
         }
       </div>
 
-      <form class="flex gap-2 px-4 py-2 border-t border-base-200" (ngSubmit)="send()">
+      <form class="flex gap-2 px-4 py-2 border-t border-base-300" (ngSubmit)="send()">
         <label for="assistant-message-input" class="sr-only">
           {{ 'assistant.panel.inputLabel' | translate }}
         </label>
