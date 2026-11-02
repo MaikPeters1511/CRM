@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { CalendarStateService } from '../../application/calendar-state.service';
@@ -24,6 +24,7 @@ import { AvailableSlot, EmployeeLookupItem, EmployeeServiceAssignment } from '..
 export class AppointmentFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly customerApi = inject(CustomerApiService);
   private readonly employeeApi = inject(EmployeeApiService);
   private readonly destroyRef = inject(DestroyRef);
@@ -98,6 +99,46 @@ export class AppointmentFormComponent {
     this.form.controls.employeeId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((employeeId) => this._selectedEmployeeId.set(employeeId));
+
+    this.applySuggestionQueryParams();
+  }
+
+  // Deep-Link vom Terminvorschlag des KI-Terminassistenten (ki-terminassistent.openspec.md,
+  // Abschnitt 4): vorausgefuellte, aber unverbindliche Werte - der Termin wird erst nach
+  // expliziter Bestaetigung/Validierung ueber submit() persistiert.
+  private applySuggestionQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const employeeId = params.get('employeeId');
+    const serviceId = params.get('serviceId');
+    const customerId = params.get('customerId');
+    const date = params.get('date');
+    const startTime = params.get('startTime');
+    const endTime = params.get('endTime');
+
+    if (employeeId) {
+      this.form.controls.employeeId.setValue(employeeId);
+      this._selectedEmployeeId.set(employeeId);
+      this.loadAvailability();
+    }
+    if (serviceId) {
+      this.form.controls.serviceId.setValue(serviceId);
+    }
+    if (customerId) {
+      this.form.controls.customerId.setValue(customerId);
+      this.customerApi.getById(customerId).subscribe({
+        next: (customer) => this._selectedCustomerLabel.set(`${customer.firstName} ${customer.lastName}`),
+        error: () => this._selectedCustomerLabel.set(null),
+      });
+    }
+    if (date) {
+      this.form.controls.date.setValue(date);
+    }
+    if (startTime) {
+      this.form.controls.startTime.setValue(startTime);
+    }
+    if (endTime) {
+      this.form.controls.endTime.setValue(endTime);
+    }
   }
 
   onCustomerQueryInput(value: string): void {

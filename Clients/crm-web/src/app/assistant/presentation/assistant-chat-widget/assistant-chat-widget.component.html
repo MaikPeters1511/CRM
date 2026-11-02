@@ -1,0 +1,76 @@
+<div class="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+  @if (state.isOpen()) {
+    <section
+      class="card bg-base-100 shadow-xl w-80 sm:w-96 max-h-[32rem] flex flex-col"
+      aria-label="{{ 'assistant.panel.heading' | translate }}"
+    >
+      <header class="flex items-center justify-between px-4 py-2 border-b border-base-200">
+        <h2 class="font-semibold text-base">{{ 'assistant.panel.heading' | translate }}</h2>
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm btn-circle"
+          [attr.aria-label]="'assistant.panel.close' | translate"
+          (click)="close()"
+        >
+          ✕
+        </button>
+      </header>
+
+      <div class="flex-1 overflow-y-auto px-4 py-2 space-y-2" role="log" aria-live="polite" aria-relevant="additions">
+        @if (state.messages().length === 0) {
+          <p class="text-sm text-base-content/60">{{ 'assistant.panel.placeholder' | translate }}</p>
+        }
+        @for (message of state.messages(); track $index) {
+          <div class="chat" [class.chat-end]="message.role === 'user'" [class.chat-start]="message.role === 'assistant'">
+            <div class="chat-bubble">{{ message.content }}</div>
+          </div>
+          @if (message.suggestions.length > 0) {
+            <div class="flex flex-col gap-2 ml-2">
+              @for (suggestion of message.suggestions; track suggestion.startTime + suggestion.employeeId) {
+                <app-assistant-suggestion-card [suggestion]="suggestion" />
+              }
+            </div>
+          }
+        }
+        @if (state.loading()) {
+          <div class="chat chat-start">
+            <div class="chat-bubble">{{ 'assistant.panel.thinking' | translate }}</div>
+          </div>
+        }
+        @if (state.error()) {
+          <p class="text-sm text-error" role="alert">{{ state.error() | translate }}</p>
+        }
+      </div>
+
+      <form class="flex gap-2 px-4 py-2 border-t border-base-200" (ngSubmit)="send()">
+        <label for="assistant-message-input" class="sr-only">
+          {{ 'assistant.panel.inputLabel' | translate }}
+        </label>
+        <input
+          #messageInput
+          id="assistant-message-input"
+          type="text"
+          class="input input-bordered input-sm flex-1"
+          [(ngModel)]="draft"
+          name="message"
+          autocomplete="off"
+          [attr.aria-describedby]="'assistant-message-hint'"
+          [placeholder]="'assistant.panel.inputPlaceholder' | translate"
+          (keydown)="onKeydown($event)"
+        />
+        <span id="assistant-message-hint" class="sr-only">{{ 'assistant.panel.inputHint' | translate }}</span>
+        <button type="submit" class="btn btn-primary btn-sm">{{ 'assistant.panel.send' | translate }}</button>
+      </form>
+    </section>
+  }
+
+  <button
+    type="button"
+    class="btn btn-circle btn-primary btn-lg shadow-lg"
+    [attr.aria-label]="(state.isOpen() ? 'assistant.panel.close' : 'assistant.panel.open') | translate"
+    [attr.aria-expanded]="state.isOpen()"
+    (click)="toggle()"
+  >
+    💬
+  </button>
+</div>

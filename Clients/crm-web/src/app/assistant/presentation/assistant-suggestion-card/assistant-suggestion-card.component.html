@@ -1,0 +1,11 @@
+<article class="card card-border card-sm bg-base-200">
+  <div class="card-body gap-1">
+    <p class="text-sm font-medium">{{ suggestion.serviceName }} — {{ suggestion.employeeName }}</p>
+    <p class="text-sm text-base-content/70">
+      {{ suggestion.startTime | date: 'short' }} – {{ suggestion.endTime | date: 'shortTime' }}
+    </p>
+    <button type="button" class="btn btn-sm btn-primary mt-1" (click)="applySuggestion()">
+      {{ 'assistant.suggestion.createAppointment' | translate }}
+    </button>
+  </div>
+</article>

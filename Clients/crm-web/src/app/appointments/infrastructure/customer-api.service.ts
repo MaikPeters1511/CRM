@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CustomerSearchParams, CustomerSearchResult } from '../domain/customer.model';
+import { CustomerLookupItem, CustomerSearchParams, CustomerSearchResult } from '../domain/customer.model';
 
 /**
  * Infrastructure-Service: kapselt den Kunde-Autocomplete-Aufruf an `customer-service`
@@ -23,5 +23,11 @@ export class CustomerApiService {
       httpParams = httpParams.set('status', params.status);
     }
     return this.http.get<CustomerSearchResult>(this.baseUrl, { params: httpParams });
+  }
+
+  // Wird fuer den Deep-Link vom Terminassistenten benoetigt (ki-terminassistent.openspec.md,
+  // Abschnitt 4): zeigt den Kundennamen im vorausgefuellten Terminformular an, statt nur die Id.
+  getById(id: string): Observable<CustomerLookupItem> {
+    return this.http.get<CustomerLookupItem>(`${this.baseUrl}/${id}`);
   }
 }

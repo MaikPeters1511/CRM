@@ -8,4 +8,5 @@ export const environment: Environment = {
   appointmentApiBaseUrl: '/api',
   authApiBaseUrl: '/api',
   catalogApiBaseUrl: '/api',
+  assistantApiBaseUrl: '/api',
 };

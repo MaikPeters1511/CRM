@@ -5,4 +5,5 @@ export interface Environment {
   appointmentApiBaseUrl: string;
   authApiBaseUrl: string;
   catalogApiBaseUrl: string;
+  assistantApiBaseUrl: string;
 }

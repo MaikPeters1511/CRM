@@ -346,5 +346,24 @@
       "saveFailed": "The changes could not be saved.",
       "deactivateFailed": "The service could not be deactivated."
     }
+  },
+  "assistant": {
+    "panel": {
+      "heading": "Appointment Assistant",
+      "open": "Open appointment assistant",
+      "close": "Close appointment assistant",
+      "placeholder": "Ask e.g. \"Free slot for Mrs. Müller next week, color + haircut\".",
+      "thinking": "Assistant is thinking…",
+      "inputLabel": "Message to the appointment assistant",
+      "inputPlaceholder": "Type a message…",
+      "inputHint": "Press Enter to send.",
+      "send": "Send"
+    },
+    "suggestion": {
+      "createAppointment": "Create appointment"
+    },
+    "errors": {
+      "unavailable": "The assistant is currently unavailable, please use the calendar view instead."
+    }
   }
 }

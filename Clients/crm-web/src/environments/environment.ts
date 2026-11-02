@@ -14,4 +14,5 @@ export const environment: Environment = {
   appointmentApiBaseUrl: gatewayBaseUrl,
   authApiBaseUrl: gatewayBaseUrl,
   catalogApiBaseUrl: gatewayBaseUrl,
+  assistantApiBaseUrl: gatewayBaseUrl,
 };

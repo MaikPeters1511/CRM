@@ -346,5 +346,24 @@
       "saveFailed": "Die Änderungen konnten nicht gespeichert werden.",
       "deactivateFailed": "Die Leistung konnte nicht deaktiviert werden."
     }
+  },
+  "assistant": {
+    "panel": {
+      "heading": "Terminassistent",
+      "open": "Terminassistent öffnen",
+      "close": "Terminassistent schließen",
+      "placeholder": "Fragen Sie z. B. \"Freier Termin für Frau Müller nächste Woche, Farbe + Schnitt\".",
+      "thinking": "Assistent denkt nach…",
+      "inputLabel": "Nachricht an den Terminassistenten",
+      "inputPlaceholder": "Nachricht eingeben…",
+      "inputHint": "Eingabe mit Enter senden.",
+      "send": "Senden"
+    },
+    "suggestion": {
+      "createAppointment": "Termin anlegen"
+    },
+    "errors": {
+      "unavailable": "Der Assistent ist aktuell nicht verfügbar, bitte nutzen Sie die Kalenderansicht."
+    }
   }
 }
