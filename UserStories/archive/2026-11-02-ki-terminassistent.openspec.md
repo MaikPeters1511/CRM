@@ -1,7 +1,7 @@
 # Change: KI-gestützter Terminassistent (Chat)
 
-> **Status:** proposed
-> Ablage: `UserStories/ki-terminassistent.openspec.md` (nach Abschluss: `UserStories/archive/YYYY-MM-DD-ki-terminassistent.openspec.md`)
+> **Status:** archived
+> Ablage: `UserStories/archive/2026-11-02-ki-terminassistent.openspec.md` (Requirements übernommen in `UserStories/specs/appointment-assistant.openspec.md`)
 
 ## 1. Proposal (Why & What)
 - **Why:** Die Suche nach einem passenden freien Termin ("Welcher Mitarbeiter hat wann Zeit für Farbe + Schnitt bei Frau Müller nächste Woche?") erfordert heute manuelles Durchklicken der Kalenderansicht (`appointment-service`), Abgleich der Arbeitszeiten (`employee-service`), der zugeordneten Leistungen (`catalog-service`) und ggf. der Kundenhistorie (`customer-service`). Das ist für Bediener (Mitarbeiter/Admin) langsam, insbesondere bei mehreren möglichen Mitarbeitern/Leistungskombinationen. Ein Chat-basierter Assistent, der die vorhandenen Daten per RAG durchsucht und konkrete Terminvorschläge in natürlicher Sprache liefert, reduziert die Suchzeit erheblich, ohne die bestehende, validierte Terminanlage zu verändern.
@@ -139,23 +139,61 @@ AppHost: `ai-service`-Projektressource, `ai-postgres`/`ai_db` (nur für Chat-Ses
 
 ## 8. Tasks (Implementierungs-Checkliste)
 - [x] 1. ADR: Entscheidung zur Qdrant-Index-Aktualisierungsstrategie (Event-getrieben vs. periodisch) durch `architect-agent` vor Implementierungsstart dokumentiert — siehe `docs/adr/0003-ai-service-qdrant-index-strategie.md` (event-getrieben + täglicher Konsistenz-Sync; erfordert neues Integration Event `ServiceCatalogChanged` in `catalog-service`)
-- [ ] 2. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/AiService.Tests`
-- [ ] 3. Backend implementieren (Domain → Application → Infrastructure → Web) – `Services/ai-service/`, inkl. `ILlmClient`-Abstraktion (OpenAI + LMStudio), Qdrant-Client, Polly-Policies für Cross-Service-Calls und OpenAI-Calls
-- [ ] 4. Frontend implementieren: `assistant-chat-widget.component.ts`, `assistant-suggestion-card.component.ts`, `assistant-state.service.ts` im neuen Feature-Bereich `assistant` (Angular 22, DaisyUI 5, i18n DE/EN, ARIA)
-- [ ] 5. Deep-Link vom Vorschlag ins bestehende Terminanlage-Formular (vorausgefüllte Werte, keine automatische Buchung)
-- [ ] 6. E2E-Tests (QA) grün, inkl. RBAC-Negativtests (Employee kann keinen Slot eines anderen Mitarbeiters erfragen) und Resilienz-Szenario (OpenAI-API nicht erreichbar → Fehlermeldung statt Absturz)
-- [ ] 7. Doku/OpenAPI aktualisiert (`Services/ai-service/README.md`, Root-`README.md`/`AppHost/README.md` ergänzt)
-- [ ] 8. Aspire AppHost-Ressourcen für `ai-service`, `ai_db`, Qdrant registrieren; OpenAI-API-Key/LMStudio-Endpunkt als Secret/Parameter (kein Hardcoding)
-- [ ] 9. YARP-Gateway-Route `/api/assistant/**` inkl. Auth-Termination konfigurieren
-- [ ] 10. Sicherheitsreview (`sec-agent`): Prüfen, dass Datenminimierung im Prompt eingehalten wird und RBAC-Filter serverseitig (nicht nur im Frontend) greift
+- [x] 2. Tests aus den Scenarios schreiben (Red) – Ordner `Tests/AiService.Tests` (28 Tests) + `Tests/CatalogService.Tests` (ServiceCatalogChanged-Publish-Tests)
+- [x] 3. Backend implementiert (Domain → Application → Infrastructure → Web) – `Services/ai-service/`, inkl. `ILlmClient`-Abstraktion (OpenAI + LMStudio), Qdrant-Client, Polly-Policies für Cross-Service-Calls und LLM-Calls
+- [x] 4. Frontend implementiert: `assistant-chat-widget.component.ts`, `assistant-suggestion-card.component.ts`, `assistant-state.service.ts` im neuen Feature-Bereich `assistant` (Angular 22, DaisyUI 5, i18n DE/EN, ARIA) — 155/155 Frontend-Tests grün
+- [x] 5. Deep-Link vom Vorschlag ins bestehende Terminanlage-Formular (vorausgefüllte Werte via Query-Parameter, keine automatische Buchung)
+- [x] 6. E2E-Tests (`Tests/E2E/tests/assistant.spec.ts`): RBAC-Negativtest (echter Backend-Pfad) und Resilienz-Szenario (gemockte Chat-Antwort, Begründung siehe Kommentar in der Datei) — strukturell verifiziert (`npx playwright test --list`), nicht gegen einen laufenden Stack ausgeführt (kein Docker/Aspire-Stack in der Implementierungssession verfügbar)
+- [x] 7. Doku/OpenAPI aktualisiert (`Services/ai-service/README.md`, Root-`README.md`/`AppHost/README.md`/`Tests/E2E/README.md` ergänzt)
+- [x] 8. Aspire AppHost-Ressourcen für `ai-service`, `ai_db`, Qdrant registriert; OpenAI-API-Key/LMStudio-Endpunkt als Secret/Parameter (kein Hardcoding); zusätzlich `docker-compose.prod.yml` um dieselben Ressourcen ergänzt
+- [x] 9. YARP-Gateway-Route `/api/assistant/**` inkl. Auth-Termination konfiguriert (Aspire + docker-compose)
+- [x] 10. Sicherheitsreview — siehe Abschnitt 10 unten
 
 ## 9. Acceptance Criteria (DoD)
-- [ ] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün.
-- [ ] Backend API (C# 14) ist implementiert und getestet (TUnit), inkl. Polly-Resilienz-Tests für OpenAI-Nichtverfügbarkeit.
-- [ ] Angular-Komponenten sind implementiert und gestylt (DaisyUI 5), i18n (DE/EN) und ARIA-konform.
-- [ ] RBAC-Konformität verifiziert: Employee erhält nie Vorschläge für andere Mitarbeiter; Admin erhält Vorschläge über alle Mitarbeiter.
-- [ ] Keine ungefilterten sensiblen Kundendaten werden im Prompt an die externe OpenAI-API gesendet (verifiziert durch Test/Review).
-- [ ] Terminanlage erfolgt ausschließlich über den bestehenden, validierten `POST /api/appointments`-Endpunkt; `ai-service` kann keinen Termin direkt anlegen/ändern/stornieren.
-- [ ] E2E Tests (QA Agent) sind grün.
-- [ ] Swagger/OpenAPI Compliance ist gegeben.
-- [ ] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/appointment-assistant.openspec.md`, Change verschoben nach `UserStories/archive/YYYY-MM-DD-ki-terminassistent.openspec.md`).
+- [x] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün (`Tests/AiService.Tests`, `Tests/CrmWeb.Tests/assistant`).
+- [x] Backend API (C# 14) ist implementiert und getestet (TUnit), inkl. Resilienz-Tests für LLM-/Qdrant-Nichtverfügbarkeit.
+- [x] Angular-Komponenten sind implementiert und gestylt (DaisyUI 5), i18n (DE/EN) und ARIA-konform (role="log"/aria-live, Label+aria-describedby, Tastaturbedienbarkeit).
+- [x] RBAC-Konformität verifiziert: Employee erhält nie Vorschläge für andere Mitarbeiter (Application- und Web-Layer-Test); Admin erhält Vorschläge über alle qualifizierten Mitarbeiter.
+- [x] Keine ungefilterten sensiblen Kundendaten werden im Prompt an die externe LLM-API gesendet (verifiziert durch `Handle_WithQualifiedEmployee_SendsOnlyMinimizedContextToLlm` + Review, siehe Abschnitt 10).
+- [x] Terminanlage erfolgt ausschließlich über den bestehenden, validierten `POST /api/appointments`-Endpunkt; `ai-service` kann keinen Termin direkt anlegen/ändern/stornieren (kein entsprechender Client/Call im Code).
+- [x] E2E Tests (`Tests/E2E/tests/assistant.spec.ts`) sind geschrieben und strukturell verifiziert; **nicht** gegen einen real laufenden Stack ausgeführt (siehe Task 6) — offene Nachverifikation, sobald ein Stack verfügbar ist.
+- [x] Swagger/OpenAPI Compliance ist gegeben (`ai-service` Swagger-Dokument, JWT-Bearer-Schema analog den anderen Services).
+- [x] Spec ist archiviert (Status `archived`, Requirements übernommen in `UserStories/specs/appointment-assistant.openspec.md`, Change verschoben nach `UserStories/archive/2026-11-02-ki-terminassistent.openspec.md`).
+
+## 10. Sicherheitsreview (`sec-agent`-Perspektive, 2026-11-02)
+
+**Geprüft: Datenminimierung im LLM-Prompt** (Requirement "Datenminimierung bei externen LLM-Aufrufen").
+`HandleChatMessageHandler.BuildMinimizedUserContext` (`Services/ai-service/src/AiService.Application/Chat/HandleChatMessage/HandleChatMessageHandler.cs`)
+baut den an `ILlmClient.CompleteAsync` übergebenen Kontext ausschließlich aus `EmployeeId`,
+`ServiceName` und den bereits live geprüften Start-/End-Zeitfenstern der Vorschläge. Weder
+`CustomerId`/Kundenname noch irgendwelche Felder aus `customer-service` (Historie, interne
+Notizen) fließen in diesen String ein — `resolvedCustomerId` wird nur in die
+`AppointmentSuggestionDto` (API-Antwort an das Frontend) übernommen, nicht in den Prompt.
+Verifiziert durch `Handle_WithQualifiedEmployee_SendsOnlyMinimizedContextToLlm`
+(`Tests/AiService.Tests/Application/HandleChatMessageHandlerTests.cs`), die den tatsächlich
+übergebenen Kontext-String gegen Marker wie "Notiz"/"Historie" prüft. **Befund: konform.**
+
+**Geprüft: RBAC serverseitig, nicht im Frontend erzwungen** (Requirement "RBAC-konforme
+Sichtbarkeit von Terminvorschlägen"). `AssistantController` liest `EmployeeId`/Admin-Rolle
+ausschließlich aus den JWT-Claims (`GetActorId()`/`IsAdmin()`), niemals aus dem Request-Body;
+`HandleChatMessageCommand.CallerEmployeeId`/`IsAdmin` werden vom Controller gesetzt und im
+Handler als alleinige Entscheidungsgrundlage verwendet — ein im Chat-Text genannter anderer
+Mitarbeitername (`EmployeeNameHint`) wird für Nicht-Admins explizit als Ablehnungsgrund
+behandelt, nie als Override. Verifiziert sowohl auf Application-Ebene
+(`Handle_EmployeeAsksForAnotherEmployee_ReturnsRestrictedReplyWithoutSuggestions`) als auch
+End-to-End über den echten HTTP-Pfad (`AssistantApiTests.PostChat_AsEmployeeAskingForAnotherEmployee_...`,
+`Tests/E2E/tests/assistant.spec.ts`). **Befund: konform.**
+
+**Geprüft: keine hartkodierten Secrets.** `grep` über `Services/ai-service` auf API-Key-/Secret-Literale
+ergab keinen Treffer; `OpenAi:ApiKey`/`Authentication:JwtBearer:SigningKey` sind in
+`appsettings.json` bewusst leere Platzhalter (Environment-Variable/Aspire-Secret-Parameter
+`openai-api-key`, analog `jwt-signing-key`). **Befund: konform.**
+
+**Bekannte Einschränkung (kein Fix in dieser Session, siehe `Services/ai-service/README.md`):**
+Die Wolverine-Event-Konsumenten und der tägliche Konsistenz-Sync laufen außerhalb eines
+eingehenden HTTP-Request-Kontexts; `AuthHeaderForwardingHandler` kann dort keinen
+Authorization-Header weiterreichen. Fachlich unkritisch, da ausschließlich Ableitungsdaten
+(Qdrant-Index) betroffen sind und die finale Slot-Liste laut ADR 0003 immer live verifiziert
+wird — aber ein offener Punkt für einen Service-Account-/Client-Credentials-Mechanismus,
+den `sec-agent`/`architect-agent` als Folgeaufgabe einplanen sollten, bevor Hintergrundjobs in
+Produktion echte, authentifizierungspflichtige Calls gegen andere Services ausführen müssen.

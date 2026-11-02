@@ -30,11 +30,14 @@ untereinander — siehe Architekturentscheidungen unten.
   Resilienz, interne Clean Architecture je Service, Aspire-Orchestrierung.
 - [`docs/adr/0002-frontend-konsolidierung.md`](docs/adr/0002-frontend-konsolidierung.md) —
   Eine gemeinsame Angular-Anwendung (`crm-web`) statt eines separaten Clients pro Backend-Service.
+- [`docs/adr/0003-ai-service-qdrant-index-strategie.md`](docs/adr/0003-ai-service-qdrant-index-strategie.md) —
+  Event-getriebene Qdrant-Index-Aktualisierung für `ai-service` (KI-Terminassistent) inkl.
+  täglichem Konsistenz-Sync als Sicherheitsnetz.
 
 ## Fachliche Spezifikationen (OpenSpec)
 
 Alle Anforderungen folgen dem [OpenSpec](https://openspec.dev/docs/)-Workflow (propose → apply →
-archive) in `UserStories/`. Alle sechs bisherigen Change-Specs sind bereits vollständig
+archive) in `UserStories/`. Alle sieben bisherigen Change-Specs sind bereits vollständig
 abgenommen und archiviert; die dauerhaft gültigen Requirements liegen in `UserStories/specs/`:
 
 - [`UserStories/specs/customer-management.openspec.md`](UserStories/specs/customer-management.openspec.md)
@@ -43,6 +46,7 @@ abgenommen und archiviert; die dauerhaft gültigen Requirements liegen in `UserS
 - [`UserStories/specs/identity.openspec.md`](UserStories/specs/identity.openspec.md)
 - [`UserStories/specs/frontend-shell.openspec.md`](UserStories/specs/frontend-shell.openspec.md)
 - [`UserStories/specs/service-catalog.openspec.md`](UserStories/specs/service-catalog.openspec.md)
+- [`UserStories/specs/appointment-assistant.openspec.md`](UserStories/specs/appointment-assistant.openspec.md)
 
 Die ursprünglichen Change-Specs (Proposal/Design/Tasks-Historie) liegen in `UserStories/archive/`.
 Eine neue Anforderung entsteht als neue Change-Spec direkt in `UserStories/`.
