@@ -5,11 +5,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <PackageReference Include="WolverineFx.Postgresql" Version="6.44.0" />
-    <PackageReference Include="WolverineFx.RabbitMQ" Version="6.44.0" />
+    <PackageReference Include="WolverineFx.Postgresql" Version="6.60.0" />
+    <PackageReference Include="WolverineFx.RabbitMQ" Version="6.60.0" />
   </ItemGroup>
 
   <ItemGroup>
