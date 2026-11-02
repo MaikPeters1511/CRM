@@ -9,6 +9,7 @@ direkt aus den Scenarios (GIVEN/WHEN/THEN) in:
 - `UserStories/terminverwaltung.openspec.md`
 - `UserStories/authentifizierung.openspec.md`
 - `UserStories/leistungskatalog.openspec.md`
+- `UserStories/ki-terminassistent.openspec.md` (RBAC- und Resilienz-Scenario, `tests/assistant.spec.ts`)
 
 ## Warum Playwright (statt Cypress)
 
@@ -132,6 +133,8 @@ Tests/E2E/
     catalog.spec.ts        Leistungskatalog CRUD/Suche/Deaktivieren (leistungskatalog.openspec.md)
     appointments.spec.ts  Terminverwaltung ohne RBAC (terminverwaltung.openspec.md)
     rbac.spec.ts          RBAC-Requirement "Sichtbarkeit von Terminen nach Rolle"
+    assistant.spec.ts     KI-Terminassistent: RBAC-Negativtest (echter Backend-Pfad) +
+                           Resilienz-Scenario (gemockte Chat-Antwort, siehe Kommentar in der Datei)
 ```
 
 ## Abdeckung der Scenarios (Abschnitt 3 der jeweiligen OpenSpec)
@@ -156,6 +159,11 @@ Jedes SHALL-Requirement aus den vier Change-Specs hat mindestens einen Test:
   `tests/catalog.spec.ts`. MODIFIED Requirement "Leistungen/Qualifikationen zuordnen"
   (Auswahl aus dem Katalog statt Freitext, Snapshot bleibt bei Deaktivierung sichtbar) -
   `tests/employees.spec.ts`.
+- **ki-terminassistent.openspec.md**: "Employee fragt nach Slot eines anderen Mitarbeiters"
+  (RBAC, echter Backend-Pfad) und "OpenAI-API antwortet mit Rate-Limit" (Resilienz, gemockte
+  Chat-Antwort - Begruendung siehe Kommentar in `tests/assistant.spec.ts`). Die uebrigen
+  Scenarios (Entitaetenextraktion, Datenminimierung, Qdrant-Resilienz) sind bereits durch
+  `Tests/AiService.Tests` auf Application-Ebene abgedeckt.
 
 ## Tatsaechliche Verifikation - finaler Stand (qa-agent, 2026-10-29, Leistungskatalog)
 

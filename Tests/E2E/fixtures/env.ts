@@ -31,6 +31,7 @@ export const urls = {
   employeeApi: env('E2E_EMPLOYEE_API_URL', 'http://localhost:5159/api'),
   appointmentApi: env('E2E_APPOINTMENT_API_URL', 'http://localhost:5169/api'),
   catalogApi: env('E2E_CATALOG_API_URL', 'http://localhost:5189/api'),
+  assistantApi: env('E2E_ASSISTANT_API_URL', 'http://localhost:5289/api'),
 };
 
 export const seedUsers = {

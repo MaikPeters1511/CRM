@@ -61,5 +61,10 @@ export default defineConfig({
       testMatch: /auth\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'assistant',
+      testMatch: /assistant\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 });
