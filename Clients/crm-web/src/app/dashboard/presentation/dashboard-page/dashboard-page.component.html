@@ -1,0 +1,114 @@
+<section aria-labelledby="dashboard-heading" class="flex flex-col gap-6">
+  <h1 id="dashboard-heading" class="text-2xl font-bold">{{ 'dashboard.heading' | translate }}</h1>
+
+  @if (state.error()) {
+    <div class="alert alert-error" role="alert">
+      <p>{{ state.error() | translate }}</p>
+    </div>
+  }
+
+  @if (state.metrics(); as metrics) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="stats bg-base-100 border border-base-300 shadow-sm" data-testid="dashboard-metric-tile">
+        <div class="stat">
+          <div class="stat-title">{{ 'dashboard.metrics.appointmentsToday' | translate }}</div>
+          <div class="stat-value text-primary">{{ metrics.appointmentsToday }}</div>
+        </div>
+      </div>
+      <div class="stats bg-base-100 border border-base-300 shadow-sm" data-testid="dashboard-metric-tile">
+        <div class="stat">
+          <div class="stat-title">{{ 'dashboard.metrics.openRequests' | translate }}</div>
+          <div class="stat-value text-primary">{{ metrics.openRequests }}</div>
+        </div>
+      </div>
+      <div class="stats bg-base-100 border border-base-300 shadow-sm" data-testid="dashboard-metric-tile">
+        <div class="stat">
+          <div class="stat-title">{{ 'dashboard.metrics.activeCustomers' | translate }}</div>
+          <div class="stat-value text-primary">{{ metrics.activeCustomers }}</div>
+        </div>
+      </div>
+      <div class="stats bg-base-100 border border-base-300 shadow-sm" data-testid="dashboard-metric-tile">
+        <div class="stat">
+          <div class="stat-title">{{ 'dashboard.metrics.totalEmployees' | translate }}</div>
+          <div class="stat-value text-primary">{{ metrics.totalEmployees }}</div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section
+      class="card bg-base-100 border border-base-300 shadow-sm lg:col-span-2"
+      aria-labelledby="dashboard-upcoming-heading"
+    >
+      <div class="card-body">
+        <h2 id="dashboard-upcoming-heading" class="card-title text-lg">
+          {{ 'dashboard.upcoming.heading' | translate }}
+        </h2>
+
+        @if (state.loading()) {
+          <p role="status" class="flex items-center gap-2">
+            <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+            {{ 'dashboard.upcoming.loading' | translate }}
+          </p>
+        } @else if (state.upcomingAppointments().length === 0) {
+          <p>{{ 'dashboard.upcoming.empty' | translate }}</p>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="table" aria-describedby="dashboard-upcoming-heading">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'dashboard.upcoming.columns.time' | translate }}</th>
+                  <th scope="col">{{ 'dashboard.upcoming.columns.status' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (appointment of state.upcomingAppointments(); track appointment.id) {
+                  <tr data-testid="upcoming-appointment-row">
+                    <td>{{ appointment.start | date: 'shortTime' }} – {{ appointment.end | date: 'shortTime' }}</td>
+                    <td>
+                      <span
+                        class="badge"
+                        [class.badge-success]="appointment.status === 'Confirmed'"
+                        [class.badge-warning]="appointment.status === 'RequiresReview'"
+                        [class.badge-neutral]="appointment.status === 'Completed'"
+                      >
+                        {{ statusTranslationKey(appointment.status) | translate }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <div class="card-actions justify-end">
+          <a class="btn btn-ghost btn-sm" routerLink="/appointments">
+            {{ 'dashboard.upcoming.viewAll' | translate }}
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="card bg-base-100 border border-base-300 shadow-sm"
+      aria-labelledby="dashboard-assistant-heading"
+      data-testid="dashboard-assistant-preview"
+    >
+      <div class="card-body">
+        <h2 id="dashboard-assistant-heading" class="card-title text-lg">
+          {{ 'dashboard.assistantPreview.heading' | translate }}
+        </h2>
+        <p class="text-sm text-base-content/70">
+          {{ 'dashboard.assistantPreview.description' | translate }}
+        </p>
+        <div class="card-actions">
+          <button type="button" class="btn btn-primary btn-sm" (click)="openAssistant()">
+            {{ 'dashboard.assistantPreview.openCta' | translate }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
