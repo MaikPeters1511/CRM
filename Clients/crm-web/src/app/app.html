@@ -5,17 +5,57 @@
     <input id="app-sidebar-toggle" type="checkbox" class="drawer-toggle" />
 
     <div class="drawer-content flex flex-col min-h-screen">
-      <header class="navbar bg-base-100 border-b border-base-300 px-4 lg:hidden" role="banner">
-        <div class="navbar-start">
+      <header class="navbar bg-base-100 border-b border-base-300 px-4 sm:px-6 sticky top-0 z-10" role="banner">
+        <div class="navbar-start gap-2">
           <label
             for="app-sidebar-toggle"
-            class="btn btn-ghost btn-square"
+            class="btn btn-ghost btn-square lg:hidden"
             [attr.aria-label]="'crm.nav.main' | translate"
           >
             ☰
           </label>
+          <span class="font-semibold lg:hidden">{{ 'crm.nav.title' | translate }}</span>
         </div>
-        <div class="navbar-center font-semibold">{{ 'crm.nav.title' | translate }}</div>
+
+        <div class="navbar-end ml-auto flex items-center gap-2 sm:gap-3">
+          <nav class="flex gap-1 items-center" aria-label="language switch">
+            @for (lang of languages; track lang) {
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost"
+                [attr.aria-label]="lang"
+                (click)="useLanguage(lang)"
+              >
+                {{ lang.toUpperCase() }}
+              </button>
+            }
+          </nav>
+
+          @defer (on idle) {
+            <app-notification-bell />
+          } @placeholder {
+            <div class="btn btn-ghost btn-sm" aria-hidden="true">
+              <span>🔔</span>
+            </div>
+          }
+
+          <a
+            routerLink="/profile"
+            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-base-200 transition-colors"
+            data-testid="sidebar-user-card"
+            [attr.aria-label]="'crm.nav.profile' | translate"
+          >
+            <div class="avatar avatar-placeholder">
+              <div class="bg-neutral text-neutral-content w-8 rounded-full">
+                <span class="text-xs">{{ userInitial() }}</span>
+              </div>
+            </div>
+            <span class="hidden sm:flex flex-col min-w-0 text-left leading-tight">
+              <span class="text-sm font-medium truncate">{{ authState.currentUser()?.displayName }}</span>
+              <span class="text-xs text-base-content/60">{{ roleTranslationKey() | translate }}</span>
+            </span>
+          </a>
+        </div>
       </header>
 
       <main id="main-content" class="flex-1 p-4 sm:p-6">
@@ -89,43 +129,7 @@
         </nav>
 
         <div class="px-3 py-3 border-t border-base-300">
-          @defer (on idle) {
-            <app-notification-bell />
-          } @placeholder {
-            <div class="btn btn-ghost btn-sm w-full justify-start" aria-hidden="true">
-              <span>🔔 {{ 'notifications.bell.label' | translate }}</span>
-            </div>
-          }
-          <nav class="flex gap-1 items-center justify-center mb-2" aria-label="language switch">
-            @for (lang of languages; track lang) {
-              <button
-                type="button"
-                class="btn btn-xs btn-ghost"
-                [attr.aria-label]="lang"
-                (click)="useLanguage(lang)"
-              >
-                {{ lang.toUpperCase() }}
-              </button>
-            }
-          </nav>
-
-          <a
-            routerLink="/profile"
-            class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200"
-            data-testid="sidebar-user-card"
-            [attr.aria-label]="'crm.nav.profile' | translate"
-          >
-            <div class="avatar avatar-placeholder">
-              <div class="bg-neutral text-neutral-content w-9 rounded-full">
-                <span class="text-xs">{{ userInitial() }}</span>
-              </div>
-            </div>
-            <span class="flex flex-col flex-1 min-w-0">
-              <span class="text-sm font-medium truncate">{{ authState.currentUser()?.displayName }}</span>
-              <span class="text-xs text-base-content/60">{{ roleTranslationKey() | translate }}</span>
-            </span>
-          </a>
-          <button type="button" class="btn btn-ghost btn-sm w-full justify-start mt-1" (click)="logout()">
+          <button type="button" class="btn btn-ghost btn-sm w-full justify-start" (click)="logout()">
             {{ 'auth.nav.logout' | translate }}
           </button>
         </div>
