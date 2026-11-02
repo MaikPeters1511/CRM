@@ -20,12 +20,39 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddHttpContextAccessor();
         services.AddTransient<AuthHeaderForwardingHandler>();
+        AddServiceAccount(services, configuration);
 
         AddCrossServiceClients(services, configuration);
         AddQdrantClient(services, configuration);
         AddLlmClient(services, configuration);
 
         return services;
+    }
+
+    // Technischer Service-Account fuer Hintergrundprozesse (Index-Sync). Zugangsdaten ausschliesslich
+    // aus Konfiguration/Secrets (ServiceAccount:Email/Password bzw. SERVICE_ACCOUNT_PASSWORD).
+    private static void AddServiceAccount(IServiceCollection services, IConfiguration configuration)
+    {
+        var options = new ServiceAccountOptions
+        {
+            Email = configuration["ServiceAccount:Email"] ?? "ai-service@crm.local",
+            Password = configuration["ServiceAccount:Password"] ?? Environment.GetEnvironmentVariable("SERVICE_ACCOUNT_PASSWORD"),
+        };
+        var configuredUrl = configuration["Services:IdentityService:BaseUrl"];
+        var identityUrl = !string.IsNullOrWhiteSpace(configuredUrl)
+            ? configuredUrl
+            : Environment.GetEnvironmentVariable("IDENTITY_SERVICE_BASE_URL") ?? "http://identity-service";
+
+        services.AddHttpClient("identity-service-login", client =>
+        {
+            client.BaseAddress = new Uri(identityUrl);
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+        services.AddSingleton<IServiceAccountTokenProvider>(sp =>
+            new ServiceAccountTokenProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient("identity-service-login"),
+                options,
+                sp.GetRequiredService<TimeProvider>()));
     }
 
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)

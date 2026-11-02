@@ -54,11 +54,13 @@ Konsistenz-Sync-Job (`DailyIndexConsistencySyncHostedService`) als Sicherheitsne
 Der Index enthält ausschließlich abstrahierte Service-/Mitarbeiter-Embeddings — keine Kunden- oder
 Terminhistorie.
 
-**KNOWN LIMITATION:** Die Konsumenten/der tägliche Sync-Job laufen außerhalb eines eingehenden
-HTTP-Request-Kontexts; `AuthHeaderForwardingHandler` kann dort keinen Authorization-Header
-weiterreichen (siehe Code-Kommentar). Für den aktuellen, reinen Ableitungsdaten-Scope bewusst
-akzeptiert — ein Service-Account-/Client-Credentials-Mechanismus für Hintergrundprozesse ist eine
-Folgeaufgabe für `sec-agent`/`architect-agent`.
+**Service-Account für Hintergrundprozesse:** Konsumenten und täglicher Sync laufen ohne eingehenden
+Nutzer-Request. `AuthHeaderForwardingHandler` nutzt dann das JWT eines technischen Service-Accounts
+(`ai-service@crm.local`, Rolle `Admin`, nur lesend genutzt), das `ServiceAccountTokenProvider` per
+`POST /api/auth/login` bei `identity-service` holt und bis kurz vor Ablauf cached. Der Account wird in
+`identity-service` nur geseedet, wenn `IdentitySeed:ServiceAccountPassword` konfiguriert ist (Aspire-Parameter
+`ai-service-account-password`, Compose: `AI_SERVICE_ACCOUNT_PASSWORD`). `ai-service` kennt den Signing-Key nur
+zur Validierung und stellt selbst keine Tokens aus. Ohne Passwort scheitern die Calls mit 401, ohne Absturz.
 
 ## Konfiguration (keine Secrets im Code, CLAUDE.md)
 
@@ -68,6 +70,7 @@ Folgeaufgabe für `sec-agent`/`architect-agent`.
 | `OpenAi:BaseUrl`, `OpenAi:Model`, `OpenAi:ApiKey` | OpenAI-Anbindung (`ApiKey` über Aspire-Secret-Parameter `openai-api-key`) |
 | `LmStudio:BaseUrl`, `LmStudio:Model` | Lokale LMStudio-Anbindung |
 | `Qdrant:BaseUrl` | Qdrant-REST-Endpunkt |
+| `ServiceAccount:Email`, `ServiceAccount:Password`, `Services:IdentityService:BaseUrl` | Service-Account für Hintergrundjobs |
 | `Services:AppointmentService:BaseUrl` / `EmployeeService` / `CatalogService` / `CustomerService` | Basis-URLs der aufgerufenen Services (Default: Aspire Service Discovery) |
 
 ## Datenbank

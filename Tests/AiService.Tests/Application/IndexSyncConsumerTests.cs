@@ -16,7 +16,7 @@ public class IndexSyncConsumerTests
             new DateTimeOffset(2026, 1, 1, 10, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 1, 11, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2026, 1, 1, 9, 0, 0, TimeSpan.Zero));
 
-        await AppointmentIndexSyncConsumers.Handle(@event, indexClient, CancellationToken.None);
+        await AppointmentIndexSyncConsumer.Handle(@event, indexClient, CancellationToken.None);
 
         await Assert.That(indexClient.MarkedBusyEmployeeIds).Contains(employeeId);
     }

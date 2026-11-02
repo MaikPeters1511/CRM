@@ -85,12 +85,20 @@ builder.Host.UseWolverine(opts =>
     {
         opts.UseRabbitMq(new Uri(rabbitMqConnectionString)).AutoProvision();
 
+        // DefaultIncomingMessage: die Publisher-Services nutzen eigene CLR-Typnamen (keine geteilte
+        // Contracts-Assembly) - ohne festen Zieltyp wuerde Wolverine die Nachricht mangels bekanntem
+        // Typnamen verwerfen.
         // Eingehende Integration Events fuer den Qdrant-Verfuegbarkeitsindex (docs/adr/0003, Abschnitt 2).
-        opts.ListenToRabbitQueue("ai-service.appointment-created", q => q.BindExchange("appointment-created"));
-        opts.ListenToRabbitQueue("ai-service.appointment-cancelled", q => q.BindExchange("appointment-cancelled"));
-        opts.ListenToRabbitQueue("ai-service.appointment-rescheduled", q => q.BindExchange("appointment-rescheduled"));
-        opts.ListenToRabbitQueue("ai-service.employee-deactivated", q => q.BindExchange("employee-deactivated"));
-        opts.ListenToRabbitQueue("ai-service.service-catalog-changed", q => q.BindExchange("service-catalog-changed"));
+        opts.ListenToRabbitQueue("ai-service.appointment-created", q => q.BindExchange("appointment-created"))
+            .DefaultIncomingMessage<AiService.Application.IndexSync.AppointmentCreatedIntegrationEvent>();
+        opts.ListenToRabbitQueue("ai-service.appointment-cancelled", q => q.BindExchange("appointment-cancelled"))
+            .DefaultIncomingMessage<AiService.Application.IndexSync.AppointmentCancelledIntegrationEvent>();
+        opts.ListenToRabbitQueue("ai-service.appointment-rescheduled", q => q.BindExchange("appointment-rescheduled"))
+            .DefaultIncomingMessage<AiService.Application.IndexSync.AppointmentRescheduledIntegrationEvent>();
+        opts.ListenToRabbitQueue("ai-service.employee-deactivated", q => q.BindExchange("employee-deactivated"))
+            .DefaultIncomingMessage<AiService.Application.IndexSync.EmployeeDeactivatedIntegrationEvent>();
+        opts.ListenToRabbitQueue("ai-service.service-catalog-changed", q => q.BindExchange("service-catalog-changed"))
+            .DefaultIncomingMessage<AiService.Application.IndexSync.ServiceCatalogChangedIntegrationEvent>();
     }
 
     // Taeglicher Konsistenz-Sync (ADR 0003, Abschnitt 3) - niedrigpriorer Reparatur-Mechanismus,

@@ -31,6 +31,15 @@ public sealed class InMemorySeedUserRepository : IUserRepository
 
         SeedUser(seed.AdminEmail, seed.AdminPassword, seed.AdminDisplayName, UserRole.Admin, hasher, environment, logger);
         SeedUser(seed.EmployeeEmail, seed.EmployeePassword, seed.EmployeeDisplayName, UserRole.Employee, hasher, environment, logger);
+
+        // Rolle Admin ist noetig, weil die Live-Endpoints (z.B. GET /api/appointments) fuer Employee
+        // auf eigene Daten gefiltert sind; der Account wird ausschliesslich lesend vom ai-service
+        // fuer den Qdrant-Index-Sync genutzt und existiert nur bei explizit konfiguriertem Passwort.
+        if (!string.IsNullOrWhiteSpace(seed.ServiceAccountPassword))
+        {
+            SeedUser(seed.ServiceAccountEmail, seed.ServiceAccountPassword, seed.ServiceAccountDisplayName,
+                UserRole.Admin, hasher, environment, logger);
+        }
     }
 
     public Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken)

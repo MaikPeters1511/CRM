@@ -15,7 +15,7 @@ namespace AiService.Application.IndexSync;
 /// alleinige Entscheidungsgrundlage) und wird vom taeglichen Konsistenz-Sync (Abschnitt 3)
 /// repariert - kein Gold-Plating durch einen verfruehten Service-Account-Mechanismus.
 /// </summary>
-public static class AppointmentIndexSyncConsumers
+public static class AppointmentIndexSyncConsumer
 {
     public static Task Handle(
         AppointmentCreatedIntegrationEvent @event, IAvailabilityIndexClient indexClient, CancellationToken cancellationToken) =>

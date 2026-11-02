@@ -23,4 +23,15 @@ public sealed class IdentitySeedOptions
     public string? EmployeePassword { get; set; }
 
     public string EmployeeDisplayName { get; set; } = "CRM Employee";
+
+    /// <summary>
+    /// Technischer Service-Account fuer ai-service (Hintergrundjobs ohne eingehenden Nutzer-Request,
+    /// docs/adr/0003). Wird NUR geseedet, wenn <see cref="ServiceAccountPassword"/> konfiguriert ist -
+    /// niemals mit einem Default-/Zufallspasswort.
+    /// </summary>
+    public string ServiceAccountEmail { get; set; } = "ai-service@crm.local";
+
+    public string? ServiceAccountPassword { get; set; }
+
+    public string ServiceAccountDisplayName { get; set; } = "AI Service Account";
 }

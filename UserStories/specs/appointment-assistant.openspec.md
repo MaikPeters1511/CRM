@@ -148,10 +148,9 @@ Hardcoding) umschaltbar machen, ohne Codeänderung in der RAG-Orchestrierungslog
 - `docs/adr/0002-frontend-konsolidierung.md` (Feature-Bereich `assistant` in `Clients/crm-web`)
 - `ai-service` legt/ändert/storniert nie selbst einen Termin — ausschließlich
   `POST /api/appointments` in `appointment-service`.
-- KNOWN LIMITATION: Wolverine-Event-Konsumenten/täglicher Konsistenz-Sync laufen ohne
-  HTTP-Request-Kontext und können daher keinen Authorization-Header weiterreichen — fachlich
-  unkritisch für reine Ableitungsdaten (siehe `Services/ai-service/README.md`), aber offener Punkt
-  für einen künftigen Service-Account-Mechanismus.
+- Hintergrundprozesse (Event-Konsumenten/Konsistenz-Sync) nutzen einen technischen Service-Account
+  (`ai-service@crm.local`, Rolle `Admin`, nur lesend; Login bei `identity-service`, Token gecached,
+  nur geseedet wenn Passwort konfiguriert) — `ai-service` stellt selbst keine Tokens aus.
 
 ## Tests
 - `Tests/AiService.Tests` (Backend, 28 Tests: Domain, Application inkl. RBAC-Negativtest,

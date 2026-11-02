@@ -17,6 +17,9 @@ var jwtAudience = builder.AddParameter("jwt-audience", "crm-api");
 var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
 var identityAdminPassword = builder.AddParameter("identity-admin-password", secret: true);
 var identityEmployeePassword = builder.AddParameter("identity-employee-password", secret: true);
+// Technischer Service-Account fuer ai-service-Hintergrundjobs (Index-Sync, docs/adr/0003):
+//   dotnet user-secrets set "Parameters:ai-service-account-password" "<zufaellig>" --project AppHost/Crm.AppHost
+var aiServiceAccountPassword = builder.AddParameter("ai-service-account-password", secret: true);
 
 // Login-Brute-Force-Limit (OWASP A04, siehe identity-service/Program.cs) ist ueber Konfiguration
 // einstellbar, damit CI/E2E-Laeufe mit vielen aufeinanderfolgenden Logins das produktive
@@ -80,6 +83,7 @@ var identityService = builder.AddProject<Projects.IdentityService_Web>("identity
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
     .WithEnvironment("IdentitySeed__AdminPassword", identityAdminPassword)
     .WithEnvironment("IdentitySeed__EmployeePassword", identityEmployeePassword)
+    .WithEnvironment("IdentitySeed__ServiceAccountPassword", aiServiceAccountPassword)
     .WithEnvironment("RateLimiting__Login__PermitLimit", loginRateLimitPermitLimit);
 
 var customerService = builder.AddProject<Projects.CustomerService_Web>("customer-service")
@@ -120,15 +124,17 @@ var appointmentService = builder.AddProject<Projects.AppointmentService_Web>("ap
 // ADR 0001 Abschnitt 2) - daher auch hier eine Service-Discovery-Referenz in dieser Richtung.
 employeeService.WithReference(appointmentService);
 
-// catalog-service: nur crm-web ruft diesen Service (ueber das Gateway) auf, kein synchroner
-// Backend-zu-Backend-Call von employee-service/appointment-service (kein Gold-Plating, siehe
+// catalog-service: publiziert ServiceCatalogChanged (docs/adr/0003, RabbitMQ-Referenz noetig); nur
+// crm-web ruft diesen Service (ueber das Gateway) auf, kein synchroner Backend-zu-Backend-Call von employee-service/appointment-service (kein Gold-Plating, siehe
 // Proposal "Impact" und Design-Abschnitt der Change-Spec).
 var catalogService = builder.AddProject<Projects.CatalogService_Web>("catalog-service")
     .WithReference(catalogDb, connectionName: "catalog_db")
+    .WithReference(rabbitmq, connectionName: "rabbitmq")
     .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
     .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)
-    .WaitFor(catalogDb);
+    .WaitFor(catalogDb)
+    .WaitFor(rabbitmq);
 
 // ai-service: synchrone Service-Discovery-Referenzen auf appointment-service/employee-service/
 // catalog-service/customer-service fuer die Polly-abgesicherten Live-Calls (ki-terminassistent.openspec.md,
@@ -140,6 +146,8 @@ var aiService = builder.AddProject<Projects.AiService_Web>("ai-service")
     .WithReference(employeeService)
     .WithReference(catalogService)
     .WithReference(customerService)
+    .WithReference(identityService)
+    .WithEnvironment("ServiceAccount__Password", aiServiceAccountPassword)
     .WithEnvironment("Authentication__JwtBearer__Issuer", jwtIssuer)
     .WithEnvironment("Authentication__JwtBearer__Audience", jwtAudience)
     .WithEnvironment("Authentication__JwtBearer__SigningKey", jwtSigningKey)

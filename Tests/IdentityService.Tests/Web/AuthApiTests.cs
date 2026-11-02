@@ -29,6 +29,36 @@ public class AuthApiTests
     }
 
     [Test]
+    public async Task PostLogin_WithConfiguredServiceAccount_ReturnsTokenWithAdminRole()
+    {
+        using var factory = new IdentityServiceWebFactory(settings =>
+        {
+            settings["IdentitySeed:ServiceAccountEmail"] = "ai-service@crm.local";
+            settings["IdentitySeed:ServiceAccountPassword"] = "Test-Service-Passw0rd!";
+        });
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("ai-service@crm.local", "Test-Service-Passw0rd!"));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions);
+        await Assert.That(body!.Role).IsEqualTo("Admin");
+    }
+
+    [Test]
+    public async Task PostLogin_WithoutConfiguredServiceAccountPassword_DoesNotSeedServiceAccount()
+    {
+        using var factory = new IdentityServiceWebFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("ai-service@crm.local", "irgendwas"));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Unauthorized);
+    }
+
+    [Test]
     public async Task PostLogin_WithWrongPassword_ReturnsUnauthorizedWithoutLeakingReason()
     {
         using var factory = new IdentityServiceWebFactory();

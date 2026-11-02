@@ -151,6 +151,7 @@ services:
       Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
       IdentitySeed__AdminPassword: ${IDENTITY_ADMIN_PASSWORD}
       IdentitySeed__EmployeePassword: ${IDENTITY_EMPLOYEE_PASSWORD}
+      IdentitySeed__ServiceAccountPassword: ${AI_SERVICE_ACCOUNT_PASSWORD}
       RateLimiting__Login__PermitLimit: ${LOGIN_RATE_LIMIT_PERMIT_LIMIT:-5}
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
     networks: [crm-network]
@@ -262,6 +263,8 @@ services:
       Authentication__JwtBearer__SigningKey: ${JWT_SIGNING_KEY}
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
       Qdrant__BaseUrl: http://qdrant:6333
+      Services__IdentityService__BaseUrl: http://identity-service:8080
+      ServiceAccount__Password: ${AI_SERVICE_ACCOUNT_PASSWORD}
       LlmProvider: ${LLM_PROVIDER:-OpenAi}
       OpenAi__ApiKey: ${OPENAI_API_KEY}
       OpenAi__Model: ${OPENAI_MODEL:-gpt-4o-mini}
@@ -284,6 +287,8 @@ services:
       employee-service:
         condition: service_started
       catalog-service:
+        condition: service_started
+      identity-service:
         condition: service_started
       customer-service:
         condition: service_started
