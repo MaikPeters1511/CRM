@@ -3,6 +3,7 @@ import { provideRouter, Router } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { App } from '../../../Clients/crm-web/src/app/app';
 import { AuthStateService } from '../../../Clients/crm-web/src/app/auth/application/auth-state.service';
+import { NotificationStateService } from '../../../Clients/crm-web/src/app/employees/application/notification-state.service';
 import { routes } from '../../../Clients/crm-web/src/app/app.routes';
 import type { AuthUser } from '../../../Clients/crm-web/src/app/auth/domain/auth-user.model';
 
@@ -21,12 +22,21 @@ describe('App (Shell/Navigation)', () => {
       logout: vi.fn(),
     };
 
+    const notificationStateMock = {
+      notifications: () => [],
+      unreadCount: () => 0,
+      loading: () => false,
+      loadNotifications: vi.fn(),
+      markAsRead: vi.fn(),
+    };
+
     TestBed.configureTestingModule({
       imports: [App],
       providers: [
         provideRouter(routes),
         provideTranslateService({ lang: 'de', fallbackLang: 'de' }),
         { provide: AuthStateService, useValue: authStateMock },
+        { provide: NotificationStateService, useValue: notificationStateMock },
       ],
     });
 
@@ -35,7 +45,7 @@ describe('App (Shell/Navigation)', () => {
     return { fixture };
   }
 
-  it('shows navigation entries for customers, employees, appointments and catalog for an authenticated Admin', () => {
+  it('shows navigation entries for customers, employees, appointments, catalog and the absence approvals view for an authenticated Admin', () => {
     const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
 
     const links = fixture.nativeElement.querySelectorAll('nav[aria-label="crm.nav.main"] a');
@@ -43,7 +53,7 @@ describe('App (Shell/Navigation)', () => {
       a.getAttribute('routerLink'),
     );
 
-    expect(hrefs).toEqual(['/customers', '/employees', '/appointments', '/catalog']);
+    expect(hrefs).toEqual(['/customers', '/employees', '/appointments', '/catalog', '/employees/absence-approvals']);
   });
 
   it('shows navigation entries for customers, employees and appointments for an authenticated Employee', () => {
