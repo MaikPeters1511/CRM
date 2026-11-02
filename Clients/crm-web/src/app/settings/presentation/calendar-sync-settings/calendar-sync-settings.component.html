@@ -1,0 +1,33 @@
+<section aria-labelledby="calendar-sync-settings-heading" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body">
+    <h2 id="calendar-sync-settings-heading" class="card-title">{{ 'settings.calendarSync.heading' | translate }}</h2>
+    <p class="text-sm text-base-content/60 mb-4">{{ 'settings.calendarSync.hint' | translate }}</p>
+    <div class="alert alert-info mb-4" role="status">{{ 'settings.mockupNotice' | translate }}</div>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <label class="form-control">
+        <span class="label-text">{{ 'settings.calendarSync.provider' | translate }}</span>
+        <select class="select select-bordered w-full" formControlName="provider">
+          <option value="none">{{ 'settings.calendarSync.providers.none' | translate }}</option>
+          <option value="google">{{ 'settings.calendarSync.providers.google' | translate }}</option>
+          <option value="microsoft365">{{ 'settings.calendarSync.providers.microsoft365' | translate }}</option>
+        </select>
+      </label>
+      <label class="form-control">
+        <span class="label-text">{{ 'settings.calendarSync.calendarId' | translate }}</span>
+        <input type="text" class="input input-bordered w-full" formControlName="calendarId" />
+      </label>
+      <label class="label cursor-pointer gap-2 sm:col-span-2">
+        <input type="checkbox" class="toggle toggle-primary" formControlName="syncEnabled" />
+        <span class="label-text">{{ 'settings.calendarSync.syncEnabled' | translate }}</span>
+      </label>
+
+      <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+        <button type="submit" class="btn btn-primary">{{ 'settings.actions.save' | translate }}</button>
+        @if (savedVisible()) {
+          <span class="text-success text-sm" role="status">{{ 'settings.actions.saved' | translate }}</span>
+        }
+      </div>
+    </form>
+  </div>
+</section>

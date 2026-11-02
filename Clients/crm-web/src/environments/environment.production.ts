@@ -9,4 +9,7 @@ export const environment: Environment = {
   authApiBaseUrl: '/api',
   catalogApiBaseUrl: '/api',
   assistantApiBaseUrl: '/api',
+  aiServiceApiBaseUrl: '/api',
+  identityApiBaseUrl: '/api',
+  notificationApiBaseUrl: '/api',
 };

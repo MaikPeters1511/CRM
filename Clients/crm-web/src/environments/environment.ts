@@ -15,4 +15,7 @@ export const environment: Environment = {
   authApiBaseUrl: gatewayBaseUrl,
   catalogApiBaseUrl: gatewayBaseUrl,
   assistantApiBaseUrl: gatewayBaseUrl,
+  aiServiceApiBaseUrl: gatewayBaseUrl,
+  identityApiBaseUrl: gatewayBaseUrl,
+  notificationApiBaseUrl: gatewayBaseUrl,
 };

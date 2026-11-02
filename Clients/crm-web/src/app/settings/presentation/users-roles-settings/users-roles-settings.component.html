@@ -1,0 +1,41 @@
+<section aria-labelledby="users-roles-heading" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body">
+    <h2 id="users-roles-heading" class="card-title">{{ 'settings.usersRoles.heading' | translate }}</h2>
+    <p class="text-sm text-base-content/60 mb-4">{{ 'settings.usersRoles.hint' | translate }}</p>
+
+    @if (state.loading()) {
+      <p role="status" class="flex items-center gap-2"><span class="loading loading-spinner loading-sm" aria-hidden="true"></span>{{ 'settings.usersRoles.loading' | translate }}</p>
+    } @else if (state.hasErrors()) {
+      <div class="alert alert-error" role="alert">{{ 'settings.usersRoles.loadFailed' | translate }}</div>
+    } @else if (state.employees().length === 0) {
+      <p>{{ 'settings.usersRoles.empty' | translate }}</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{{ 'settings.usersRoles.columns.name' | translate }}</th>
+              <th>{{ 'settings.usersRoles.columns.email' | translate }}</th>
+              <th>{{ 'settings.usersRoles.columns.role' | translate }}</th>
+              <th>{{ 'settings.usersRoles.columns.status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (employee of state.employees(); track employee.id) {
+              <tr>
+                <td>{{ employee.firstName }} {{ employee.lastName }}</td>
+                <td>{{ employee.email }}</td>
+                <td><span class="badge badge-outline">{{ 'settings.usersRoles.roles.' + employee.role | translate }}</span></td>
+                <td>
+                  <span class="badge" [class.badge-success]="employee.isActive" [class.badge-neutral]="!employee.isActive">
+                    {{ (employee.isActive ? 'settings.usersRoles.statusActive' : 'settings.usersRoles.statusInactive') | translate }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</section>
