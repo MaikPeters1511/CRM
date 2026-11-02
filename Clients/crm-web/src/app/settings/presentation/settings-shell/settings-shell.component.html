@@ -1,19 +1,23 @@
-<section aria-labelledby="settings-heading" class="flex flex-col lg:flex-row gap-6">
-  <h1 id="settings-heading" class="sr-only">{{ 'settings.heading' | translate }}</h1>
+<section aria-labelledby="settings-heading" class="flex flex-col gap-6 max-w-6xl mx-auto">
+  <div>
+    <h1 id="settings-heading" class="text-2xl font-semibold tracking-tight">{{ 'settings.heading' | translate }}</h1>
+  </div>
 
-  <nav class="lg:w-64 shrink-0" aria-label="{{ 'settings.nav.label' | translate }}">
-    <ul class="menu bg-base-100 border border-base-300 rounded-box w-full gap-1">
-      @for (entry of navEntries; track entry.path) {
-        <li>
-          <a [routerLink]="[entry.path]" routerLinkActive="menu-active">
-            {{ entry.labelKey | translate }}
-          </a>
-        </li>
-      }
-    </ul>
-  </nav>
+  <div class="flex flex-col lg:flex-row gap-6 items-start">
+    <nav class="w-full lg:w-64 shrink-0" aria-label="{{ 'settings.nav.label' | translate }}">
+      <ul class="menu bg-base-100 border border-base-300 rounded-box w-full p-2 gap-1 shadow-xs">
+        @for (entry of navEntries; track entry.path) {
+          <li>
+            <a [routerLink]="[entry.path]" routerLinkActive="menu-active" class="font-medium">
+              {{ entry.labelKey | translate }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
 
-  <div class="flex-1 min-w-0">
-    <router-outlet />
+    <div class="flex-1 w-full min-w-0">
+      <router-outlet />
+    </div>
   </div>
 </section>

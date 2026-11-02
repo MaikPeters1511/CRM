@@ -1,83 +1,175 @@
-<section aria-labelledby="general-settings-heading" class="card bg-base-100 border border-base-300 shadow-sm">
-  <div class="card-body">
-    <h2 id="general-settings-heading" class="card-title">{{ 'settings.general.heading' | translate }}</h2>
-    <p class="text-sm text-base-content/60 mb-4">{{ 'settings.general.hint' | translate }}</p>
+<section aria-labelledby="general-settings-heading" class="flex flex-col gap-6">
+  <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-6">
+    <!-- Karte 1: Unternehmensprofil & Kontakt -->
+    <div class="card bg-base-100 border border-base-300 shadow-xs">
+      <div class="card-body gap-5">
+        <div class="flex items-start justify-between gap-4 border-b border-base-300 pb-4">
+          <div>
+            <h2 id="general-settings-heading" class="card-title text-lg">
+              {{ 'settings.general.heading' | translate }}
+            </h2>
+            <p class="text-sm text-base-content/60 mt-0.5">
+              {{ 'settings.general.hint' | translate }}
+            </p>
+          </div>
+          <div class="avatar avatar-placeholder shrink-0">
+            <div class="bg-primary/10 text-primary border border-primary/20 w-12 h-12 rounded-xl flex items-center justify-center">
+              <span class="text-base font-bold">
+                {{ (form.controls.companyName.value || 'MP').slice(0, 2).toUpperCase() }}
+              </span>
+            </div>
+          </div>
+        </div>
 
-    <form [formGroup]="form" (ngSubmit)="save()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <label class="form-control sm:col-span-2">
-        <span class="label-text">{{ 'settings.general.companyName' | translate }}</span>
-        <input type="text" class="input input-bordered w-full" formControlName="companyName" />
-      </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="form-control sm:col-span-2">
+            <span class="label-text">{{ 'settings.general.companyName' | translate }}</span>
+            <input
+              type="text"
+              class="input w-full"
+              formControlName="companyName"
+              placeholder="MP CRM GmbH"
+            />
+          </label>
 
-      <label class="form-control sm:col-span-2">
-        <span class="label-text">{{ 'settings.general.logoUrl' | translate }}</span>
-        <input type="text" class="input input-bordered w-full" formControlName="logoUrl" />
-      </label>
+          <label class="form-control sm:col-span-2">
+            <span class="label-text">{{ 'settings.general.logoUrl' | translate }}</span>
+            <input
+              type="url"
+              class="input w-full"
+              formControlName="logoUrl"
+              placeholder="https://beispiel.de/logo.svg"
+            />
+          </label>
 
-      <label class="form-control">
-        <span class="label-text">{{ 'settings.general.street' | translate }}</span>
-        <input type="text" class="input input-bordered w-full" formControlName="street" />
-      </label>
-      <label class="form-control">
-        <span class="label-text">{{ 'settings.general.zipCode' | translate }}</span>
-        <input type="text" class="input input-bordered w-full" formControlName="zipCode" />
-      </label>
-      <label class="form-control">
-        <span class="label-text">{{ 'settings.general.city' | translate }}</span>
-        <input type="text" class="input input-bordered w-full" formControlName="city" />
-      </label>
-      <label class="form-control">
-        <span class="label-text">{{ 'settings.general.phone' | translate }}</span>
-        <input type="text" class="input input-bordered w-full" formControlName="phone" />
-      </label>
-      <label class="form-control sm:col-span-2">
-        <span class="label-text">{{ 'settings.general.email' | translate }}</span>
-        <input type="email" class="input input-bordered w-full" formControlName="email" />
-      </label>
+          <label class="form-control">
+            <span class="label-text">{{ 'settings.general.email' | translate }}</span>
+            <input
+              type="email"
+              class="input w-full"
+              formControlName="email"
+              placeholder="kontakt@firma.de"
+            />
+          </label>
 
-      <fieldset class="sm:col-span-2">
-        <legend class="label-text font-semibold mb-2">{{ 'settings.general.openingHours' | translate }}</legend>
-        <div class="flex flex-col gap-2">
+          <label class="form-control">
+            <span class="label-text">{{ 'settings.general.phone' | translate }}</span>
+            <input
+              type="tel"
+              class="input w-full"
+              formControlName="phone"
+              placeholder="+49 30 1234567"
+            />
+          </label>
+        </div>
+
+        <div class="divider my-0"></div>
+
+        <!-- Adresse -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <label class="form-control sm:col-span-3">
+            <span class="label-text">{{ 'settings.general.street' | translate }}</span>
+            <input
+              type="text"
+              class="input w-full"
+              formControlName="street"
+              placeholder="Musterstraße 1"
+            />
+          </label>
+
+          <label class="form-control sm:col-span-1">
+            <span class="label-text">{{ 'settings.general.zipCode' | translate }}</span>
+            <input
+              type="text"
+              class="input w-full"
+              formControlName="zipCode"
+              placeholder="10115"
+            />
+          </label>
+
+          <label class="form-control sm:col-span-2">
+            <span class="label-text">{{ 'settings.general.city' | translate }}</span>
+            <input
+              type="text"
+              class="input w-full"
+              formControlName="city"
+              placeholder="Berlin"
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Karte 2: Oeffnungszeiten -->
+    <fieldset class="card bg-base-100 border border-base-300 shadow-xs">
+      <div class="card-body gap-4">
+        <div class="border-b border-base-300 pb-3">
+          <legend class="text-base font-semibold">
+            {{ 'settings.general.openingHours' | translate }}
+          </legend>
+        </div>
+
+        <div class="rounded-box border border-base-300 divide-y divide-base-300 overflow-hidden">
           @for (slot of openingHours(); track slot.weekday; let i = $index) {
-            <div class="flex items-center gap-3 flex-wrap">
-              <span class="w-24">{{ 'settings.general.weekdays.' + slot.weekday | translate }}</span>
-              <label class="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  class="checkbox checkbox-sm"
-                  [checked]="slot.closed"
-                  (change)="updateOpeningHoursField(i, 'closed', $event.target.checked)"
-                />
-                {{ 'settings.general.closed' | translate }}
-              </label>
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 transition-colors"
+              [class.bg-base-200/40]="slot.closed"
+            >
+              <div class="flex items-center justify-between sm:justify-start gap-4 min-w-48">
+                <span class="font-medium text-sm w-28">
+                  {{ 'settings.general.weekdays.' + slot.weekday | translate }}
+                </span>
+                <label class="inline-flex items-center gap-2 text-xs text-base-content/70 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-sm"
+                    [checked]="!slot.closed"
+                    (change)="updateOpeningHoursField(i, 'closed', !$event.target.checked)"
+                  />
+                  @if (slot.closed) {
+                    <span class="badge badge-ghost badge-sm">{{ 'settings.general.closed' | translate }}</span>
+                  }
+                </label>
+              </div>
+
               @if (!slot.closed) {
-                <input
-                  type="time"
-                  class="input input-bordered input-sm"
-                  [value]="slot.from"
-                  (change)="updateOpeningHoursField(i, 'from', $event.target.value)"
-                  [attr.aria-label]="('settings.general.weekdays.' + slot.weekday | translate) + ' ' + ('settings.general.from' | translate)"
-                />
-                <span>–</span>
-                <input
-                  type="time"
-                  class="input input-bordered input-sm"
-                  [value]="slot.to"
-                  (change)="updateOpeningHoursField(i, 'to', $event.target.value)"
-                  [attr.aria-label]="('settings.general.weekdays.' + slot.weekday | translate) + ' ' + ('settings.general.to' | translate)"
-                />
+                <div class="flex items-center gap-2">
+                  <input
+                    type="time"
+                    class="input input-sm w-32 font-mono"
+                    [value]="slot.from"
+                    (change)="updateOpeningHoursField(i, 'from', $event.target.value)"
+                    [attr.aria-label]="('settings.general.weekdays.' + slot.weekday | translate) + ' ' + ('settings.general.from' | translate)"
+                  />
+                  <span class="text-base-content/50 font-medium">–</span>
+                  <input
+                    type="time"
+                    class="input input-sm w-32 font-mono"
+                    [value]="slot.to"
+                    (change)="updateOpeningHoursField(i, 'to', $event.target.value)"
+                    [attr.aria-label]="('settings.general.weekdays.' + slot.weekday | translate) + ' ' + ('settings.general.to' | translate)"
+                  />
+                </div>
+              } @else {
+                <span class="text-xs text-base-content/50 hidden sm:inline">
+                  {{ 'settings.general.closed' | translate }}
+                </span>
               }
             </div>
           }
         </div>
-      </fieldset>
 
-      <div class="sm:col-span-2 flex items-center gap-3 mt-2">
-        <button type="submit" class="btn btn-primary">{{ 'settings.actions.save' | translate }}</button>
-        @if (savedVisible()) {
-          <span class="text-success text-sm" role="status">{{ 'settings.actions.saved' | translate }}</span>
-        }
+        <div class="flex items-center justify-end gap-3 pt-2">
+          @if (savedVisible()) {
+            <span class="badge badge-success badge-soft gap-1.5 py-3 px-3 text-sm" role="status">
+              ✓ {{ 'settings.actions.saved' | translate }}
+            </span>
+          }
+          <button type="submit" class="btn btn-primary px-6">
+            {{ 'settings.actions.save' | translate }}
+          </button>
+        </div>
       </div>
-    </form>
-  </div>
+    </fieldset>
+  </form>
 </section>
