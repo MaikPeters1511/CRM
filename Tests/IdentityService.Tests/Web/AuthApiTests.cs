@@ -1,24 +1,26 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using IdentityService.Tests.Support;
 using IdentityService.Web.Controllers;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using TUnit.Core;
 
 namespace IdentityService.Tests.Web;
 
-public class AuthApiTests
+[NotInParallel]
+[ClassDataSource<IdentityDbContainerFixture>(Shared = SharedType.PerTestSession)]
+public class AuthApiTests(IdentityDbContainerFixture dbFixture)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     [Test]
     public async Task PostLogin_WithValidAdminCredentials_ReturnsTokenWithAdminRole()
     {
-        using var factory = new IdentityServiceWebFactory();
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString);
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest(IdentityServiceWebFactory.AdminEmail, IdentityServiceWebFactory.AdminPassword));
+        var response = await AuthTestHelpers.LoginAsTrustedDeviceAsync(
+            factory, client, IdentityServiceWebFactory.AdminEmail, IdentityServiceWebFactory.AdminPassword);
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
@@ -31,15 +33,15 @@ public class AuthApiTests
     [Test]
     public async Task PostLogin_WithConfiguredServiceAccount_ReturnsTokenWithAdminRole()
     {
-        using var factory = new IdentityServiceWebFactory(settings =>
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString, settings =>
         {
             settings["IdentitySeed:ServiceAccountEmail"] = "ai-service@crm.local";
             settings["IdentitySeed:ServiceAccountPassword"] = "Test-Service-Passw0rd!";
         });
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("ai-service@crm.local", "Test-Service-Passw0rd!"));
+        var response = await AuthTestHelpers.LoginAsTrustedDeviceAsync(
+            factory, client, "ai-service@crm.local", "Test-Service-Passw0rd!");
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions);
@@ -49,7 +51,7 @@ public class AuthApiTests
     [Test]
     public async Task PostLogin_WithoutConfiguredServiceAccountPassword_DoesNotSeedServiceAccount()
     {
-        using var factory = new IdentityServiceWebFactory();
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/login",
@@ -61,7 +63,7 @@ public class AuthApiTests
     [Test]
     public async Task PostLogin_WithWrongPassword_ReturnsUnauthorizedWithoutLeakingReason()
     {
-        using var factory = new IdentityServiceWebFactory();
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/login",
@@ -73,7 +75,7 @@ public class AuthApiTests
     [Test]
     public async Task PostLogin_WithUnknownEmail_ReturnsUnauthorizedSameAsWrongPassword()
     {
-        using var factory = new IdentityServiceWebFactory();
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/login",
@@ -85,11 +87,11 @@ public class AuthApiTests
     [Test]
     public async Task PostLogin_WithValidEmployeeCredentials_ReturnsTokenWithEmployeeRoleAndOwnUserId()
     {
-        using var factory = new IdentityServiceWebFactory();
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString);
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest(IdentityServiceWebFactory.EmployeeEmail, IdentityServiceWebFactory.EmployeePassword));
+        var response = await AuthTestHelpers.LoginAsTrustedDeviceAsync(
+            factory, client, IdentityServiceWebFactory.EmployeeEmail, IdentityServiceWebFactory.EmployeePassword);
 
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions);
 
@@ -109,11 +111,11 @@ public class AuthApiTests
     [Test]
     public async Task PostLogin_WithValidEmployeeCredentials_ReturnsUserIdMatchingEmployeeServiceDevSeed()
     {
-        using var factory = new IdentityServiceWebFactory();
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString);
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest(IdentityServiceWebFactory.EmployeeEmail, IdentityServiceWebFactory.EmployeePassword));
+        var response = await AuthTestHelpers.LoginAsTrustedDeviceAsync(
+            factory, client, IdentityServiceWebFactory.EmployeeEmail, IdentityServiceWebFactory.EmployeePassword);
 
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions);
 
@@ -135,7 +137,7 @@ public class AuthApiTests
     [Test]
     public async Task PostLogin_ExceedsConfiguredPermitLimit_ReturnsTooManyRequests()
     {
-        using var factory = new IdentityServiceWebFactory(configureRateLimit: config =>
+        using var factory = new IdentityServiceWebFactory(dbFixture.ConnectionString, configureRateLimit: config =>
         {
             config["RateLimiting:Login:PermitLimit"] = "2";
             config["RateLimiting:Login:WindowSeconds"] = "60";

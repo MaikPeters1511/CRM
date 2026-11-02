@@ -4,6 +4,15 @@ using Microsoft.Extensions.Configuration;
 
 namespace IdentityService.Tests.Web;
 
+/// <summary>
+/// Seit docs/adr/0004 (identity_db) benoetigt identity-service zwingend eine echte PostgreSQL-
+/// Datenbank - identisches Muster wie EmployeeServiceRealInfrastructureWebFactory
+/// (Tests/EmployeeService.Tests/Web): <c>AddIdentityServiceInfrastructure</c> liest den
+/// Connection-String EAGER (vor builder.Build()), daher wird hier die Prozess-Umgebungsvariable
+/// <c>ConnectionStrings__identity_db</c> gesetzt statt WebApplicationFactory's
+/// ConfigureAppConfiguration-Hook zu nutzen (der erst bei Build() greift). Tests, die diese
+/// Factory verwenden, sind deshalb <c>[NotInParallel]</c> (globale Prozess-Umgebungsvariable).
+/// </summary>
 public sealed class IdentityServiceWebFactory : WebApplicationFactory<Program>
 {
     public const string AdminEmail = "admin@crm.local";
@@ -11,11 +20,16 @@ public sealed class IdentityServiceWebFactory : WebApplicationFactory<Program>
     public const string EmployeeEmail = "employee@crm.local";
     public const string EmployeePassword = "Test-Employee-Passw0rd!";
 
-    private readonly Action<Dictionary<string, string?>>? _configureRateLimit;
+    private const string ConnectionStringEnvVarName = "ConnectionStrings__identity_db";
 
-    public IdentityServiceWebFactory(Action<Dictionary<string, string?>>? configureRateLimit = null)
+    private readonly Action<Dictionary<string, string?>>? _configureRateLimit;
+    private readonly string? _previousConnectionStringEnvVar;
+
+    public IdentityServiceWebFactory(string connectionString, Action<Dictionary<string, string?>>? configureRateLimit = null)
     {
         _configureRateLimit = configureRateLimit;
+        _previousConnectionStringEnvVar = Environment.GetEnvironmentVariable(ConnectionStringEnvVarName);
+        Environment.SetEnvironmentVariable(ConnectionStringEnvVarName, connectionString);
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -37,5 +51,11 @@ public sealed class IdentityServiceWebFactory : WebApplicationFactory<Program>
             _configureRateLimit?.Invoke(settings);
             configBuilder.AddInMemoryCollection(settings);
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        Environment.SetEnvironmentVariable(ConnectionStringEnvVarName, _previousConnectionStringEnvVar);
     }
 }

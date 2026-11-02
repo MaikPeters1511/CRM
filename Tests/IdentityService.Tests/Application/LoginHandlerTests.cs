@@ -1,78 +1,172 @@
+using IdentityService.Application.Audit;
 using IdentityService.Application.Auth;
 using IdentityService.Application.Auth.Login;
+using IdentityService.Application.Devices;
+using IdentityService.Application.Mfa;
+using IdentityService.Application.Security;
+using IdentityService.Domain.Devices;
+using IdentityService.Domain.Mfa;
+using IdentityService.Domain.Security;
 using IdentityService.Domain.Users;
 using NSubstitute;
 
 namespace IdentityService.Tests.Application;
 
+/// <summary>
+/// Testet die Login-Gate-Reihenfolge Lockout -> Passwort -> Device-Trust -> MFA
+/// (docs/adr/0004, Abschnitt 5). Jede Abhaengigkeit ist per Default "freundlich" konfiguriert
+/// (bekanntes Geraet, kein MFA) - einzelne Tests ueberschreiben gezielt eine Abhaengigkeit, um das
+/// jeweilige Gate isoliert zu pruefen.
+/// </summary>
 public class LoginHandlerTests
 {
-    private static readonly User AdminUser = new(
-        Guid.NewGuid(), "admin@crm.local", "hashed-password", UserRole.Admin, "CRM Admin");
+    private const string UserAgent = "test-agent";
+    private const string IpAddress = "203.0.113.10";
+
+    private static User NewUser() => new(Guid.NewGuid(), "admin@crm.local", "hashed-password", UserRole.Admin, "CRM Admin");
+
+    private sealed class Fixture
+    {
+        public readonly IUserRepository UserRepository = Substitute.For<IUserRepository>();
+        public readonly IPasswordVerifier PasswordVerifier = Substitute.For<IPasswordVerifier>();
+        public readonly ITokenGenerator TokenGenerator = Substitute.For<ITokenGenerator>();
+        public readonly ISecurityPolicyRepository SecurityPolicyRepository = Substitute.For<ISecurityPolicyRepository>();
+        public readonly IKnownDeviceRepository KnownDeviceRepository = Substitute.For<IKnownDeviceRepository>();
+        public readonly IPendingDeviceConfirmationRepository PendingDeviceConfirmationRepository = Substitute.For<IPendingDeviceConfirmationRepository>();
+        public readonly IDeviceConfirmationNotifier DeviceConfirmationNotifier = Substitute.For<IDeviceConfirmationNotifier>();
+        public readonly IMfaCredentialRepository MfaCredentialRepository = Substitute.For<IMfaCredentialRepository>();
+        public readonly ILoginChallengeCache LoginChallengeCache = Substitute.For<ILoginChallengeCache>();
+        public readonly IAuditLogger AuditLogger = Substitute.For<IAuditLogger>();
+
+        public Fixture()
+        {
+            SecurityPolicyRepository.GetAsync(Arg.Any<CancellationToken>()).Returns(new SecurityPolicy());
+        }
+
+        public void KnownDeviceFor(User user) =>
+            KnownDeviceRepository
+                .FindAsync(user.Id, Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new KnownDevice(Guid.NewGuid(), user.Id, "hash", UserAgent, "203.0.113.0/24"));
+
+        public LoginHandler Build() => new(
+            UserRepository, PasswordVerifier, TokenGenerator, SecurityPolicyRepository,
+            KnownDeviceRepository, PendingDeviceConfirmationRepository, DeviceConfirmationNotifier,
+            MfaCredentialRepository, LoginChallengeCache, AuditLogger, TimeProvider.System);
+    }
 
     [Test]
-    public async Task HandleAsync_WithValidCredentials_ReturnsSuccessWithToken()
+    public async Task HandleAsync_WithValidCredentialsAndKnownDeviceNoMfa_ReturnsSuccessWithToken()
     {
-        var repository = Substitute.For<IUserRepository>();
-        repository.FindByEmailAsync(AdminUser.Email, Arg.Any<CancellationToken>())
-            .Returns(AdminUser);
+        var user = NewUser();
+        var fixture = new Fixture();
+        fixture.UserRepository.FindByEmailAsync(user.Email, Arg.Any<CancellationToken>()).Returns(user);
+        fixture.PasswordVerifier.Verify(user, "correct-password").Returns(true);
+        fixture.KnownDeviceFor(user);
 
-        var passwordVerifier = Substitute.For<IPasswordVerifier>();
-        passwordVerifier.Verify(AdminUser, "correct-password").Returns(true);
-
-        var tokenGenerator = Substitute.For<ITokenGenerator>();
         var expiry = DateTimeOffset.UtcNow.AddHours(1);
-        tokenGenerator.GenerateToken(AdminUser, out Arg.Any<DateTimeOffset>())
+        fixture.TokenGenerator.GenerateToken(user, out Arg.Any<DateTimeOffset>())
             .Returns(callInfo =>
             {
                 callInfo[1] = expiry;
                 return "fake-jwt-token";
             });
 
-        var handler = new LoginHandler(repository, passwordVerifier, tokenGenerator);
-
-        var result = await handler.HandleAsync(new LoginCommand(AdminUser.Email, "correct-password"), CancellationToken.None);
+        var result = await fixture.Build().HandleAsync(
+            new LoginCommand(user.Email, "correct-password", UserAgent, IpAddress), CancellationToken.None);
 
         await Assert.That(result.Status).IsEqualTo(LoginStatus.Success);
         await Assert.That(result.AccessToken).IsEqualTo("fake-jwt-token");
         await Assert.That(result.Role).IsEqualTo(nameof(UserRole.Admin));
-        await Assert.That(result.UserId).IsEqualTo(AdminUser.Id.ToString());
+        await Assert.That(result.UserId).IsEqualTo(user.Id.ToString());
     }
 
     [Test]
     public async Task HandleAsync_WithWrongPassword_ReturnsInvalidCredentialsWithoutToken()
     {
-        var repository = Substitute.For<IUserRepository>();
-        repository.FindByEmailAsync(AdminUser.Email, Arg.Any<CancellationToken>())
-            .Returns(AdminUser);
+        var user = NewUser();
+        var fixture = new Fixture();
+        fixture.UserRepository.FindByEmailAsync(user.Email, Arg.Any<CancellationToken>()).Returns(user);
+        fixture.PasswordVerifier.Verify(user, "wrong-password").Returns(false);
 
-        var passwordVerifier = Substitute.For<IPasswordVerifier>();
-        passwordVerifier.Verify(AdminUser, "wrong-password").Returns(false);
-
-        var tokenGenerator = Substitute.For<ITokenGenerator>();
-        var handler = new LoginHandler(repository, passwordVerifier, tokenGenerator);
-
-        var result = await handler.HandleAsync(new LoginCommand(AdminUser.Email, "wrong-password"), CancellationToken.None);
+        var result = await fixture.Build().HandleAsync(
+            new LoginCommand(user.Email, "wrong-password", UserAgent, IpAddress), CancellationToken.None);
 
         await Assert.That(result.Status).IsEqualTo(LoginStatus.InvalidCredentials);
         await Assert.That(result.AccessToken).IsNull();
-        tokenGenerator.DidNotReceive().GenerateToken(Arg.Any<User>(), out Arg.Any<DateTimeOffset>());
+        fixture.TokenGenerator.DidNotReceive().GenerateToken(Arg.Any<User>(), out Arg.Any<DateTimeOffset>());
     }
 
     [Test]
     public async Task HandleAsync_WithUnknownEmail_ReturnsInvalidCredentials()
     {
-        var repository = Substitute.For<IUserRepository>();
-        repository.FindByEmailAsync("unknown@crm.local", Arg.Any<CancellationToken>())
-            .Returns((User?)null);
+        var fixture = new Fixture();
+        fixture.UserRepository.FindByEmailAsync("unknown@crm.local", Arg.Any<CancellationToken>()).Returns((User?)null);
 
-        var passwordVerifier = Substitute.For<IPasswordVerifier>();
-        var tokenGenerator = Substitute.For<ITokenGenerator>();
-        var handler = new LoginHandler(repository, passwordVerifier, tokenGenerator);
-
-        var result = await handler.HandleAsync(new LoginCommand("unknown@crm.local", "any-password"), CancellationToken.None);
+        var result = await fixture.Build().HandleAsync(
+            new LoginCommand("unknown@crm.local", "any-password", UserAgent, IpAddress), CancellationToken.None);
 
         await Assert.That(result.Status).IsEqualTo(LoginStatus.InvalidCredentials);
-        passwordVerifier.DidNotReceive().Verify(Arg.Any<User>(), Arg.Any<string>());
+        fixture.PasswordVerifier.DidNotReceive().Verify(Arg.Any<User>(), Arg.Any<string>());
+    }
+
+    [Test]
+    public async Task HandleAsync_WhenAlreadyLockedOut_ReturnsLockedWithoutCheckingPassword()
+    {
+        var user = NewUser();
+        var fixture = new Fixture();
+        user.RecordFailedLoginAttempt(1, TimeSpan.FromMinutes(15), DateTimeOffset.UtcNow);
+        fixture.UserRepository.FindByEmailAsync(user.Email, Arg.Any<CancellationToken>()).Returns(user);
+
+        var result = await fixture.Build().HandleAsync(
+            new LoginCommand(user.Email, "irrelevant", UserAgent, IpAddress), CancellationToken.None);
+
+        await Assert.That(result.Status).IsEqualTo(LoginStatus.Locked);
+        fixture.PasswordVerifier.DidNotReceive().Verify(Arg.Any<User>(), Arg.Any<string>());
+    }
+
+    [Test]
+    public async Task HandleAsync_WithUnknownDevice_ReturnsDeviceConfirmationRequiredAndSendsCode()
+    {
+        var user = NewUser();
+        var fixture = new Fixture();
+        fixture.UserRepository.FindByEmailAsync(user.Email, Arg.Any<CancellationToken>()).Returns(user);
+        fixture.PasswordVerifier.Verify(user, "correct-password").Returns(true);
+        // Kein KnownDeviceFor(user) - Repository liefert Default (null) => unbekanntes Geraet.
+
+        var result = await fixture.Build().HandleAsync(
+            new LoginCommand(user.Email, "correct-password", UserAgent, IpAddress), CancellationToken.None);
+
+        await Assert.That(result.Status).IsEqualTo(LoginStatus.DeviceConfirmationRequired);
+        await Assert.That(result.PendingDeviceConfirmationId).IsNotNull();
+        await Assert.That(result.AccessToken).IsNull();
+        await fixture.DeviceConfirmationNotifier.Received(1).NotifyAsync(user.Email, Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task HandleAsync_WithMfaEnabledAndKnownDevice_ReturnsMfaRequiredChallengeToken()
+    {
+        var user = NewUser();
+        user.EnableMfa();
+        var fixture = new Fixture();
+        fixture.UserRepository.FindByEmailAsync(user.Email, Arg.Any<CancellationToken>()).Returns(user);
+        fixture.PasswordVerifier.Verify(user, "correct-password").Returns(true);
+        fixture.KnownDeviceFor(user);
+        fixture.MfaCredentialRepository.FindByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
+            .Returns(VerifiedCredentialFor(user));
+        fixture.LoginChallengeCache.IssueToken(user.Id).Returns("challenge-token");
+
+        var result = await fixture.Build().HandleAsync(
+            new LoginCommand(user.Email, "correct-password", UserAgent, IpAddress), CancellationToken.None);
+
+        await Assert.That(result.Status).IsEqualTo(LoginStatus.MfaRequired);
+        await Assert.That(result.MfaChallengeToken).IsEqualTo("challenge-token");
+        await Assert.That(result.AccessToken).IsNull();
+    }
+
+    private static MfaCredential VerifiedCredentialFor(User user)
+    {
+        var credential = new MfaCredential(Guid.NewGuid(), user.Id, "SECRETSECRETSECRET");
+        credential.MarkVerified();
+        return credential;
     }
 }

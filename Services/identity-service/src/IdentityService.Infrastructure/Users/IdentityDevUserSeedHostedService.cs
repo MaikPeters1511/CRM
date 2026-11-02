@@ -10,12 +10,14 @@ using Microsoft.Extensions.Options;
 namespace IdentityService.Infrastructure.Users;
 
 /// <summary>
-/// Seed der Testnutzer (Admin/Employee/optionaler Service-Account) direkt in identity_db, sobald
-/// die Tabelle leer ist (docs/adr/0004, Abschnitt 1). Ersetzt die bisherige rein In-Memory-Seeding-
-/// Logik in <c>InMemorySeedUserRepository</c>; identisches Verhalten (deterministische Ids,
+/// Seed der Testnutzer (Admin/Employee/optionaler Service-Account) direkt in identity_db
+/// (docs/adr/0004, Abschnitt 1). Ersetzt die bisherige rein In-Memory-Seeding-Logik in
+/// <c>InMemorySeedUserRepository</c>; identisches Verhalten (deterministische Ids,
 /// PasswordHasher&lt;T&gt;, Zufalls-Dev-Passwort NUR in Development falls nicht konfiguriert, sonst
-/// Exception), nur jetzt persistiert, damit bestehende E2E-Tests (Tests/E2E/tests/auth.spec.ts)
-/// ohne Anpassung gruen bleiben.
+/// Exception), nur jetzt persistiert. Prueft bewusst JE E-Mail (nicht nur "Tabelle insgesamt leer"),
+/// damit ein spaeter konfigurierter Service-Account (z.B. IdentitySeed:ServiceAccountPassword)
+/// auch dann noch angelegt wird, wenn Admin/Employee bereits existieren (gilt sowohl fuer
+/// Produktion als auch fuer die gemeinsam genutzte Testcontainer-DB in IdentityServiceWebFactory).
 /// </summary>
 public sealed class IdentityDevUserSeedHostedService(
     IServiceScopeFactory scopeFactory,
@@ -30,20 +32,15 @@ public sealed class IdentityDevUserSeedHostedService(
             using var scope = scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
 
-            if (await dbContext.Users.AnyAsync(cancellationToken))
-            {
-                return;
-            }
-
             var seed = seedOptions.Value;
             var hasher = new PasswordHasher<User>();
 
-            SeedUser(dbContext, seed.AdminEmail, seed.AdminPassword, seed.AdminDisplayName, UserRole.Admin, hasher);
-            SeedUser(dbContext, seed.EmployeeEmail, seed.EmployeePassword, seed.EmployeeDisplayName, UserRole.Employee, hasher);
+            await SeedUserIfMissingAsync(dbContext, seed.AdminEmail, seed.AdminPassword, seed.AdminDisplayName, UserRole.Admin, hasher, cancellationToken);
+            await SeedUserIfMissingAsync(dbContext, seed.EmployeeEmail, seed.EmployeePassword, seed.EmployeeDisplayName, UserRole.Employee, hasher, cancellationToken);
 
             if (!string.IsNullOrWhiteSpace(seed.ServiceAccountPassword))
             {
-                SeedUser(dbContext, seed.ServiceAccountEmail, seed.ServiceAccountPassword, seed.ServiceAccountDisplayName, UserRole.Admin, hasher);
+                await SeedUserIfMissingAsync(dbContext, seed.ServiceAccountEmail, seed.ServiceAccountPassword, seed.ServiceAccountDisplayName, UserRole.Admin, hasher, cancellationToken);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -56,10 +53,15 @@ public sealed class IdentityDevUserSeedHostedService(
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    private void SeedUser(
+    private async Task SeedUserIfMissingAsync(
         IdentityDbContext dbContext, string email, string? configuredPassword, string displayName, UserRole role,
-        PasswordHasher<User> hasher)
+        PasswordHasher<User> hasher, CancellationToken cancellationToken)
     {
+        if (await dbContext.Users.AnyAsync(u => u.Email == email, cancellationToken))
+        {
+            return;
+        }
+
         var id = DeterministicIdFor(email);
         var password = configuredPassword;
 
