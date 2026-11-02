@@ -60,7 +60,7 @@
             <ul
               tabindex="0"
               role="menu"
-              class="dropdown-content menu bg-base-100 rounded-box z-20 mt-2 w-72 p-2 shadow-md border border-base-300"
+              class="dropdown-content menu bg-base-100 rounded-box z-20 mt-2 w-56 p-2 shadow-md border border-base-300"
             >
               <li class="menu-title px-3 py-1.5">
                 <span class="font-semibold text-base-content truncate">{{ authState.currentUser()?.displayName }}</span>
@@ -71,32 +71,6 @@
                   {{ 'crm.nav.profile' | translate }}
                 </a>
               </li>
-              <div class="divider my-1"></div>
-              <li class="menu-title px-3 py-1 text-xs">
-                {{ 'profile.themePicker.heading' | translate }}
-              </li>
-              <div class="grid grid-cols-2 gap-1.5 px-2 py-1 max-h-56 overflow-y-auto">
-                @for (theme of themes; track theme) {
-                  <button
-                    type="button"
-                    [attr.data-theme]="theme"
-                    class="flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md border text-left text-xs font-medium bg-base-100 text-base-content hover:border-primary transition-colors cursor-pointer"
-                    [class.border-primary]="themeState.activeTheme() === theme"
-                    [class.ring-1]="themeState.activeTheme() === theme"
-                    [class.ring-primary]="themeState.activeTheme() === theme"
-                    [class.border-base-300]="themeState.activeTheme() !== theme"
-                    (click)="selectTheme(theme)"
-                  >
-                    <span class="truncate">{{ 'profile.themePicker.themes.' + theme | translate }}</span>
-                    <span class="flex items-center gap-0.5 shrink-0">
-                      <span class="w-2 h-3 rounded-xs bg-primary"></span>
-                      <span class="w-2 h-3 rounded-xs bg-secondary"></span>
-                      <span class="w-2 h-3 rounded-xs bg-accent"></span>
-                      <span class="w-2 h-3 rounded-xs bg-neutral"></span>
-                    </span>
-                  </button>
-                }
-              </div>
               <div class="divider my-1"></div>
               <li role="menuitem">
                 <button type="button" class="text-error" (click)="logout()">
