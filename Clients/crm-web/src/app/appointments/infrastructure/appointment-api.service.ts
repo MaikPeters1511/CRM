@@ -4,8 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Appointment,
-  AppointmentListItem,
   CalendarQueryParams,
+  CalendarResponse,
   CancelAppointmentRequest,
   CreateAppointmentRequest,
   RescheduleAppointmentRequest,
@@ -20,7 +20,13 @@ export class AppointmentApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.appointmentApiBaseUrl}/appointments`;
 
-  getCalendar(params: CalendarQueryParams): Observable<AppointmentListItem[]> {
+  /**
+   * `GET /api/appointments` liefert seit dem Abwesenheits-Workflow (Breaking Change) nicht
+   * mehr ein nacktes `AppointmentListItem[]`, sondern `CalendarResponse { appointments,
+   * absenceEntries }` - genehmigte Abwesenheiten werden als separate, nicht-persistierte
+   * Ganztages-Eintraege mitgeliefert (abwesenheit-workflow.openspec.md Abschnitt 5).
+   */
+  getCalendar(params: CalendarQueryParams): Observable<CalendarResponse> {
     let httpParams = new HttpParams().set('from', params.from).set('to', params.to);
     if (params.employeeId) {
       httpParams = httpParams.set('employeeId', params.employeeId);
@@ -28,7 +34,7 @@ export class AppointmentApiService {
     if (params.customerId) {
       httpParams = httpParams.set('customerId', params.customerId);
     }
-    return this.http.get<AppointmentListItem[]>(this.baseUrl, { params: httpParams });
+    return this.http.get<CalendarResponse>(this.baseUrl, { params: httpParams });
   }
 
   getById(id: string): Observable<Appointment> {

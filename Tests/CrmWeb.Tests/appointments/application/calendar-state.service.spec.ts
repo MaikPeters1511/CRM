@@ -42,7 +42,7 @@ describe('CalendarStateService', () => {
 
   function createApiMock() {
     return {
-      getCalendar: vi.fn().mockReturnValue(of([confirmedAppointment])),
+      getCalendar: vi.fn().mockReturnValue(of({ appointments: [confirmedAppointment], absenceEntries: [] })),
       getById: vi.fn().mockReturnValue(of(fullAppointment)),
       create: vi.fn().mockReturnValue(of(fullAppointment)),
       reschedule: vi.fn().mockReturnValue(of(fullAppointment)),
@@ -209,5 +209,33 @@ describe('CalendarStateService', () => {
 
     expect(apiMock.getById).toHaveBeenCalledWith('a1');
     expect(service.selectedAppointment()).toEqual(fullAppointment);
+  });
+
+  it('exposes the approved absence entries from the CalendarResponse separately from appointments (Scenario: Genehmigte Abwesenheit erscheint im Kalender)', () => {
+    const absenceEntry = { employeeId: 'e2', type: 'Vacation' as const, from: '2024-11-20', to: '2024-11-22' };
+    const { service } = setup({
+      getCalendar: vi.fn().mockReturnValue(of({ appointments: [confirmedAppointment], absenceEntries: [absenceEntry] })),
+    });
+
+    service.loadAppointments();
+
+    expect(service.appointments()).toEqual([confirmedAppointment]);
+    expect(service.absenceEntries()).toEqual([absenceEntry]);
+  });
+
+  it('keeps the previously loaded absence entries and reports an error when a reload fails', () => {
+    const { service } = setup({
+      getCalendar: vi
+        .fn()
+        .mockReturnValueOnce(of({ appointments: [], absenceEntries: [{ employeeId: 'e2', type: 'Sick' as const, from: '2024-11-20', to: '2024-11-20' }] }))
+        .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 }))),
+    });
+
+    service.loadAppointments();
+    expect(service.absenceEntries().length).toBe(1);
+
+    service.loadAppointments();
+    expect(service.errors()).toEqual(['appointment.errors.loadFailed']);
+    expect(service.absenceEntries().length).toBe(1);
   });
 });

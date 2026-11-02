@@ -23,12 +23,13 @@ describe('CalendarViewComponent', () => {
     cancellationReason: null,
   };
 
-  function setup(role: 'Admin' | 'Employee' = 'Admin') {
+  function setup(role: 'Admin' | 'Employee' = 'Admin', absenceEntries: unknown[] = []) {
     const stateMock = {
       viewMode: () => 'week' as const,
       anchorDate: () => '2024-05-15',
       employeeFilter: () => null,
       appointments: () => [appointment],
+      absenceEntries: () => absenceEntries,
       loading: () => false,
       errors: () => [],
       hasErrors: () => false,
@@ -40,8 +41,12 @@ describe('CalendarViewComponent', () => {
       goToToday: vi.fn(),
       loadAppointments: vi.fn(),
     };
-    const employeeApiMock = { search: vi.fn().mockReturnValue(of({ items: [], totalCount: 0, page: 1, pageSize: 20 })) };
-    const authMock = { isAdmin: () => role === 'Admin' };
+    const employeeApiMock = {
+      search: vi.fn().mockReturnValue(
+        of({ items: [{ id: 'e2', firstName: 'Erika', lastName: 'Mustermann', isActive: true, services: [] }], totalCount: 1, page: 1, pageSize: 20 }),
+      ),
+    };
+    const authMock = { isAdmin: () => role === 'Admin', currentUser: () => ({ userId: 'e1', role, displayName: 'Ich' }) };
 
     TestBed.configureTestingModule({
       imports: [CalendarViewComponent],
@@ -150,5 +155,27 @@ describe('CalendarViewComponent', () => {
     const { fixture, employeeApiMock } = setup('Employee');
     expect(fixture.nativeElement.querySelector('#employee-filter')).toBeFalsy();
     expect(employeeApiMock.search).not.toHaveBeenCalled();
+  });
+
+  it('renders an approved absence entry as a separate, visually distinct full-day badge (Scenario: Genehmigte Abwesenheit erscheint im Kalender)', () => {
+    const { fixture } = setup('Admin', [{ employeeId: 'e2', type: 'Vacation', from: '2024-05-14', to: '2024-05-16' }]);
+
+    const badges = fixture.nativeElement.querySelectorAll('.absence-entry');
+    expect(badges.length).toBeGreaterThan(0);
+    expect((badges[0] as HTMLElement).className).toContain('badge-warning');
+  });
+
+  it('shows the employee name and absence type in the absence badge tooltip', () => {
+    const { fixture } = setup('Admin', [{ employeeId: 'e2', type: 'Vacation', from: '2024-05-14', to: '2024-05-16' }]);
+
+    const badge = fixture.nativeElement.querySelector('.absence-entry') as HTMLElement;
+    expect(badge.title).toContain('Erika');
+    expect(badge.title).toContain('Vacation');
+  });
+
+  it('does not render an absence badge for days outside the approved absence range', () => {
+    const { fixture } = setup('Admin', [{ employeeId: 'e2', type: 'Vacation', from: '2024-01-01', to: '2024-01-02' }]);
+
+    expect(fixture.nativeElement.querySelector('.absence-entry')).toBeFalsy();
   });
 });

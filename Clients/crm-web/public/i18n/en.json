@@ -192,6 +192,38 @@
         "fromRequired": "Start date is required.",
         "toRequired": "End date is required.",
         "conflict": "The absence conflicts with existing appointments. Please confirm explicitly or reschedule the appointments."
+      },
+      "myRequests": {
+        "heading": "My requests",
+        "empty": "No absence requests yet.",
+        "period": "{{from}} – {{to}}",
+        "status": {
+          "Pending": "Pending",
+          "Approved": "Approved",
+          "Rejected": "Rejected"
+        }
+      }
+    },
+    "absenceApprovals": {
+      "heading": "Absence approvals",
+      "employee": "Employee",
+      "type": "Type",
+      "period": "Period",
+      "requestedAt": "Requested at",
+      "empty": "No pending absence requests.",
+      "loading": "Loading requests…",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveLabel": "Approve request from {{name}}",
+      "rejectLabel": "Reject request from {{name}}",
+      "confirmApprove": "Really approve the request from {{name}} ({{from}} – {{to}})?",
+      "confirmReject": "Really reject the request from {{name}} ({{from}} – {{to}})?",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "errors": {
+        "loadFailed": "The pending requests could not be loaded.",
+        "decideFailed": "The decision could not be saved.",
+        "alreadyDecided": "This request has already been decided."
       }
     },
     "deactivateModal": {
@@ -227,7 +259,10 @@
       "employeeFilterSearch": "Search employees",
       "allEmployees": "All employees",
       "loading": "Loading appointments…",
-      "gridLabel": "Appointment calendar"
+      "gridLabel": "Appointment calendar",
+      "absences": {
+        "heading": "Approved absences"
+      }
     },
     "status": {
       "Confirmed": "Confirmed",
@@ -291,7 +326,23 @@
       "customers": "Customers",
       "employees": "Employees",
       "appointments": "Appointments",
-      "catalog": "Services"
+      "catalog": "Services",
+      "absenceApprovals": "Absence approvals"
+    }
+  },
+  "notification": {
+    "bell": {
+      "label": "Notifications",
+      "unreadCountLabel": "{{count}} unread notifications",
+      "dropdownHeading": "Notifications",
+      "empty": "No notifications yet.",
+      "markRead": "Mark as read"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutes": "{{value}} min ago",
+      "hours": "{{value}} h ago",
+      "days": "{{value}} days ago"
     }
   },
   "catalog": {

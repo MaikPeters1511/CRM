@@ -30,7 +30,7 @@ describe('AppointmentApiService', () => {
         r.params.get('to') === '2024-01-07',
     );
     expect(req.request.method).toBe('GET');
-    req.flush([]);
+    req.flush({ appointments: [], absenceEntries: [] });
   });
 
   it('omits employeeId/customerId params when not set', () => {
@@ -39,7 +39,21 @@ describe('AppointmentApiService', () => {
     const req = httpMock.expectOne((r) => r.url === baseUrl);
     expect(req.request.params.has('employeeId')).toBe(false);
     expect(req.request.params.has('customerId')).toBe(false);
-    req.flush([]);
+    req.flush({ appointments: [], absenceEntries: [] });
+  });
+
+  it('returns the CalendarResponse shape with appointments and absenceEntries (Breaking Change: kein nacktes Array mehr)', () => {
+    const absenceEntry = { employeeId: 'e1', type: 'Vacation', from: '2024-11-20', to: '2024-11-22' };
+    let result: unknown;
+
+    service
+      .getCalendar({ employeeId: null, customerId: null, from: '2024-01-01', to: '2024-01-07' })
+      .subscribe((response) => (result = response));
+
+    const req = httpMock.expectOne((r) => r.url === baseUrl);
+    req.flush({ appointments: [], absenceEntries: [absenceEntry] });
+
+    expect(result).toEqual({ appointments: [], absenceEntries: [absenceEntry] });
   });
 
   it('sends GET to /appointments/{id}', () => {
