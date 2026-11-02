@@ -125,13 +125,13 @@ Das System SHALL genehmigte Abwesenheiten im Terminkalender als separate, visuel
 - [x] 1. Tests aus den Scenarios schreiben (Red) – `Tests/EmployeeService.Tests`, `Tests/AppointmentService.Tests` (Backend-Teil; `Tests/CrmWeb.Tests` folgt mit Task 4)
 - [x] 2. Backend `employee-service`: `Absence`-Status/Approve/Reject, `Notification`-Aggregate, Endpunkte, EF-Migration, Integration Events (backend-agent)
 - [x] 3. Backend `appointment-service`: `IEmployeeAbsenceClient` + Kalender-Integration (backend-agent)
-- [ ] 4. Frontend: Statusanzeige eigener Anträge, Freigabe-Ansicht, Glocke, Kalender-Integration (frontend-agent)
-- [ ] 5. Lokale Verifikation: Backend-Tests (TUnit) grün, Frontend-Tests grün, Build fehlerfrei
+- [x] 4. Frontend: Statusanzeige eigener Anträge, Freigabe-Ansicht, Glocke, Kalender-Integration (frontend-agent)
+- [x] 5. Lokale Verifikation: Backend-Tests (TUnit) grün, Frontend-Tests grün, Build fehlerfrei
 - [ ] 6. Doku/OpenAPI aktualisieren (doc-agent) — separater Schritt, nicht Teil dieser Session
 - [ ] 7. QA/E2E-Tests (qa-agent) — separater Schritt, nicht Teil dieser Session
 
 ## 9. Acceptance Criteria (DoD)
-- [ ] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün
-- [ ] Backend-API (C# 14) implementiert und getestet (TUnit)
-- [ ] Angular-Komponenten implementiert und gestylt (DaisyUI 5), i18n DE/EN, ARIA
-- [ ] Build (Backend + Frontend) fehlerfrei
+- [x] Jedes Scenario aus Abschnitt 3 ist durch einen automatisierten Test abgedeckt und grün
+- [x] Backend-API (C# 14) implementiert und getestet (TUnit)
+- [x] Angular-Komponenten implementiert und gestylt (DaisyUI 5), i18n DE/EN, ARIA
+- [x] Build (Backend + Frontend) fehlerfrei

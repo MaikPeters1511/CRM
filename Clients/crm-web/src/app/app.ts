@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthStateService } from './auth/application/auth-state.service';
 import { AssistantChatWidgetComponent } from './assistant/presentation/assistant-chat-widget/assistant-chat-widget.component';
+import { NotificationBellComponent } from './employees/presentation/notification-bell/notification-bell.component';
 
 /**
  * Shell-Komponente: Header/Navigation/Router-Outlet fuer die konsolidierte Anwendung.
@@ -13,7 +14,7 @@ import { AssistantChatWidgetComponent } from './assistant/presentation/assistant
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, AssistantChatWidgetComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, AssistantChatWidgetComponent, NotificationBellComponent],
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
