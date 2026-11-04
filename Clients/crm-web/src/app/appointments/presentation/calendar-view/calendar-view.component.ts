@@ -1,10 +1,11 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { AuthStateService } from '../../../auth/application/auth-state.service';
 import { LocalTimePipe, LocaleFormatService } from '../../../shared/formatting/locale-format.service';
+import { AppointmentLabelsService } from '../../application/appointment-labels.service';
 import { CalendarStateService } from '../../application/calendar-state.service';
 import { EmployeeApiService } from '../../infrastructure/employee-api.service';
 import { AppointmentListItem, AppointmentStatus, CalendarAbsenceEntry, CalendarViewMode } from '../../domain/appointment.model';
@@ -61,6 +62,7 @@ export class CalendarViewComponent implements OnInit {
   private readonly auth = inject(AuthStateService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly translate = inject(TranslateService);
+  private readonly labels = inject(AppointmentLabelsService);
   protected readonly localeFormat = inject(LocaleFormatService);
   readonly state = inject(CalendarStateService);
 
@@ -225,6 +227,9 @@ export class CalendarViewComponent implements OnInit {
   });
 
   constructor() {
+    // Kunden-/Leistungsnamen fuer die sichtbaren Termine nachladen (Ids -> Anzeigenamen).
+    effect(() => this.labels.ensureLoaded(this.state.appointments()));
+
     // Echte, debounced serverseitige Suche (Bug 10 Nachfolge-Fix). `skip(1)` ignoriert die
     // synchrone Erstemission von `toObservable` fuer den initialen (leeren) Suchbegriff - die
     // sinnvolle Default-Liste wird separat (ungedebounced) in `ngOnInit` geladen. Die Subscription
@@ -294,11 +299,22 @@ export class CalendarViewComponent implements OnInit {
    * Tagesspalten-Block selbst dafuer keinen Platz hat (Bugfix: Block zeigte den vollen
    * Zeitraum nicht lesbar an und hatte keinen Hover-Hinweis).
    */
+  /** Kundenname des Termins, solange noch nicht aufgeloest: leerer String (kein Id-Leak im UI). */
+  customerLabel(appointment: AppointmentListItem): string {
+    return this.labels.customerName(appointment.customerId) ?? '';
+  }
+
+  serviceLabel(appointment: AppointmentListItem): string {
+    return this.labels.serviceName(appointment.serviceId) ?? '';
+  }
+
   appointmentTooltip(appointment: AppointmentListItem): string {
     const start = this.localeFormat.formatTime(appointment.startTime);
     const end = this.localeFormat.formatTime(appointment.endTime);
     const status = this.translate.instant(this.statusLabelKey(appointment.status));
-    const parts = [`${start}–${end}`, status];
+    const parts = [`${start}–${end}`, this.serviceLabel(appointment), this.customerLabel(appointment), status].filter(
+      (part) => part.length > 0,
+    );
     if (this.isAdmin()) {
       parts.push(this.employeeName(appointment.employeeId));
     }

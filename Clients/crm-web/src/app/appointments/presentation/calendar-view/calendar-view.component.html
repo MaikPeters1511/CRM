@@ -261,8 +261,8 @@
                             {{ appointment.startTime | localTime }}–{{ appointment.endTime | localTime }}
                           </span>
                         </span>
-                        <span class="text-[11px] opacity-90 whitespace-nowrap">
-                          {{ statusLabelKey(appointment.status) | translate }}
+                        <span class="w-full truncate text-[11px] opacity-90">
+                          {{ customerLabel(appointment) || (statusLabelKey(appointment.status) | translate) }}
                         </span>
                       </button>
                     }
@@ -354,9 +354,12 @@
                             {{ block.appointment.startTime | localTime }}–{{ block.appointment.endTime | localTime }}
                           </span>
                         </span>
-                        <span class="text-[11px] opacity-90 whitespace-nowrap">
-                          {{ statusLabelKey(block.appointment.status) | translate }}
-                        </span>
+                        @if (serviceLabel(block.appointment)) {
+                          <span class="w-full truncate text-[11px] font-semibold leading-tight">{{ serviceLabel(block.appointment) }}</span>
+                        }
+                        @if (customerLabel(block.appointment)) {
+                          <span class="w-full truncate text-[11px] leading-tight opacity-90">{{ customerLabel(block.appointment) }}</span>
+                        }
                       </button>
                     }
                   </div>
