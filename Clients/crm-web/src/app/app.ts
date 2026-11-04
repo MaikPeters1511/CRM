@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthStateService } from './auth/application/auth-state.service';
@@ -7,6 +7,23 @@ import { AssistantChatWidgetComponent } from './assistant/presentation/assistant
 import { NotificationBellComponent } from './employees/presentation/notification-bell/notification-bell.component';
 import { ThemeState } from './profile/application/theme.state';
 import { LocaleFormatService } from './shared/formatting/locale-format.service';
+
+const LANGUAGE_STORAGE_KEY = 'crm.language';
+
+interface LanguageOption {
+  code: 'de' | 'en';
+  flag: string;
+  label: string;
+}
+
+function readSavedLanguage(): 'de' | 'en' | null {
+  try {
+    const value = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return value === 'de' || value === 'en' ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Shell-Komponente: Sidebar-Navigation/Router-Outlet fuer die konsolidierte Anwendung
@@ -38,10 +55,29 @@ export class App {
   protected readonly themeState = inject(ThemeState);
   protected readonly localeFormat = inject(LocaleFormatService);
 
-  readonly languages = ['de', 'en'] as const;
+  readonly languageOptions: readonly LanguageOption[] = [
+    { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
+    { code: 'en', flag: '🇬🇧', label: 'English' },
+  ];
+
+  protected readonly currentLanguage = computed(
+    () => this.languageOptions.find((o) => o.code === this.localeFormat.lang()) ?? this.languageOptions[0],
+  );
+
+  constructor() {
+    const saved = readSavedLanguage();
+    if (saved && saved !== this.localeFormat.lang()) {
+      this.translate.use(saved);
+    }
+  }
 
   useLanguage(lang: string): void {
     this.translate.use(lang);
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    } catch {
+      // localStorage evtl. nicht verfuegbar - die Auswahl gilt dann nur fuer diese Sitzung.
+    }
   }
 
   openAssistant(): void {

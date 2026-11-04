@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { App } from '../../../Clients/crm-web/src/app/app';
 import { AuthStateService } from '../../../Clients/crm-web/src/app/auth/application/auth-state.service';
 import { AssistantStateService } from '../../../Clients/crm-web/src/app/assistant/application/assistant-state.service';
 import { NotificationStateService } from '../../../Clients/crm-web/src/app/employees/application/notification-state.service';
 import { routes } from '../../../Clients/crm-web/src/app/app.routes';
+import { installLocalStorageMock } from '../support/local-storage.mock';
 import type { AuthUser } from '../../../Clients/crm-web/src/app/auth/domain/auth-user.model';
 
 /**
@@ -15,6 +16,8 @@ import type { AuthUser } from '../../../Clients/crm-web/src/app/auth/domain/auth
  * - "Gemeinsame Navigation" (Navigation zeigt alle drei Bereiche fuer Admin/Employee)
  */
 describe('App (Shell/Navigation)', () => {
+  beforeEach(() => installLocalStorageMock());
+
   function setup(user: AuthUser | null) {
     const authStateMock = {
       isAuthenticated: () => user !== null,
@@ -71,6 +74,29 @@ describe('App (Shell/Navigation)', () => {
     const links = fixture.nativeElement.querySelectorAll('nav[aria-label="crm.nav.main"] a');
 
     expect(links.length).toBe(5);
+  });
+
+  it('offers a language dropdown with Deutsch and English and marks the active one', () => {
+    const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
+
+    const items = fixture.nativeElement.querySelectorAll('[data-testid="language-switcher"] [role="menuitemradio"]');
+    expect(Array.from(items as NodeListOf<HTMLElement>).map((i) => i.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
+      '🇩🇪Deutsch✓',
+      '🇬🇧English',
+    ]);
+    expect((items[0] as HTMLElement).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('switches the language and remembers the choice', () => {
+    const { fixture } = setup({ userId: 'u1', role: 'Admin', displayName: 'Admin User' });
+    const translate = TestBed.inject(TranslateService);
+    const useSpy = vi.spyOn(translate, 'use');
+
+    const english = fixture.nativeElement.querySelectorAll('[role="menuitemradio"]')[1] as HTMLButtonElement;
+    english.click();
+
+    expect(useSpy).toHaveBeenCalledWith('en');
+    expect(localStorage.getItem('crm.language')).toBe('en');
   });
 
   it('hides the module navigation for anonymous (not authenticated) users', () => {

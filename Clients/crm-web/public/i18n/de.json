@@ -354,6 +354,9 @@
     }
   },
   "crm": {
+    "language": {
+      "label": "Sprache"
+    },
     "brand": {
       "shortName": "MP"
     },
