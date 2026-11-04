@@ -1,3 +1,4 @@
+import { mapBackendErrors } from '../../shared/errors/backend-error-messages';
 import { HttpErrorResponse } from '@angular/common/http';
 
 /**
@@ -13,10 +14,10 @@ export function extractValidationErrors(error: unknown): string[] {
   if (error instanceof HttpErrorResponse) {
     const body = error.error as { errors?: Record<string, string[]> | string[] } | null;
     if (Array.isArray(body?.errors)) {
-      return body.errors;
+      return mapBackendErrors(body.errors);
     }
     if (body?.errors) {
-      return Object.values(body.errors).flat();
+      return mapBackendErrors(Object.values(body.errors).flat());
     }
   }
   return [];
