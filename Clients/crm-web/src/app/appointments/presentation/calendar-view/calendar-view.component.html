@@ -18,7 +18,7 @@
     <div class="card bg-base-100 border border-base-300 shadow-xs">
       <div class="card-body p-3.5 flex-row items-center justify-between">
         <div>
-          <span class="text-xs text-base-content/60 font-medium">Gesamt im Zeitraum</span>
+          <span class="text-xs text-base-content/60 font-medium">{{ 'appointment.calendar.totalInRange' | translate }}</span>
           <p class="text-xl font-bold leading-tight mt-0.5">{{ stats().total }}</p>
         </div>
         <span class="badge badge-primary badge-soft badge-lg">📅</span>
@@ -98,7 +98,7 @@
                 type="text"
                 class="input input-sm w-full"
                 aria-controls="employee-filter"
-                placeholder="Name eingeben…"
+                [attr.placeholder]="'appointment.calendar.employeeSearchPlaceholder' | translate"
                 [value]="employeeFilterQuery()"
                 (input)="onEmployeeFilterQueryInput($any($event.target).value)"
               />

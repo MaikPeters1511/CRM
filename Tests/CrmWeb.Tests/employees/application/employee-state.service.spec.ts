@@ -98,7 +98,7 @@ describe('EmployeeStateService', () => {
 
     expect(onSuccess).not.toHaveBeenCalled();
     expect(service.employees()).toEqual([]);
-    expect(service.errors()).toEqual(['Email is already assigned to another employee.']);
+    expect(service.errors()).toEqual(['backendErrors.emailTaken']);
   });
 
   it('assigns a service to an employee (Leistung zuordnen)', () => {
