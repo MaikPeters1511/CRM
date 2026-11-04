@@ -18,18 +18,48 @@
         </div>
 
         <div class="navbar-end ml-auto flex items-center gap-2 sm:gap-3">
-          <nav class="flex gap-1 items-center" aria-label="language switch">
-            @for (lang of languages; track lang) {
-              <button
-                type="button"
-                class="btn btn-xs btn-ghost"
-                [attr.aria-label]="lang"
-                (click)="useLanguage(lang)"
-              >
-                {{ lang.toUpperCase() }}
-              </button>
-            }
-          </nav>
+          <div class="dropdown dropdown-end" data-testid="language-switcher">
+            <div
+              tabindex="0"
+              role="button"
+              class="btn btn-ghost btn-sm gap-1.5 px-2.5 font-medium"
+              [attr.aria-label]="'crm.language.label' | translate"
+              aria-haspopup="menu"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="size-4 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9S14.5 18.5 12 21c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3Z" />
+              </svg>
+              <span aria-hidden="true">{{ currentLanguage().flag }}</span>
+              <span class="hidden sm:inline">{{ currentLanguage().code.toUpperCase() }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="size-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </div>
+            <ul
+              tabindex="0"
+              role="menu"
+              class="dropdown-content menu bg-base-100 rounded-box z-20 mt-2 w-44 p-2 shadow-md border border-base-300"
+              [attr.aria-label]="'crm.language.label' | translate"
+            >
+              @for (option of languageOptions; track option.code) {
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    class="flex items-center gap-2"
+                    [class.menu-active]="option.code === currentLanguage().code"
+                    [attr.aria-checked]="option.code === currentLanguage().code"
+                    [attr.lang]="option.code"
+                    (click)="useLanguage(option.code); closeDropdown($event)"
+                  >
+                    <span aria-hidden="true">{{ option.flag }}</span>
+                    <span class="flex-1 text-left">{{ option.label }}</span>
+                    @if (option.code === currentLanguage().code) {
+                      <span aria-hidden="true">✓</span>
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
 
           @defer (on idle) {
             <app-notification-bell />
