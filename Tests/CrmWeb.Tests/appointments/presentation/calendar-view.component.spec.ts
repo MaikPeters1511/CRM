@@ -6,6 +6,7 @@ import { CalendarViewComponent } from '../../../../Clients/crm-web/src/app/appoi
 import { CalendarStateService } from '../../../../Clients/crm-web/src/app/appointments/application/calendar-state.service';
 import { AuthStateService } from '../../../../Clients/crm-web/src/app/auth/application/auth-state.service';
 import { EmployeeApiService } from '../../../../Clients/crm-web/src/app/appointments/infrastructure/employee-api.service';
+import { AppointmentLabelsService } from '../../../../Clients/crm-web/src/app/appointments/application/appointment-labels.service';
 import { AppointmentListItem } from '../../../../Clients/crm-web/src/app/appointments/domain/appointment.model';
 
 describe('CalendarViewComponent', () => {
@@ -59,6 +60,11 @@ describe('CalendarViewComponent', () => {
         of({ items: [{ id: 'e2', firstName: 'Erika', lastName: 'Mustermann', isActive: true, services: [] }], totalCount: 1, page: 1, pageSize: 20 }),
       ),
     };
+    const labelsMock = {
+      ensureLoaded: vi.fn(),
+      customerName: (id: string) => (id === 'c1' ? 'Clara Müller' : null),
+      serviceName: (id: string) => (id === 's1' ? 'Farbe + Schnitt' : null),
+    };
     const authMock = { isAdmin: () => role === 'Admin', currentUser: () => ({ userId: 'e1', role, displayName: 'Ich' }) };
 
     TestBed.configureTestingModule({
@@ -69,6 +75,7 @@ describe('CalendarViewComponent', () => {
         { provide: CalendarStateService, useValue: stateMock },
         { provide: EmployeeApiService, useValue: employeeApiMock },
         { provide: AuthStateService, useValue: authMock },
+        { provide: AppointmentLabelsService, useValue: labelsMock },
       ],
     });
 
@@ -245,6 +252,23 @@ describe('CalendarViewComponent', () => {
 
     const blocks = fixture.nativeElement.querySelectorAll('.pointer-events-auto');
     expect(blocks.length).toBe(1);
+  });
+
+  it('shows service title and customer name on the appointment block and in its tooltip', () => {
+    const { fixture } = setup();
+
+    const block = fixture.nativeElement.querySelector('.pointer-events-auto') as HTMLElement;
+    expect(block.textContent).toContain('Farbe + Schnitt');
+    expect(block.textContent).toContain('Clara Müller');
+    expect(block.title).toContain('Clara Müller');
+    expect(block.title).toContain('Farbe + Schnitt');
+  });
+
+  it('requests label resolution for the visible appointments', () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    const labels = TestBed.inject(AppointmentLabelsService) as unknown as { ensureLoaded: ReturnType<typeof vi.fn> };
+    expect(labels.ensureLoaded).toHaveBeenCalledWith([appointment]);
   });
 
   it('moves focus between cells on arrow key navigation', () => {
